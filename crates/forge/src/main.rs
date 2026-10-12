@@ -70,7 +70,11 @@ async fn main() -> anyhow::Result<()> {
                     }
                 });
             }
-            let listener = tokio::net::TcpListener::bind(&listen).await?;
+            // TCP_NODELAY: git smart-HTTP responses are streamed from a child process in small
+            // chunks; with Nagle + the client's delayed ACK every such response stalled ~40ms.
+            let listener = axum::serve::ListenerExt::tap_io(tokio::net::TcpListener::bind(&listen).await?, |tcp| {
+                let _ = tcp.set_nodelay(true);
+            });
             tracing::info!("forge listening on {listen}");
             axum::serve(listener, app).with_graceful_shutdown(shutdown()).await?;
         }

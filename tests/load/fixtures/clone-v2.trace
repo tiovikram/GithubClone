@@ -1,0 +1,69 @@
+packet:          git< version 2
+packet:          git< version 2
+packet:          git< agent=git/2.39.5
+packet:          git< ls-refs=unborn
+packet:          git< fetch=shallow wait-for-done filter
+packet:          git< server-option
+packet:          git< object-format=sha1
+packet:          git< object-info
+packet:          git< 0000
+packet:        clone< version 2
+packet:        clone< agent=git/2.39.5
+packet:        clone< ls-refs=unborn
+packet:        clone< fetch=shallow wait-for-done filter
+packet:        clone< server-option
+packet:        clone< object-format=sha1
+packet:        clone< object-info
+packet:        clone< 0000
+packet:        clone> command=ls-refs
+packet:        clone> agent=git/2.50.1-Darwin
+packet:        clone> object-format=sha1
+packet:        clone> 0001
+packet:        clone> peel
+packet:        clone> symrefs
+packet:        clone> unborn
+packet:        clone> ref-prefix refs/heads/
+packet:        clone> ref-prefix refs/tags/
+packet:        clone> ref-prefix HEAD
+packet:        clone> 0000
+packet:          git< command=ls-refs
+packet:          git< agent=git/2.50.1-Darwin
+packet:          git< object-format=sha1
+packet:          git< 0001
+packet:          git< peel
+packet:          git< symrefs
+packet:          git< unborn
+packet:          git< ref-prefix refs/heads/
+packet:          git< ref-prefix refs/tags/
+packet:          git< ref-prefix HEAD
+packet:          git< 0000
+packet:          git> 0002
+packet:        clone< 41538d836c83abd768750f41d0372b2c10047dd1 HEAD symref-target:refs/heads/main
+packet:        clone< 41538d836c83abd768750f41d0372b2c10047dd1 refs/heads/main
+packet:        clone< 0000
+packet:        clone< 0002
+packet:        clone> command=fetch
+packet:        clone> agent=git/2.50.1-Darwin
+packet:        clone> object-format=sha1
+packet:        clone> 0001
+packet:        clone> thin-pack
+packet:        clone> no-progress
+packet:        clone> ofs-delta
+packet:        clone> want 41538d836c83abd768750f41d0372b2c10047dd1
+packet:        clone> want 41538d836c83abd768750f41d0372b2c10047dd1
+packet:        clone> done
+packet:        clone> 0000
+packet:          git< command=fetch
+packet:          git< agent=git/2.50.1-Darwin
+packet:          git< object-format=sha1
+packet:          git< 0001
+packet:          git< thin-pack
+packet:          git< no-progress
+packet:          git< ofs-delta
+packet:          git< want 41538d836c83abd768750f41d0372b2c10047dd1
+packet:          git< want 41538d836c83abd768750f41d0372b2c10047dd1
+packet:          git< done
+packet:          git< 0000
+packet:        clone< packfile
+packet:          git> 0002
+packet:        clone< 0002
