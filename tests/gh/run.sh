@@ -412,7 +412,7 @@ t "repo deploy-key list --json"              0 "\"title\": *\"CI key\""      "$G
 DKID="$(api_q "repos/$ALICE/demo/keys" --jq '.[0].id')"
 t "repo deploy-key delete"                   0 ""                            "$GH" repo deploy-key delete "$DKID" -R "$R"
 
-t "repo autolink create"                     0 "TICKET-"                     "$GH" repo autolink create "TICKET-" "https://tracker.example.com/<num>" -R "$R"
+t "repo autolink create"                     0 "Created repository autolink" "$GH" repo autolink create "TICKET-" "https://tracker.example.com/<num>" -R "$R"
 t "repo autolink list"                       0 "TICKET-"                     "$GH" repo autolink list -R "$R"
 t "repo autolink list --json"                0 "\"keyPrefix\": *\"TICKET-\"" "$GH" repo autolink list -R "$R" --json id,keyPrefix,urlTemplate,isAlphanumeric
 ALID="$(api_q "repos/$ALICE/demo/autolinks" --jq '.[0].id')"
@@ -534,7 +534,7 @@ t "gist view --files"                        0 "hello.txt"                   "$G
 t "gist edit --add"                          0 ""                            "$GH" gist edit "$GIST_ID" -a "$WORK/second.txt"
 t "gist edit FILE (replace content)"         0 ""                            "$GH" gist edit "$GIST_ID" -f hello.txt "$WORK/hello2.txt"
 K="gist edit" t "gist edit result"           0 "hello again"                 "$GH" gist view "$GIST_ID" --raw -f hello.txt
-t "gist edit --desc"                         0 ""                            "$GH" gist edit "$GIST_ID" -d "Renamed gist"
+t "gist edit --desc"                         0 ""                            "$GH" gist edit "$GIST_ID" -f hello.txt -d "Renamed gist"
 t "gist rename"                              0 ""                            "$GH" gist rename "$GIST_ID" hello.txt greeting.txt
 K="gist rename" t "gist rename result"       0 "greeting.txt"                "$GH" gist view "$GIST_ID" --files
 t "gist clone"                               0 ""                            "$GH" gist clone "$GIST_ID" "$WORK/work/gistclone"
