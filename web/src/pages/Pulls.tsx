@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, NavLink, Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { api, errorMessage, isNotFound, type Pull } from "../api";
+import { api, errorMessage, isNotFound, type IssueComment, type Pull, type Review } from "../api";
 import { useAuth } from "../auth";
 import { BranchSelect } from "../components/BranchSelect";
 import { CommitList } from "../components/CommitList";
@@ -9,7 +9,7 @@ import {
 } from "../components/common";
 import { CommentBox, CommentForm, LabelsSidebar, MarkdownEditor, useComments } from "../components/Conversation";
 import { DiffView } from "../components/Diff";
-import { CommentIcon, MergeIcon, PullClosedIcon, PullIcon } from "../components/icons";
+import { CheckIcon, CommentIcon, MergeIcon, PullClosedIcon, PullIcon } from "../components/icons";
 import { useRepo } from "../components/RepoLayout";
 import { useAsync, useTitle } from "../hooks";
 import { firstLine } from "../util";
@@ -318,12 +318,96 @@ export function PullPage({ tab }: { tab: "conversation" | "commits" | "files" })
   );
 }
 
+const REVIEW_TEXT: Record<string, string> = {
+  APPROVED: "approved these changes",
+  CHANGES_REQUESTED: "requested changes",
+  COMMENTED: "reviewed",
+  DISMISSED: "reviewed (dismissed)",
+};
+
+function ReviewEntry({ review, repoPath }: { review: Review; repoPath: string }) {
+  const cls = review.state === "APPROVED" ? "review-approved" : review.state === "CHANGES_REQUESTED" ? "review-changes" : "";
+  return (
+    <>
+      <div className="timeline-event" data-testid="review-event">
+        {review.state === "APPROVED" ? <CheckIcon className="icon c-open" /> : <CommentIcon />}{" "}
+        <UserLink user={review.user} />{" "}
+        <span className={`review-state ${cls}`}>{REVIEW_TEXT[review.state] || review.state.toLowerCase()}</span>{" "}
+        <RelTime iso={review.submitted_at} />
+      </div>
+      {review.body && <CommentBox user={review.user} body={review.body} created={review.submitted_at || ""}
+        association={review.author_association} repoPath={repoPath} />}
+    </>
+  );
+}
+
+function ReviewForm({ pr, onDone }: { pr: Pull; onDone: (r: Review) => void }) {
+  const { owner, name, repo } = useRepo();
+  const { user } = useAuth();
+  const [open, setOpen] = useState(false);
+  const [body, setBody] = useState("");
+  const own = user?.login === pr.user.login;
+  const [event, setEvent] = useState<"COMMENT" | "APPROVE" | "REQUEST_CHANGES">("COMMENT");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  if (!open) {
+    return (
+      <div className="timeline-event">
+        <button type="button" className="btn btn-sm" onClick={() => setOpen(true)} data-testid="review-open">Review changes</button>
+      </div>
+    );
+  }
+  return (
+    <form className="box box-body review-form" aria-label="Submit review" onSubmit={async (e) => {
+      e.preventDefault();
+      setBusy(true);
+      setErr("");
+      try {
+        const r = await api.createReview(owner, name, pr.number, { event, body: body.trim() || undefined });
+        onDone(r);
+        setOpen(false);
+        setBody("");
+      } catch (ex) {
+        setErr(errorMessage(ex));
+      } finally {
+        setBusy(false);
+      }
+    }}>
+      <h3 className="h5">Finish your review</h3>
+      <MarkdownEditor value={body} onChange={setBody} label="Review summary" placeholder="Leave a comment" rows={4} repoPath={repo.full_name} />
+      <fieldset>
+        <legend className="sr-only">Review type</legend>
+        <label className="radio-row"><input type="radio" name="review-event" checked={event === "COMMENT"} onChange={() => setEvent("COMMENT")} />
+          <span><strong>Comment</strong><br /><span className="muted small">Submit general feedback without explicit approval.</span></span></label>
+        <label className="radio-row"><input type="radio" name="review-event" disabled={own} checked={event === "APPROVE"} onChange={() => setEvent("APPROVE")} />
+          <span><strong>Approve</strong><br /><span className="muted small">{own ? "Pull request authors can't approve their own pull request." : "Submit feedback and approve merging these changes."}</span></span></label>
+        <label className="radio-row"><input type="radio" name="review-event" disabled={own} checked={event === "REQUEST_CHANGES"} onChange={() => setEvent("REQUEST_CHANGES")} />
+          <span><strong>Request changes</strong><br /><span className="muted small">{own ? "Pull request authors can't request changes on their own pull request." : "Submit feedback that must be addressed before merging."}</span></span></label>
+      </fieldset>
+      {err && <p className="c-danger small" role="alert">{err}</p>}
+      <div className="form-actions">
+        <button type="button" className="btn" onClick={() => setOpen(false)}>Cancel</button>
+        <button type="submit" className="btn btn-primary" disabled={busy || (event !== "APPROVE" && !body.trim())}>
+          {busy ? "Submitting…" : "Submit review"}
+        </button>
+      </div>
+    </form>
+  );
+}
+
 function Conversation({ pr, canEdit, canPush, reload, setPr }: {
   pr: Pull; canEdit: boolean; canPush: boolean; reload: () => void; setPr: (p: Pull) => void;
 }) {
+  const { user } = useAuth();
   const { repo, owner, name, base } = useRepo();
   const comments = useComments(owner, name, pr.number);
+  const reviews = useAsync(() => api.reviews(owner, name, pr.number), [owner, name, pr.number]);
   const [err, setErr] = useState<unknown>();
+  type Entry = { at: string; c?: IssueComment; r?: Review };
+  const timeline: Entry[] = [
+    ...(comments.data || []).map((c) => ({ at: c.created_at, c })),
+    ...(reviews.data || []).filter((r) => r.state !== "PENDING").map((r) => ({ at: r.submitted_at || "", r })),
+  ].sort((a, b) => a.at.localeCompare(b.at));
   const setState = async (state: "open" | "closed") => {
     setErr(undefined);
     try {
@@ -337,10 +421,11 @@ function Conversation({ pr, canEdit, canPush, reload, setPr }: {
       <div className="layout-main timeline">
         <CommentBox user={pr.user} body={pr.body} created={pr.created_at} repoPath={repo.full_name} />
         {comments.error !== undefined ? <ErrorBox error={comments.error} onRetry={comments.reload} /> :
-          (comments.data || []).map((c) => (
-            <CommentBox key={c.id} user={c.user} body={c.body} created={c.created_at}
-              association={c.author_association} repoPath={repo.full_name} />
-          ))}
+          reviews.error !== undefined ? <ErrorBox error={reviews.error} onRetry={reviews.reload} /> :
+          timeline.map((e) => e.c ? (
+            <CommentBox key={`c${e.c.id}`} user={e.c.user} body={e.c.body} created={e.c.created_at}
+              association={e.c.author_association} repoPath={repo.full_name} />
+          ) : e.r ? <ReviewEntry key={`r${e.r.id}`} review={e.r} repoPath={repo.full_name} /> : null)}
         {pr.merged_at ? (
           <div className="timeline-event">
             <MergeIcon className="icon c-merged" /> <UserLink user={pr.merged_by} /> merged commit{" "}
@@ -355,6 +440,9 @@ function Conversation({ pr, canEdit, canPush, reload, setPr }: {
           <MergeBox pr={pr} canPush={canPush} onMerged={reload} />
         )}
         {err !== undefined && <ErrorBox error={err} />}
+        {user && !pr.merged_at && pr.state === "open" && (
+          <ReviewForm pr={pr} onDone={(r) => reviews.setData([...(reviews.data || []), r])} />
+        )}
         <CommentForm repoPath={repo.full_name}
           onSubmit={async (body) => {
             const c = await api.addComment(owner, name, pr.number, body);

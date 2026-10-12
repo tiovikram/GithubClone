@@ -10,6 +10,11 @@ struct Assets;
 
 pub async fn spa(uri: Uri) -> Response {
     let path = uri.path().trim_start_matches('/');
+    // Unknown /api/* paths (e.g. /api/forge/x, /api/uploads/x) and missing hashed assets must not
+    // get the SPA shell: API clients expect GitHub's JSON 404, and a stale chunk must fail loudly.
+    if path == "api" || path.starts_with("api/") {
+        return crate::error::ApiError::not_found().into_response();
+    }
     if let Some(f) = Assets::get(path).filter(|_| !path.is_empty()) {
         let mime = mime_guess::from_path(path).first_or_octet_stream();
         let cache = if path.starts_with("assets/") { "public, max-age=31536000, immutable" } else { "no-cache" };
@@ -18,6 +23,9 @@ pub async fn spa(uri: Uri) -> Response {
             .header(header::CACHE_CONTROL, cache)
             .body(Body::from(f.data.into_owned()))
             .unwrap();
+    }
+    if path.starts_with("assets/") {
+        return (StatusCode::NOT_FOUND, "Not Found").into_response();
     }
     match Assets::get("index.html") {
         Some(f) => Response::builder()
