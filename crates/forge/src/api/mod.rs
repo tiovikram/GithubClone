@@ -24,6 +24,8 @@ pub mod statuses;
 pub mod collaborators;
 pub mod issue_comments;
 pub mod issue_events;
+pub mod issue_ops;
+pub mod repo_ops;
 pub mod issues;
 pub mod labels;
 pub mod reactions;

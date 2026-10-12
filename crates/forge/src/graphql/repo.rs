@@ -811,6 +811,9 @@ impl GRef {
     async fn repository(&self) -> GRepo {
         GRepo::new(self.repo.clone())
     }
+    async fn compare(&self, ctx: &Context<'_>, head_ref: String) -> async_graphql::Result<Option<super::ghcompat::Comparison>> {
+        super::ghcompat::compare(ctx, self, &head_ref).await
+    }
     async fn branch_protection_rule(&self) -> Option<BranchProtectionRule> {
         None
     }

@@ -328,6 +328,23 @@ cp "$GH_CONFIG_DIR/config.yml" "$GH2_DIR/config.yml"
 : >"$WORK/gitconfig2"
 gh2() { env -u GH_ENTERPRISE_TOKEN GH_CONFIG_DIR="$GH2_DIR" GIT_CONFIG_GLOBAL="$WORK/gitconfig2" "$GH" "$@"; }
 login_as() { printf '%s\n' "$1" | gh2 auth login --hostname "$HOST" --with-token --git-protocol https --insecure-storage; }
+# `gh auth refresh` runs the OAuth device flow: wait for the one-time code gh prints, approve it
+# as the signed-in user (what the /login/device page does), and let gh finish polling.
+refresh_via_device_flow() {
+  local out="$WORK/refresh.out" code="" pid i
+  gh2 auth refresh --hostname "$HOST" --scopes read:project --insecure-storage --clipboard=false >"$out" 2>&1 </dev/null &
+  pid=$!
+  for i in $(seq 1 100); do
+    code="$(grep -Eo '[A-Z0-9]{4}-[A-Z0-9]{4}' "$out" | head -1)"
+    [ -n "$code" ] && break
+    sleep 0.1
+  done
+  [ -n "$code" ] && curl -s -o /dev/null --unix-socket "$SOCK" -X POST -H "Authorization: token $TOKEN" \
+    -H 'Content-Type: application/json' -d "{\"user_code\":\"$code\"}" "http://$HOST/api/forge/device/approve"
+  wait "$pid"; local rc=$?
+  cat "$out"
+  return $rc
+}
 
 # More content on main: a workflow (for gh workflow/run) and a docs/ directory (for read-dir).
 ( cd "$SEED" && git fetch -q origin && git checkout -q -B main origin/main \
@@ -349,7 +366,8 @@ t "auth token"                               0 "^$TOKEN\$"                   gh2
 t "auth token --user"                        0 "^$BOB_TOKEN\$"               gh2 auth token --hostname "$HOST" --user "$BOB"
 t "auth setup-git"                           0 ""                            gh2 auth setup-git --hostname "$HOST"
 t "auth setup-git result"                    0 "auth git-credential"         git config --file "$WORK/gitconfig2" --get-all "credential.https://$HOST.helper"
-t "auth refresh"                             0 ""                            gh2 auth refresh --hostname "$HOST" --scopes read:project
+K="auth refresh" t "auth refresh (device flow)" 0 "Authentication complete"   refresh_via_device_flow
+K="auth refresh" t "auth refresh result"     0 "account $ALICE"              gh2 auth status --hostname "$HOST"
 t "auth logout"                              0 "$BOB"                        gh2 auth logout --hostname "$HOST" --user "$BOB"
 K="auth logout" t "auth logout result"       0 "account $ALICE"              gh2 auth status --hostname "$HOST"
 
@@ -423,9 +441,10 @@ t "issue pin"                                0 "Pinned issue"                "$G
 K="issue pin" t "issue pin result"           0 "\"isPinned\": *true"         "$GH" issue view 1 -R "$R" --json isPinned
 t "issue unpin"                              0 "Unpinned issue"              "$GH" issue unpin 1 -R "$R"
 K="issue unpin" t "issue unpin result"       0 "\"isPinned\": *false"        "$GH" issue view 1 -R "$R" --json isPinned
-t "issue lock"                               0 "Locked"                      "$GH" issue lock 1 -R "$R" --reason resolved
+# (lock/unlock print their confirmation only on a terminal)
+t "issue lock"                               0 ""                            "$GH" issue lock 1 -R "$R" --reason resolved
 K="issue lock" t "issue lock result"         0 "^true resolved\$"            "$GH" api "repos/$ALICE/demo/issues/1" --jq '"\(.locked) \(.active_lock_reason)"'
-t "issue unlock"                             0 "Unlocked"                    "$GH" issue unlock 1 -R "$R"
+t "issue unlock"                             0 ""                            "$GH" issue unlock 1 -R "$R"
 K="issue unlock" t "issue unlock result"     0 "^false\$"                    "$GH" api "repos/$ALICE/demo/issues/1" --jq '.locked'
 t "issue develop"                            0 "$ALICE/demo/tree/1-first-bug" "$GH" issue develop 1 -R "$R" --name 1-first-bug --base main
 t "issue develop --list"                     0 "1-first-bug"                 "$GH" issue develop 1 -R "$R" --list
@@ -444,8 +463,10 @@ K="issue reopen" t "issue reopen (again)"    0 "Reopened"                    "$G
 # ------------------------------------------------------------------------------------------------
 # pull requests: lock / revert / update-branch / more variants
 
-t "pr lock"                                  0 "Locked"                      "$GH" pr lock 5 -R "$R" --reason off_topic
-t "pr unlock"                                0 "Unlocked"                    "$GH" pr unlock 5 -R "$R"
+t "pr lock"                                  0 ""                            "$GH" pr lock 5 -R "$R" --reason off_topic
+K="pr lock" t "pr lock result"               0 "^true off-topic\$"           "$GH" api "repos/$ALICE/demo/issues/5" --jq '"\(.locked) \(.active_lock_reason)"'
+t "pr unlock"                                0 ""                            "$GH" pr unlock 5 -R "$R"
+K="pr unlock" t "pr unlock result"           0 "^false\$"                    "$GH" api "repos/$ALICE/demo/issues/5" --jq .locked
 t "pr update-branch"                         0 ""                            "$GH" pr update-branch 5 -R "$R"
 K="pr update-branch" t "pr update-branch result" 0 "Merge branch 'main'"     "$GH" api "repos/$ALICE/demo/commits/feature2" --jq .commit.message
 t "pr create (behind base)"                  0 "/pull/"                      "$GH" pr create -R "$R" --head behind --base main -t "Behind PR" -b "behind"
@@ -474,7 +495,7 @@ K="label edit" t "label edit result"         0 "\"name\": *\"triaged\""      "$G
 t "label clone"                              0 ""                            "$GH" label clone "$HOST/$ALICE/demo" -R "$HOST/$ALICE/target" --force
 K="label clone" t "label clone result"       0 "triaged"                     "$GH" label list -R "$HOST/$ALICE/target"
 t "label delete"                             0 ""                            "$GH" label delete gql-label -R "$R" --yes
-K="label delete" t "label delete result"     0 "^0\$"                        "$GH" label list -R "$R" --search gql-label --json name --jq length
+K="label delete" t "label delete result"     1 "Not Found"                   "$GH" api "repos/$ALICE/demo/labels/gql-label"
 
 # ------------------------------------------------------------------------------------------------
 # releases

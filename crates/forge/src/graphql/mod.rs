@@ -10,6 +10,7 @@
 //! * Feature-gated fields from §5.2 are deliberately absent so gh takes the simplest GHES path.
 pub mod connection;
 pub mod enums;
+pub mod ghcompat;
 pub mod issue;
 pub mod loaders;
 pub mod mutation;
@@ -40,13 +41,18 @@ use crate::state::AppState;
 
 pub use loaders::Ld;
 
-pub type ForgeSchema = Schema<query::Query, mutation::Mutation, EmptySubscription>;
+/// The mutation root: the original subset plus the gh-compatibility additions.
+#[derive(async_graphql::MergedObject)]
+#[graphql(name = "Mutation")]
+pub struct MutationRoot(mutation::Mutation, ghcompat::GhMutation);
+
+pub type ForgeSchema = Schema<query::Query, MutationRoot, EmptySubscription>;
 
 /// The schema is immutable; build it once.
 pub fn schema() -> &'static ForgeSchema {
     static SCHEMA: OnceLock<ForgeSchema> = OnceLock::new();
     SCHEMA.get_or_init(|| {
-        Schema::build(query::Query, mutation::Mutation, EmptySubscription)
+        Schema::build(query::Query, MutationRoot(mutation::Mutation, ghcompat::GhMutation), EmptySubscription)
             .validation_mode(ValidationMode::Fast)
             .limit_recursive_depth(64)
             .finish()
@@ -99,6 +105,9 @@ pub async fn execute(state: &AppState, viewer: User, body: &[u8]) -> Result<Valu
     let mut req: async_graphql::Request =
         serde_json::from_value(raw).map_err(|_| ApiError::bad_request("Problems parsing JSON"))?;
     fill_absent_variables(&mut req);
+    if let Some(errors) = ghcompat::undefined_mutation_fields(&req) {
+        return Ok(errors);
+    }
     let loader = DataLoader::new(Ld::new(state.clone(), Some(viewer.clone())), tokio::spawn);
     let req = req.data(state.clone()).data(Viewer(viewer)).data(loader);
     let resp = schema().execute(req).await;

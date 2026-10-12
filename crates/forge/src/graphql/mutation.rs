@@ -627,7 +627,7 @@ fn visibility_str(v: RepositoryVisibility) -> &'static str {
     }
 }
 
-#[Object]
+#[Object(name = "MutationCore")] // merged into the `Mutation` root (graphql::MutationRoot)
 impl Mutation {
     async fn create_repository(&self, ctx: &Context<'_>, input: CreateRepositoryInput) -> async_graphql::Result<Option<CreateRepositoryPayload>> {
         let s = st(ctx);
