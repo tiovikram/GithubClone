@@ -11,6 +11,15 @@ pub mod pulls;
 pub mod repos;
 pub mod reviews;
 pub mod statuses;
+pub mod collaborators;
+pub mod issue_comments;
+pub mod issue_events;
+pub mod issues;
+pub mod labels;
+pub mod reactions;
+pub mod search;
+pub mod search_git;
+pub mod stars;
 pub mod users;
 
 use axum::extract::{OriginalUri, Request};
@@ -37,6 +46,15 @@ pub fn routes() -> Router<AppState> {
         .merge(branches::routes())
         .merge(forks::routes())
         .merge(statuses::routes())
+        .merge(issues::routes())
+        .merge(issue_comments::routes())
+        .merge(issue_events::routes())
+        .merge(labels::routes())
+        .merge(reactions::routes())
+        .merge(search::routes())
+        .merge(search_git::routes())
+        .merge(stars::routes())
+        .merge(collaborators::routes())
         .fallback(|| async { crate::error::ApiError::not_found() })
 }
 

@@ -15,5 +15,6 @@ pub async fn after_refs_changed(
         crate::git::stats::schedule_update(state, ctx.repo.id);
     }
     crate::pulls::on_refs_changed(state, ctx, actor, changed).await?;
+    crate::api::issues::on_refs_changed(state, ctx, actor, changed).await;
     Ok(())
 }

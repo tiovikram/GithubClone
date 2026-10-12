@@ -355,10 +355,7 @@ pub async fn create_pull(state: &AppState, ctx: &RepoCtx, actor: &User, input: C
                     .bind(actor_id)
                     .fetch_one(&mut *tx)
                     .await?;
-                    sqlx::query("UPDATE repositories SET open_issues_count = open_issues_count + 1 WHERE id = $1")
-                        .bind(repo_id)
-                        .execute(&mut *tx)
-                        .await?;
+            // open_issues_count is maintained by a trigger (migration 0200).
                     id
                 }
             };
@@ -587,10 +584,7 @@ async fn mark_merged(state: &AppState, pull: &Pull, actor_id: Option<i64>, head_
         .execute(&mut *tx)
         .await?;
     if was_open {
-        sqlx::query("UPDATE repositories SET open_issues_count = GREATEST(open_issues_count - 1, 0) WHERE id = $1")
-            .bind(pull.issue.repo_id)
-            .execute(&mut *tx)
-            .await?;
+            // open_issues_count is maintained by a trigger (migration 0200).
     }
     record_event(&mut *tx, pull, actor_id, "referenced", Some(merge_sha), json!({})).await?;
     record_event(&mut *tx, pull, actor_id, "merged", Some(merge_sha), json!({})).await?;
@@ -723,10 +717,7 @@ async fn close_issue_row(state: &AppState, pull: &Pull, actor_id: Option<i64>) -
         .await?
         .rows_affected();
     if n > 0 {
-        sqlx::query("UPDATE repositories SET open_issues_count = GREATEST(open_issues_count - 1, 0) WHERE id = $1")
-            .bind(pull.issue.repo_id)
-            .execute(&mut *tx)
-            .await?;
+            // open_issues_count is maintained by a trigger (migration 0200).
         record_event(&mut *tx, pull, actor_id, "closed", None, json!({})).await?;
     }
     tx.commit().await?;
@@ -843,7 +834,7 @@ pub async fn reopen_pull(state: &AppState, ctx: &RepoCtx, actor: &User, number: 
         .await?
         .rows_affected();
     if n > 0 {
-        sqlx::query("UPDATE repositories SET open_issues_count = open_issues_count + 1 WHERE id = $1").bind(ctx.repo.id).execute(&mut *tx).await?;
+            // open_issues_count is maintained by a trigger (migration 0200).
         record_event(&mut *tx, &pull, Some(actor.id), "reopened", None, json!({})).await?;
     }
     tx.commit().await?;
