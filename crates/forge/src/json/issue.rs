@@ -286,6 +286,8 @@ pub fn label(api: &str, full_name: &str, l: &LabelRow) -> Value {
         "color": l.color,
         "default": l.is_default,
         "description": opt_str(&l.description),
+        "archived_at": null,
+        "archived_by": null,
     })
 }
 
@@ -366,4 +368,186 @@ pub fn issue(api: &str, base: &str, ctx: &RepoCtx, i: &IssueFull) -> Value {
 
 pub fn urlencode(s: &str) -> String {
     percent_encoding::utf8_percent_encode(s, percent_encoding::NON_ALPHANUMERIC).to_string()
+}
+
+// ---------------------------------------------------------------------------------------------
+// Issue comments, issue events and reactions.
+
+#[derive(Debug, Clone, sqlx::FromRow)]
+pub struct CommentRow {
+    pub id: i64,
+    pub issue_id: i64,
+    pub repo_id: i64,
+    pub user_id: Option<i64>,
+    pub body: String,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+/// A comment with everything needed to render `issue-comment`.
+#[derive(Debug, Clone)]
+pub struct CommentFull {
+    pub row: CommentRow,
+    pub user: Option<User>,
+    pub issue_number: i64,
+    pub is_pull: bool,
+    pub reactions: HashMap<String, i64>,
+    pub author_association: String,
+}
+
+/// Batch-loads users, issue numbers, reactions and associations for comments of one repository.
+pub async fn load_comments(db: &PgPool, ctx: &RepoCtx, rows: Vec<CommentRow>) -> ApiResult<Vec<CommentFull>> {
+    let ids: Vec<i64> = rows.iter().map(|r| r.id).collect();
+    let mut issue_ids: Vec<i64> = rows.iter().map(|r| r.issue_id).collect();
+    issue_ids.sort_unstable();
+    issue_ids.dedup();
+    let issues: Vec<(i64, i64, bool)> = sqlx::query_as("SELECT id, number, is_pull FROM issues WHERE id = ANY($1)")
+        .bind(&issue_ids)
+        .fetch_all(db)
+        .await?;
+    let issues: HashMap<i64, (i64, bool)> = issues.into_iter().map(|(id, n, p)| (id, (n, p))).collect();
+    let mut user_ids: Vec<i64> = rows.iter().filter_map(|r| r.user_id).collect();
+    user_ids.sort_unstable();
+    user_ids.dedup();
+    let users = users_by_ids(db, &user_ids).await?;
+    let assoc = associations(db, ctx, &user_ids).await?;
+    let mut reactions = reaction_counts(db, "issue_comment", &ids).await?;
+    Ok(rows
+        .into_iter()
+        .map(|row| {
+            let (issue_number, is_pull) = issues.get(&row.issue_id).copied().unwrap_or((0, false));
+            CommentFull {
+                user: row.user_id.and_then(|id| users.get(&id).cloned()),
+                author_association: row.user_id.and_then(|id| assoc.get(&id).cloned()).unwrap_or_else(|| "NONE".into()),
+                reactions: reactions.remove(&row.id).unwrap_or_default(),
+                issue_number,
+                is_pull,
+                row,
+            }
+        })
+        .collect())
+}
+
+/// `issue-comment` schema.
+pub fn comment(api: &str, base: &str, ctx: &RepoCtx, c: &CommentFull) -> Value {
+    let full_name = ctx.full_name();
+    let r = &c.row;
+    let url = format!("{api}/repos/{full_name}/issues/comments/{}", r.id);
+    let kind = if c.is_pull { "pull" } else { "issues" };
+    json!({
+        "id": r.id,
+        "node_id": ids::encode("IssueComment", r.id),
+        "url": url,
+        "html_url": format!("{base}/{full_name}/{kind}/{}#issuecomment-{}", c.issue_number, r.id),
+        "body": r.body,
+        "user": user_or_ghost(api, base, c.user.as_ref()),
+        "created_at": ts(r.created_at),
+        "updated_at": ts(r.updated_at),
+        "issue_url": format!("{api}/repos/{full_name}/issues/{}", c.issue_number),
+        "author_association": c.author_association,
+        "performed_via_github_app": null,
+        "reactions": reactions_json(api, &url, &c.reactions),
+    })
+}
+
+#[derive(Debug, Clone, sqlx::FromRow)]
+pub struct EventRow {
+    pub id: i64,
+    pub issue_id: i64,
+    pub repo_id: i64,
+    pub actor_id: Option<i64>,
+    pub event: String,
+    pub commit_id: Option<String>,
+    pub data: Value,
+    pub created_at: DateTime<Utc>,
+}
+
+/// User ids referenced from an event's `data` (assignee, reviewer ...).
+pub const EVENT_USER_KEYS: [&str; 4] = ["assignee_id", "assigner_id", "requested_reviewer_id", "review_requester_id"];
+
+/// Users referenced by a set of events (actors and ids inside `data`), batched.
+pub async fn event_users(db: &PgPool, rows: &[EventRow]) -> ApiResult<HashMap<i64, User>> {
+    let mut ids: Vec<i64> = rows.iter().filter_map(|r| r.actor_id).collect();
+    for r in rows {
+        for k in EVENT_USER_KEYS {
+            if let Some(id) = r.data.get(k).and_then(|v| v.as_i64()) {
+                ids.push(id);
+            }
+        }
+    }
+    ids.sort_unstable();
+    ids.dedup();
+    users_by_ids(db, &ids).await
+}
+
+/// `issue-event` schema (also the per-type shapes of the `issue-event-for-issue` and timeline
+/// unions). `issue` is embedded by the repository-wide endpoints, like GitHub.
+pub fn event(api: &str, base: &str, ctx: &RepoCtx, e: &EventRow, users: &HashMap<i64, User>, issue: Option<Value>) -> Value {
+    let full_name = ctx.full_name();
+    let user = |key: &str| {
+        let u = e.data.get(key).and_then(|v| v.as_i64()).and_then(|id| users.get(&id));
+        user_or_ghost(api, base, u)
+    };
+    let mut v = json!({
+        "id": e.id,
+        "node_id": ids::encode("IssueEvent", e.id),
+        "url": format!("{api}/repos/{full_name}/issues/events/{}", e.id),
+        "actor": user_or_ghost(api, base, e.actor_id.and_then(|id| users.get(&id))),
+        "event": e.event,
+        "commit_id": opt_str(&e.commit_id),
+        "commit_url": e.commit_id.as_ref().map(|c| format!("{api}/repos/{full_name}/commits/{c}")),
+        "created_at": ts(e.created_at),
+        "performed_via_github_app": null,
+    });
+    match e.event.as_str() {
+        "labeled" | "unlabeled" => {
+            v["label"] = e.data.get("label").cloned().unwrap_or_else(|| json!({"name": "", "color": "ededed"}));
+        }
+        "assigned" | "unassigned" => {
+            v["assignee"] = user("assignee_id");
+            v["assigner"] = user("assigner_id");
+        }
+        "milestoned" | "demilestoned" => {
+            v["milestone"] = e.data.get("milestone").cloned().unwrap_or_else(|| json!({"title": ""}));
+        }
+        "renamed" => {
+            v["rename"] = e.data.get("rename").cloned().unwrap_or_else(|| json!({"from": "", "to": ""}));
+        }
+        "locked" => {
+            v["lock_reason"] = e.data.get("lock_reason").cloned().unwrap_or(Value::Null);
+        }
+        "closed" | "reopened" => {
+            v["state_reason"] = e.data.get("state_reason").cloned().unwrap_or(Value::Null);
+        }
+        "review_requested" | "review_request_removed" => {
+            v["review_requester"] = user("review_requester_id");
+            v["requested_reviewer"] = user("requested_reviewer_id");
+        }
+        _ => {}
+    }
+    if let Some(i) = issue {
+        v["issue"] = i;
+    }
+    v
+}
+
+#[derive(Debug, Clone, sqlx::FromRow)]
+pub struct ReactionRow {
+    pub id: i64,
+    pub subject_type: String,
+    pub subject_id: i64,
+    pub user_id: i64,
+    pub content: String,
+    pub created_at: DateTime<Utc>,
+}
+
+/// `reaction` schema.
+pub fn reaction(api: &str, base: &str, r: &ReactionRow, user: Option<&User>) -> Value {
+    json!({
+        "id": r.id,
+        "node_id": ids::encode("Reaction", r.id),
+        "user": user_or_ghost(api, base, user),
+        "content": r.content,
+        "created_at": ts(r.created_at),
+    })
 }
