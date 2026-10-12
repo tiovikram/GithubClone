@@ -12,6 +12,7 @@ merges branches. Read `docs/ARCHITECTURE.md` (the contract) and skim the existin
 - **Your own databases.** Create and use `forge_<area>` (dev) and `forge_<area>_test` (tests):
   `createdb -O forge forge_<area>` and set `DATABASE_URL` / `DATABASE_URL_TEST`. Never use the
   shared `forge`/`forge_test` databases: other branches add migrations and sqlx will refuse.
+- **Never `pkill -f "forge serve"` broadly**: kill only your own process (match your worktree path).
 - **Your own port** for dev servers (given in your brief) via `FORGE_LISTEN=127.0.0.1:<port>`,
   `FORGE_BASE_URL=http://localhost:<port>`, and data dirs under your worktree's `data/`.
 - **Never touch the user's git credentials/keychain.** Every `git` you run (scripts, tests) must
