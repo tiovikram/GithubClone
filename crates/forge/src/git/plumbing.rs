@@ -64,7 +64,9 @@ pub async fn commit_changes(
                     .await?;
                 }
                 Change::Delete { path } => {
-                    run_idx(vec!["update-index".into(), "--force-remove".into(), "--".into(), path], None).await?;
+                    // `--force-remove` needs a work tree; `--index-info` with mode 0 works in bare repos.
+                    let line = format!("0 0000000000000000000000000000000000000000\t{path}\n");
+                    run_idx(vec!["update-index".into(), "--index-info".into()], Some(line.into_bytes())).await?;
                 }
             }
         }
