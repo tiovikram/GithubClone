@@ -145,9 +145,8 @@ async fn org_json(s: &AppState, o: &User) -> ApiResult<Value> {
     let mut v = json::user::org_simple(&s.api_url(), s.base_url(), o);
     let m = v.as_object_mut().unwrap();
     for (k, val) in [
-        ("name", json::opt_str(&o.name)),
+        ("name", json!(o.name.clone().unwrap_or_else(|| o.login.clone()))),
         ("company", json::opt_str(&o.company)),
-        ("blog", json!(o.blog)),
         ("location", json::opt_str(&o.location)),
         ("email", json::opt_str(&o.email)),
         ("twitter_username", json::opt_str(&o.twitter_username)),
@@ -167,6 +166,9 @@ async fn org_json(s: &AppState, o: &User) -> ApiResult<Value> {
         ("archived_at", Value::Null),
     ] {
         m.insert(k.into(), val);
+    }
+    if !o.blog.is_empty() {
+        m.insert("blog".into(), json!(o.blog));
     }
     Ok(v)
 }
