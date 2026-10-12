@@ -80,18 +80,39 @@ pub async fn user_for_token(state: &AppState, token: &str) -> Result<Option<User
     Ok(user)
 }
 
-pub async fn user_for_password(state: &AppState, login: &str, password: &str) -> Result<Option<User>, ApiError> {
-    let u = sqlx::query_as::<_, User>("SELECT * FROM users WHERE lower(login) = lower($1) OR lower(email) = lower($1)")
-        .bind(login)
-        .fetch_optional(&state.db)
-        .await?;
-    let Some(u) = u else { return Ok(None) };
-    let Some(hash) = u.password_hash.clone() else { return Ok(None) };
+/// Error returned while password attempts for a login are throttled (see `crate::security`).
+pub fn too_many_attempts() -> ApiError {
+    ApiError::new(axum::http::StatusCode::TOO_MANY_REQUESTS, "Too many failed login attempts. Try again later.")
+}
+
+/// Checks `login` (or email) and `password`. Failed attempts are counted per login and client
+/// address; once throttled, this returns a 429 error without checking the password.
+pub async fn user_for_password(state: &AppState, login: &str, password: &str, client: Option<std::net::IpAddr>) -> Result<Option<User>, ApiError> {
+    if crate::security::login_throttled(login, client) {
+        return Err(too_many_attempts());
+    }
+    // An exact login match wins over another account that uses the same string as its email.
+    let u = sqlx::query_as::<_, User>(
+        "SELECT * FROM users WHERE lower(login) = lower($1) OR lower(email) = lower($1)
+          ORDER BY (lower(login) = lower($1)) DESC, id LIMIT 1",
+    )
+    .bind(login)
+    .fetch_optional(&state.db)
+    .await?;
+    // Unknown users still pay for a hash verification so timing does not reveal which logins exist.
+    let hash = u.as_ref().and_then(|u| u.password_hash.clone()).unwrap_or_else(|| dummy_hash().to_string());
     let pw = password.to_string();
     let ok = tokio::task::spawn_blocking(move || verify_password(&pw, &hash))
         .await
         .unwrap_or(false);
-    Ok(ok.then_some(u))
+    let u = u.filter(|u| ok && u.password_hash.is_some());
+    crate::security::record_login(login, client, u.is_some());
+    Ok(u)
+}
+
+fn dummy_hash() -> &'static str {
+    static H: std::sync::OnceLock<String> = std::sync::OnceLock::new();
+    H.get_or_init(|| hash_password(&random_string(24)).unwrap_or_default())
 }
 
 async fn user_for_session(state: &AppState, sid: &str) -> Result<Option<User>, ApiError> {
@@ -142,7 +163,7 @@ async fn authenticate_uncached(parts: &Parts, state: &AppState) -> Result<AuthRe
                 let (login, secret) = decoded.split_once(':').unwrap_or((&decoded, ""));
                 match user_for_token(state, secret).await? {
                     Some(u) => Some(u),
-                    None if !secret.is_empty() => user_for_password(state, login, secret).await?,
+                    None if !secret.is_empty() => user_for_password(state, login, secret, crate::security::client_ip(parts)).await?,
                     None => None,
                 }
             }

@@ -188,6 +188,8 @@ async fn next_event(rx: &mut tokio::sync::mpsc::UnboundedReceiver<Received>, eve
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn webhook_delivery_via_queue() {
+    // The receiver runs on loopback, which webhook delivery refuses by default (SSRF guard).
+    forge::security::set_webhook_allow_private(true);
     let s = TestServer::start().await;
     forge::jobs::spawn_worker(s.state.clone());
     let u = s.user().await;
@@ -284,6 +286,7 @@ async fn repo_id(s: &TestServer, u: &TestUser, repo: &str) -> i64 {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn webhook_retries_failed_delivery() {
+    forge::security::set_webhook_allow_private(true);
     let s = TestServer::start().await;
     let u = s.user().await;
     let repo = s.create_repo(&u, true).await;

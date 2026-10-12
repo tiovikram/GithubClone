@@ -117,7 +117,10 @@ pub async fn analyze(git: &GitCmd, repo: &Path, base: &str, head: &str) -> anyho
     let (changed_files, additions, deletions) = numstat(git, repo, mb.as_deref().unwrap_or(EMPTY_TREE), head).await?;
     let tree = if mb.is_some() { merge_tree(git, repo, base, head, None).await? } else { None };
     let mergeable = tree.is_some();
-    let rebaseable = mergeable && count(git, repo, &format!("{base}..{head}"), true).await? == 0;
+    let rebaseable = match &mb {
+        Some(m) => rebase_feasible(git, repo, base, m, head, commits).await?.unwrap_or(mergeable && count(git, repo, &format!("{base}..{head}"), true).await? == 0),
+        None => false,
+    };
     Ok(Analysis { merge_base: mb, commits, additions, deletions, changed_files, mergeable, rebaseable, merge_tree: tree })
 }
 
@@ -278,6 +281,22 @@ pub async fn rebase(git: &GitCmd, repo: &Path, onto: &str, base: &str, head: &st
         tip = commit_tree(git, repo, &tree, &[&tip], &c.message, &c.author, committer).await?;
     }
     Ok(Some(tip))
+}
+
+/// Most commits `rebase_feasible` replays; longer PRs fall back to an approximation.
+pub const MAX_REBASE_CHECK: i64 = 100;
+
+/// Whether `merge_base..head` replays cleanly onto `onto` (what a rebase merge would do).
+/// None when the PR is too long to check cheaply. Writes (unreferenced) objects.
+pub async fn rebase_feasible(git: &GitCmd, repo: &Path, onto: &str, merge_base: &str, head: &str, commits: i64) -> anyhow::Result<Option<bool>> {
+    if commits > MAX_REBASE_CHECK {
+        return Ok(None);
+    }
+    if commits == 0 {
+        return Ok(Some(true));
+    }
+    let who = RawIdent { name: "forge".into(), email: "forge@localhost".into(), date: String::new() };
+    Ok(Some(rebase(git, repo, onto, merge_base, head, &who).await?.is_some()))
 }
 
 // ---------------------------------------------------------------------------------------------

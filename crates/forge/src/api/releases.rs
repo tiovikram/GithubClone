@@ -565,6 +565,11 @@ pub async fn upload_asset(
             };
             hasher.update(&chunk);
             size += chunk.len() as i64;
+            // GitHub caps release assets at 2 GiB; without a cap a writer could fill storage.
+            if size as u64 > crate::security::max_asset_bytes() {
+                let _ = w.abort().await;
+                anyhow::bail!("asset exceeds the maximum size");
+            }
             if let Err(e) = w.write_all(&chunk).await {
                 let _ = w.abort().await;
                 return Err(e.into());
@@ -635,7 +640,11 @@ pub async fn stream_asset(s: &AppState, a: &AssetRow, content_type: &str) -> Api
     let disp = format!("attachment; filename={}", crate::json::release::seg(&a.name));
     if let Ok(v) = HeaderValue::from_str(&disp) {
         h.insert(header::CONTENT_DISPOSITION, v);
+    } else {
+        h.insert(header::CONTENT_DISPOSITION, HeaderValue::from_static("attachment"));
     }
+    // The uploader chooses the content type (e.g. text/html): never let it render on our origin.
+    crate::security::harden_user_content(&mut res);
     Ok(res)
 }
 

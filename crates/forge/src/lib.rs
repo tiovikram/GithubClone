@@ -17,6 +17,9 @@ pub mod jobs;
 pub mod json;
 pub mod ssh;
 pub mod pulls;
+pub mod security;
+pub mod protection;
+pub mod signed_url;
 pub mod state;
 pub mod web;
 pub mod webhooks;
@@ -64,6 +67,7 @@ pub async fn migrate(db: &sqlx::PgPool) -> anyhow::Result<()> {
 
 pub fn app(state: AppState) -> Router {
     let api = api::routes()
+        .layer(middleware::from_fn_with_state(state.clone(), security::archived_read_only))
         .layer(DefaultBodyLimit::max(100 * 1024 * 1024))
         .layer(CompressionLayer::new())
         .layer(middleware::from_fn(api::github_headers));
@@ -73,7 +77,12 @@ pub fn app(state: AppState) -> Router {
         .nest("/api/v3", api)
         .nest("/api/graphql", graphql)
         .nest("/api/forge", forge_api::routes())
-        .nest("/api/uploads", api::releases::upload_routes().layer(middleware::from_fn(api::github_headers)))
+        .nest(
+            "/api/uploads",
+            api::releases::upload_routes()
+                .layer(middleware::from_fn_with_state(state.clone(), security::archived_read_only))
+                .layer(middleware::from_fn(api::github_headers)),
+        )
         .merge(api::releases::download_routes())
         .merge(api::gists::raw_routes())
         .route("/avatars/{login}", get(web::avatar))
@@ -83,6 +92,7 @@ pub fn app(state: AppState) -> Router {
         .merge(api::branches::web_routes())
         .fallback(web::spa)
         .layer(middleware::from_fn_with_state(state.clone(), api::keys::dot_keys_middleware))
+        .layer(middleware::from_fn(security::nosniff))
         .layer(TraceLayer::new_for_http())
         .with_state(state)
 }

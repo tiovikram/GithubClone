@@ -811,8 +811,11 @@ impl GRef {
     async fn repository(&self) -> GRepo {
         GRepo::new(self.repo.clone())
     }
-    async fn branch_protection_rule(&self) -> Option<BranchProtectionRule> {
-        None
+    async fn branch_protection_rule(&self, ctx: &Context<'_>) -> Option<BranchProtectionRule> {
+        let branch = self.name.strip_prefix("refs/heads/")?;
+        let st = ctx.data_unchecked::<AppState>();
+        let r = crate::protection::rules(&st.db, self.repo.repo.id, branch).await.ok()??;
+        Some(BranchProtectionRule { repo_id: self.repo.repo.id, rules: r })
     }
 }
 
@@ -820,18 +823,51 @@ pub fn short_ref(name: &str) -> &str {
     name.strip_prefix("refs/heads/").or_else(|| name.strip_prefix("refs/tags/")).unwrap_or(name)
 }
 
-pub struct BranchProtectionRule;
+pub struct BranchProtectionRule {
+    repo_id: i64,
+    rules: crate::protection::Rules,
+}
 
 #[Object]
 impl BranchProtectionRule {
-    async fn required_approving_review_count(&self) -> Option<i32> {
-        None
+    async fn id(&self) -> ID {
+        ID(ids::encode_str("BranchProtectionRule", &format!("{}:{}", self.repo_id, self.rules.branch)))
     }
-    async fn requires_strict_status_checks(&self) -> bool {
-        false
+    async fn pattern(&self) -> String {
+        self.rules.branch.clone()
+    }
+    async fn required_approving_review_count(&self) -> Option<i32> {
+        self.rules.requires_pull_request().then(|| self.rules.required_approvals() as i32)
     }
     async fn requires_approving_reviews(&self) -> bool {
-        false
+        self.rules.requires_pull_request()
+    }
+    async fn dismisses_stale_reviews(&self) -> bool {
+        self.rules.dismiss_stale_reviews()
+    }
+    async fn requires_status_checks(&self) -> bool {
+        self.rules.cfg.get("required_status_checks").is_some_and(|v| v.is_object())
+    }
+    async fn requires_strict_status_checks(&self) -> bool {
+        self.rules.strict()
+    }
+    async fn required_status_check_contexts(&self) -> Vec<String> {
+        self.rules.required_contexts()
+    }
+    async fn is_admin_enforced(&self) -> bool {
+        self.rules.enforce_admins()
+    }
+    async fn allows_force_pushes(&self) -> bool {
+        self.rules.allow_force_pushes()
+    }
+    async fn allows_deletions(&self) -> bool {
+        self.rules.allow_deletions()
+    }
+    async fn requires_linear_history(&self) -> bool {
+        self.rules.linear_history()
+    }
+    async fn lock_branch(&self) -> bool {
+        self.rules.lock_branch()
     }
 }
 
@@ -926,7 +962,13 @@ impl GCommit {
     async fn info(&self, ctx: &Context<'_>) -> Option<&CommitInfo> {
         self.info
             .get_or_init(|| async {
-                git_log(st(ctx), self.repo.repo.id, &["-1", &self.oid]).await.ok().and_then(|mut v| v.pop())
+                // The oid can come from a client-supplied node id or a stored review commit id:
+                // only a full hex object id may reach git (anything else could be parsed as an
+                // option, e.g. `--output=<file>`).
+                if !crate::git::read::is_sha(&self.oid) {
+                    return None;
+                }
+                git_log(st(ctx), self.repo.repo.id, &["-1", "--end-of-options", &self.oid]).await.ok().and_then(|mut v| v.pop())
             })
             .await
             .as_ref()
