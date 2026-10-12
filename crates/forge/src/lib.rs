@@ -14,6 +14,7 @@ pub mod hooks;
 pub mod ids;
 pub mod json;
 pub mod ssh;
+pub mod pulls;
 pub mod state;
 pub mod web;
 
