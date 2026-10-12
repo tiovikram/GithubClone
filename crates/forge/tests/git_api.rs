@@ -446,11 +446,12 @@ async fn private_repo_visibility_and_archives() {
         .unwrap();
     assert_eq!(res.status().as_u16(), 302);
     let loc = res.headers().get("location").unwrap().to_str().unwrap().to_string();
-    assert!(loc.ends_with("/archive/main.tar.gz"), "{loc}");
+    assert!(loc.contains("/archive/main.tar.gz?token="), "{loc}");
     let res = client.get(&loc).header("Authorization", format!("token {}", u.token)).send().await.unwrap();
     assert_eq!(res.status().as_u16(), 200);
     let bytes = res.bytes().await.unwrap();
     assert_eq!(&bytes[..2], &[0x1f, 0x8b], "gzip magic");
-    let res = client.get(&loc).send().await.unwrap();
-    assert_eq!(res.status().as_u16(), 404, "anonymous can't download a private archive");
+    let unsigned = loc.split('?').next().unwrap();
+    let res = client.get(unsigned).send().await.unwrap();
+    assert_eq!(res.status().as_u16(), 404, "anonymous can't download a private archive without the signed token");
 }
