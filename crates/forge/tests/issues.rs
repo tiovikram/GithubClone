@@ -498,6 +498,44 @@ async fn search(s: &TestServer, u: &TestUser, q: String) -> Vec<i64> {
     n
 }
 
+#[test]
+fn reference_parsing() {
+    use forge::api::issues::{closing_numbers, referenced_numbers};
+    assert_eq!(referenced_numbers("see #1, #22 and a#3 &#4; (#5)"), vec![1, 22, 5]);
+    assert_eq!(closing_numbers("Fixes #1, closes: #2\nresolved #3 and mentions #4"), vec![1, 2, 3]);
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn push_references_and_closes_issues() {
+    let s = TestServer::start().await;
+    let u = s.user().await;
+    let repo = s.create_repo(&u, true).await;
+    let base = format!("/repos/{}/{repo}", u.login);
+    s.call(Some(&u), "POST", &format!("{base}/issues"), Some(json!({"title": "one"}))).await;
+    s.call(Some(&u), "POST", &format!("{base}/issues"), Some(json!({"title": "two"}))).await;
+
+    let w = s.work_dir("refs");
+    let (ok, out) = s.git(&w, &["clone", &s.clone_url(&u, &repo), "c"]);
+    assert!(ok, "{out}");
+    let c = w.join("c");
+    std::fs::write(c.join("f.txt"), "x").unwrap();
+    assert!(s.git(&c, &["add", "."]).0);
+    assert!(s.git(&c, &["commit", "-m", "Fixes #1, see #2"]).0);
+    let (ok, out) = s.git(&c, &["push", "origin", "HEAD"]);
+    assert!(ok, "{out}");
+
+    let (_, i1) = s.call(Some(&u), "GET", &format!("{base}/issues/1"), None).await;
+    assert_eq!(i1["state"], "closed");
+    assert_eq!(i1["state_reason"], "completed");
+    let (_, i2) = s.call(Some(&u), "GET", &format!("{base}/issues/2"), None).await;
+    assert_eq!(i2["state"], "open");
+    let (_, ev) = s.call(Some(&u), "GET", &format!("{base}/issues/2/events"), None).await;
+    let r = ev.as_array().unwrap().iter().find(|e| e["event"] == "referenced").expect("referenced event");
+    assert_eq!(r["commit_id"].as_str().unwrap().len(), 40);
+    assert!(r["commit_url"].as_str().unwrap().contains("/commits/"));
+    assert_eq!(r["actor"]["login"], u.login.as_str());
+}
+
 fn url_encode(s: &str) -> String {
     url::form_urlencoded::byte_serialize(s.as_bytes()).collect()
 }

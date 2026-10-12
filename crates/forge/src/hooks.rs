@@ -10,5 +10,6 @@ pub async fn after_refs_changed(
     _actor: Option<&User>,
     _changed: &[(String, String, String)],
 ) -> anyhow::Result<()> {
+    crate::api::issues::on_refs_changed(_state, _ctx, _actor, _changed).await;
     Ok(())
 }

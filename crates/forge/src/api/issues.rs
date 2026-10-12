@@ -473,6 +473,100 @@ pub async fn record_cross_references(state: &AppState, ctx: &RepoCtx, actor: &Us
     }
 }
 
+/// Issue numbers closed by keywords (`fixes #1`, `Closes: #2`, `resolved #3` ...) in a message.
+pub fn closing_numbers(text: &str) -> Vec<i64> {
+    const KEYWORDS: [&str; 9] = ["close", "closes", "closed", "fix", "fixes", "fixed", "resolve", "resolves", "resolved"];
+    let lower = text.to_lowercase();
+    let words: Vec<&str> = lower.split(|c: char| c.is_whitespace() || c == ',').filter(|w| !w.is_empty()).collect();
+    let mut out = Vec::new();
+    for pair in words.windows(2) {
+        if KEYWORDS.contains(&pair[0].trim_end_matches(':')) {
+            if let Some(n) = referenced_numbers(pair[1]).first() {
+                if !out.contains(n) {
+                    out.push(*n);
+                }
+            }
+        }
+    }
+    out
+}
+
+/// After a push: records `referenced` events for `#N` mentions in new commit messages and, on
+/// the default branch, closes issues named with closing keywords (GitHub behaviour).
+/// Best effort; called from `hooks::after_refs_changed`.
+pub async fn on_refs_changed(state: &AppState, ctx: &RepoCtx, actor: Option<&User>, changed: &[(String, String, String)]) {
+    if let Err(e) = commit_references(state, ctx, actor, changed).await {
+        tracing::warn!(error = %e.message, repo = ctx.repo.id, "recording commit references failed");
+    }
+}
+
+async fn commit_references(state: &AppState, ctx: &RepoCtx, actor: Option<&User>, changed: &[(String, String, String)]) -> ApiResult<()> {
+    let zero = |s: &str| s.chars().all(|c| c == '0');
+    let default_ref = format!("refs/heads/{}", ctx.repo.default_branch);
+    let mut path = None;
+    for (refname, old, new) in changed {
+        if !refname.starts_with("refs/heads/") || zero(new) {
+            continue;
+        }
+        let path = match &path {
+            Some(p) => p,
+            None => path.insert(state.git.sync(ctx.repo.id).await?),
+        };
+        let range = if zero(old) { new.clone() } else { format!("{old}..{new}") };
+        let (ok, out, _) = state
+            .git
+            .git
+            .try_run(path, &["log", "-n", "100", "--format=%H%x1f%B%x1e", &range, "--"])
+            .await?;
+        if !ok {
+            continue;
+        }
+        let log = String::from_utf8_lossy(&out).to_string();
+        for rec in log.split('\u{1e}') {
+            let Some((sha, msg)) = rec.trim_start_matches('\n').split_once('\u{1f}') else { continue };
+            let numbers = referenced_numbers(msg);
+            if numbers.is_empty() {
+                continue;
+            }
+            let closing = if *refname == default_ref { closing_numbers(msg) } else { vec![] };
+            let issues: Vec<IssueRow> = sqlx::query_as("SELECT * FROM issues WHERE repo_id = $1 AND number = ANY($2)")
+                .bind(ctx.repo.id)
+                .bind(&numbers)
+                .fetch_all(&state.db)
+                .await?;
+            for issue in issues {
+                let mut tx = state.db.begin().await?;
+                let seen: bool = sqlx::query_scalar(
+                    "SELECT EXISTS(SELECT 1 FROM issue_events WHERE issue_id = $1 AND event = 'referenced' AND commit_id = $2)",
+                )
+                .bind(issue.id)
+                .bind(sha)
+                .fetch_one(&mut *tx)
+                .await?;
+                if seen {
+                    continue;
+                }
+                let actor_id = actor.map(|a| a.id);
+                record_event(&mut tx, ctx.repo.id, issue.id, actor_id, "referenced", Some(sha), json!({})).await?;
+                if closing.contains(&issue.number) && !issue.is_pull && issue.state == "open" {
+                    sqlx::query(
+                        "UPDATE issues SET state = 'closed', state_reason = 'completed', closed_at = now(), closed_by_id = $2,
+                            updated_at = now() WHERE id = $1",
+                    )
+                    .bind(issue.id)
+                    .bind(actor_id)
+                    .execute(&mut *tx)
+                    .await?;
+                    let data = json!({ "state_reason": "completed" });
+                    record_event(&mut tx, ctx.repo.id, issue.id, actor_id, "closed", Some(sha), data).await?;
+                }
+                tx.commit().await?;
+            }
+        }
+    }
+    Ok(())
+}
+
 /// Input for [`create_issue`]. Labels/assignees/milestone are applied only when the actor has
 /// triage access (GitHub silently drops them otherwise).
 #[derive(Debug, Default, Clone)]

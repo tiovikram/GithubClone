@@ -92,13 +92,8 @@ pub async fn update_comment(state: &AppState, ctx: &RepoCtx, actor: &User, comme
 pub async fn delete_comment(state: &AppState, ctx: &RepoCtx, actor: &User, comment_id: i64) -> ApiResult<()> {
     let c = comment_by_id(state, ctx, comment_id).await?;
     can_edit(ctx, actor, &c)?;
-    let mut tx = state.db.begin().await?;
-    sqlx::query("DELETE FROM reactions WHERE subject_type = 'issue_comment' AND subject_id = $1")
-        .bind(c.id)
-        .execute(&mut *tx)
-        .await?;
-    sqlx::query("DELETE FROM issue_comments WHERE id = $1").bind(c.id).execute(&mut *tx).await?;
-    tx.commit().await?;
+    // Reactions go with it (trigger, migration 0201).
+    sqlx::query("DELETE FROM issue_comments WHERE id = $1").bind(c.id).execute(&state.db).await?;
     Ok(())
 }
 
