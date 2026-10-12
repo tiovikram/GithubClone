@@ -53,7 +53,7 @@ for c in "${CLUSTERS_KIND[@]:-}"; do [ -n "$c" ] && kind delete cluster --name "
 if have docker; then
   for i in "${IMAGES[@]:-}"; do [ -n "$i" ] && docker rmi -f "$i"; done
   for v in "${VOLUMES[@]:-}"; do [ -n "$v" ] && docker volume rm -f "$v"; done
-  EXTRA=$(docker images --format '{{.Repository}}:{{.Tag}}' | grep -E '^(rancher/k3s|ghcr.io/k3d-io/|kindest/node|cgr.dev/chainguard/minio|postgres:16|rust:1-bookworm|node:24-bookworm-slim|debian:bookworm-slim)' | tr '\n' ' ')
+  EXTRA=$(docker images --format '{{.Repository}}:{{.Tag}}' | grep -E '^(rancher/k3s|ghcr.io/k3d-io/|kindest/node|cgr.dev/chainguard/minio|postgres:16|rust:1-bookworm|node:24-bookworm-slim|debian:bookworm-slim|codeberg.org/forgejo/forgejo|grafana/k6)' | tr '\n' ' ')
   if [ -n "$EXTRA" ] && confirm "Also remove images pulled for the clusters/build: $EXTRA?"; then
     # shellcheck disable=SC2086
     docker rmi -f $EXTRA
