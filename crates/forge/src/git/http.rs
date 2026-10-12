@@ -210,6 +210,13 @@ async fn receive_pack(
         _ => return auth_challenge(),
     };
     let proto = protocol_env(&parts.headers);
+    let guard = match crate::protection::push_guard(&state, &ctx).await {
+        Ok(g) => g,
+        Err(e) => {
+            tracing::error!(error = %format!("{e:#}"), "branch protection setup failed");
+            return plain(StatusCode::INTERNAL_SERVER_ERROR, "push failed");
+        }
+    };
     let mut reader = body_reader(&parts.headers, body);
     let git = state.git.git.clone();
     let repo_id = ctx.repo.id;
@@ -225,6 +232,9 @@ async fn receive_pack(
                 .stderr(Stdio::piped());
             if let Some(p) = proto {
                 cmd.env("GIT_PROTOCOL", p);
+            }
+            if let Some(g) = &guard {
+                g.apply(&mut cmd);
             }
             let mut child = cmd.spawn()?;
             let mut stdin = child.stdin.take().unwrap();

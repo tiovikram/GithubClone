@@ -3,6 +3,7 @@ pub mod keys;
 pub mod branches;
 pub mod commits;
 pub mod contents;
+pub mod cross_compare;
 pub mod forks;
 pub mod git_data;
 pub mod gitapi;
@@ -27,6 +28,7 @@ pub mod issue_events;
 pub mod issues;
 pub mod labels;
 pub mod reactions;
+pub mod ref_dispatch;
 pub mod search;
 pub mod search_git;
 pub mod stars;
@@ -76,6 +78,7 @@ pub fn routes() -> Router<AppState> {
         .merge(gists::routes())
         .merge(misc::routes())
         .merge(actions::routes())
+        .merge(ref_dispatch::routes())
         .fallback(|| async { crate::error::ApiError::not_found() })
 }
 

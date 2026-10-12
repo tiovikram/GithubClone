@@ -931,6 +931,7 @@ pub async fn merge_pull(state: &AppState, ctx: &RepoCtx, actor: &User, number: i
             return Err(ApiError::conflict("Head branch was modified. Review and try the merge again."));
         }
     }
+    crate::protection::check_pull_merge(state, ctx, &pull, input.method).await?;
     let author = match pull.issue.user_id {
         Some(id) => db::user_by_id(&state.db, id).await.ok(),
         None => None,
@@ -1222,10 +1223,12 @@ pub async fn pull_status(state: &AppState, pull: &Pull) -> ApiResult<PullStatus>
     .fetch_all(&state.db)
     .await?;
     let unstable = states.iter().any(|s| s != "success");
+    let (blocked, review_required) = if open { crate::protection::merge_blockers(state, pull).await? } else { (false, false) };
     let (ms, mss) = match mergeable {
         None => ("unknown", "UNKNOWN"),
         Some(false) => ("dirty", "DIRTY"),
         Some(true) if pull.pr.draft => ("draft", "DRAFT"),
+        Some(true) if blocked => ("blocked", "BLOCKED"),
         Some(true) if unstable => ("unstable", "UNSTABLE"),
         Some(true) => ("clean", "CLEAN"),
     };
@@ -1234,7 +1237,10 @@ pub async fn pull_status(state: &AppState, pull: &Pull) -> ApiResult<PullStatus>
         Some(true) => "MERGEABLE",
         Some(false) => "CONFLICTING",
     };
-    let review_decision = review_decision(&state.db, pull).await?;
+    let mut review_decision = review_decision(&state.db, pull).await?;
+    if review_required && review_decision != Some("CHANGES_REQUESTED") {
+        review_decision = Some("REVIEW_REQUIRED");
+    }
     Ok(PullStatus { mergeable, rebaseable, mergeable_state: ms, merge_state_status: mss, mergeable_enum: me, review_decision })
 }
 

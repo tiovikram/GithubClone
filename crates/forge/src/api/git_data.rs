@@ -194,6 +194,7 @@ pub async fn update_ref(s: &AppState, ctx: &RepoCtx, actor: &User, name: &str, s
     if !read::is_sha(sha) {
         return Err(ApiError::unprocessable("Object does not exist"));
     }
+    crate::protection::check_ref_update(s, ctx, name, &sha.to_lowercase()).await?;
     let git = s.git.git.clone();
     let (name_c, sha_c) = (name.to_string(), sha.to_lowercase());
     let (kind, updates) = s
@@ -217,6 +218,7 @@ pub async fn update_ref(s: &AppState, ctx: &RepoCtx, actor: &User, name: &str, s
 }
 
 pub async fn delete_ref(s: &AppState, ctx: &RepoCtx, actor: &User, name: &str) -> ApiResult<()> {
+    crate::protection::check_ref_delete(s, ctx, name).await?;
     let git = s.git.git.clone();
     let name_c = name.to_string();
     let ((), updates) = s

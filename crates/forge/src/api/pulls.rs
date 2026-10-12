@@ -29,7 +29,11 @@ pub fn routes() -> Router<AppState> {
             "/repos/{owner}/{repo}/pulls/{number}/requested_reviewers",
             get(list_reviewers).post(add_reviewers).delete(remove_reviewers),
         )
-        .route("/repos/{owner}/{repo}/commits/{sha}/pulls", get(for_commit))
+}
+
+/// Per-ref routes, mounted behind `ref_dispatch` (refs may contain `/`).
+pub fn commit_ref_routes() -> Router<AppState> {
+    Router::new().route("/repos/{owner}/{repo}/commits/{sha}/pulls", get(for_commit))
 }
 
 type RepoPath = Path<(String, String)>;

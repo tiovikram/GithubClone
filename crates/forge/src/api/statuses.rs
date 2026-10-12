@@ -21,6 +21,11 @@ use crate::state::AppState;
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/repos/{owner}/{repo}/statuses/{sha}", get(list_statuses_legacy).post(create_status_h))
+}
+
+/// Per-ref routes, mounted behind `ref_dispatch` (refs may contain `/`).
+pub fn commit_ref_routes() -> Router<AppState> {
+    Router::new()
         .route("/repos/{owner}/{repo}/commits/{ref}/statuses", get(list_statuses))
         .route("/repos/{owner}/{repo}/commits/{ref}/status", get(combined_status))
         .route("/repos/{owner}/{repo}/commits/{ref}/check-runs", get(check_runs))

@@ -22,10 +22,10 @@ use crate::error::{ApiError, ApiResult};
 use crate::extract::Json;
 use crate::state::AppState;
 
-pub fn routes() -> Router<AppState> {
+/// Branch protection routes, mounted behind `ref_dispatch` (branch names may contain `/`).
+pub fn protection_routes() -> Router<AppState> {
     let prot = "/repos/{owner}/{repo}/branches/{branch}/protection";
     Router::new()
-        .route("/repos/{template_owner}/{template_repo}/generate", post(generate))
         .route(prot, get(get_protection).put(put_protection).delete(delete_protection))
         .route(&format!("{prot}/enforce_admins"), get(get_enforce_admins).post(set_enforce_admins).delete(del_enforce_admins))
         .route(&format!("{prot}/required_signatures"), get(get_signatures).post(set_signatures).delete(del_signatures))
@@ -37,6 +37,11 @@ pub fn routes() -> Router<AppState> {
             &format!("{prot}/required_status_checks"),
             get(get_status_checks).patch(patch_status_checks).delete(del_status_checks),
         )
+}
+
+pub fn routes() -> Router<AppState> {
+    Router::new()
+        .route("/repos/{template_owner}/{template_repo}/generate", post(generate))
         .route("/repos/{owner}/{repo}/license", get(repo_license))
         .route("/repos/{owner}/{repo}/events", get(repo_events))
         .route("/networks/{owner}/{repo}/events", get(repo_events))

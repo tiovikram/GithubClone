@@ -17,6 +17,8 @@ pub mod jobs;
 pub mod json;
 pub mod ssh;
 pub mod pulls;
+pub mod protection;
+pub mod signed_url;
 pub mod state;
 pub mod web;
 pub mod webhooks;
