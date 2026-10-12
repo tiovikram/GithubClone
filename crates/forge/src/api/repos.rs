@@ -237,7 +237,17 @@ pub async fn full_json(s: &AppState, viewer: Option<&User>, ctx: &RepoCtx) -> Ap
             source = Some(root);
         }
     }
-    Ok(json::repo::full(&s.api_url(), s.base_url(), ctx, parent.as_ref(), source.as_ref()))
+    let mut v = json::repo::full(&s.api_url(), s.base_url(), ctx, parent.as_ref(), source.as_ref());
+    v["subscribers_count"] = serde_json::json!(subscribers_count(s, ctx.repo.id).await?);
+    Ok(v)
+}
+
+/// Number of users watching (subscribed to) a repository.
+pub async fn subscribers_count(s: &AppState, repo_id: i64) -> ApiResult<i64> {
+    Ok(sqlx::query_scalar("SELECT count(*) FROM watches WHERE repo_id = $1 AND subscribed AND NOT ignored")
+        .bind(repo_id)
+        .fetch_one(&s.db)
+        .await?)
 }
 
 async fn get_repo(State(s): State<AppState>, MaybeUser(u): MaybeUser, Path((owner, repo)): Path<(String, String)>) -> ApiResult<Json<Value>> {

@@ -47,6 +47,8 @@ pub struct RepoUrls {
     pub repo_api: String,
     /// `{base}/{owner}/{repo}`
     pub html: String,
+    /// Repository id (for batch lookups such as commit comment counts).
+    pub repo_id: i64,
 }
 
 impl RepoUrls {
@@ -57,6 +59,7 @@ impl RepoUrls {
             base: base.to_string(),
             repo_api: format!("{api}/repos/{full}"),
             html: format!("{base}/{full}"),
+            repo_id: ctx.repo.id,
         }
     }
 }
