@@ -115,7 +115,15 @@ pub async fn create_repo(state: &AppState, owner: &User, creator: &User, req: Cr
             mode: "100644".into(),
         }];
         if let Some(t) = req.gitignore_template.as_deref() {
-            files.push(Change::Put { path: ".gitignore".into(), content: gitignore_for(t).into_bytes(), mode: "100644".into() });
+            let content = super::misc::gitignore_template(t).map(|(_, c)| c.to_string()).unwrap_or_else(|| gitignore_for(t));
+            files.push(Change::Put { path: ".gitignore".into(), content: content.into_bytes(), mode: "100644".into() });
+        }
+        if let Some(text) = req.license_template.as_deref().and_then(|k| {
+            let year = chrono::Datelike::year(&chrono::Utc::now());
+            let holder = creator.name.clone().filter(|n| !n.is_empty()).unwrap_or_else(|| owner.login.clone());
+            super::misc::license_text(k, year, &holder)
+        }) {
+            files.push(Change::Put { path: "LICENSE".into(), content: text.into_bytes(), mode: "100644".into() });
         }
         let who = identity_for(creator);
         let git = state.git.git.clone();

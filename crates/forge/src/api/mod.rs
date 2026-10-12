@@ -1,7 +1,19 @@
 //! REST API mounted at /api/v3. One module per area; each exposes `routes()`.
+pub mod actions;
+pub mod commit_comments;
+pub mod deployments;
+pub mod gists;
 pub mod meta;
+pub mod misc;
+pub mod orgs_extra;
+pub mod plat;
+pub mod releases;
+pub mod repo_extras;
+pub mod search_extra;
+pub mod social;
 pub mod repos;
 pub mod users;
+pub mod webhooks;
 
 use axum::extract::{OriginalUri, Request};
 use axum::http::{header, HeaderMap, HeaderName, HeaderValue, StatusCode, Uri};
@@ -18,6 +30,17 @@ pub fn routes() -> Router<AppState> {
         .merge(meta::routes())
         .merge(users::routes())
         .merge(repos::routes())
+        .merge(releases::routes())
+        .merge(webhooks::routes())
+        .merge(social::routes())
+        .merge(orgs_extra::routes())
+        .merge(repo_extras::routes())
+        .merge(commit_comments::routes())
+        .merge(deployments::routes())
+        .merge(gists::routes())
+        .merge(misc::routes())
+        .merge(search_extra::routes())
+        .merge(actions::routes())
         .fallback(|| async { crate::error::ApiError::not_found() })
 }
 

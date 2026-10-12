@@ -137,17 +137,18 @@ async fn get_user(State(s): State<AppState>, Path(login): Path<String>) -> ApiRe
         return org_json(&s, &u).await.map(Json);
     }
     let (public, _) = repo_counts(&s, u.id).await?;
-    Ok(Json(json::user::public(&s.api_url(), s.base_url(), &u, public, 0, 0)))
+    let (followers, following) = super::social::follow_counts(&s.db, u.id).await?;
+    Ok(Json(json::user::public(&s.api_url(), s.base_url(), &u, public, followers, following)))
 }
 
-async fn org_json(s: &AppState, o: &User) -> ApiResult<Value> {
+pub async fn org_json(s: &AppState, o: &User) -> ApiResult<Value> {
     let (public, private) = repo_counts(s, o.id).await?;
     let mut v = json::user::org_simple(&s.api_url(), s.base_url(), o);
     let m = v.as_object_mut().unwrap();
     for (k, val) in [
-        ("name", json::opt_str(&o.name)),
+        ("name", json!(o.name.clone().unwrap_or_else(|| o.login.clone()))),
         ("company", json::opt_str(&o.company)),
-        ("blog", json!(o.blog)),
+        ("blog", if o.blog.is_empty() { Value::Null } else { json!(o.blog) }),
         ("location", json::opt_str(&o.location)),
         ("email", json::opt_str(&o.email)),
         ("twitter_username", json::opt_str(&o.twitter_username)),

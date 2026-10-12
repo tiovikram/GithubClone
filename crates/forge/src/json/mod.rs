@@ -1,5 +1,6 @@
 //! Builders for GitHub-shaped JSON. Shared by REST and GraphQL.
 pub mod issue;
+pub mod release;
 pub mod repo;
 pub mod user;
 

@@ -57,6 +57,10 @@ async fn main() -> anyhow::Result<()> {
         Cmd::Serve => {
             let listen = cfg.listen.clone();
             let state = forge::build_state(cfg).await?;
+            // Background job worker (webhook deliveries, ...); runs in every replica.
+            if std::env::var("FORGE_WORKERS").ok().as_deref() != Some("0") {
+                forge::jobs::spawn_worker(state.clone());
+            }
             let app = forge::app(state);
             // Optional unix socket listener (used by gh's `http_unix_socket` in tests).
             if let Ok(sock) = std::env::var("FORGE_UNIX_SOCKET") {
