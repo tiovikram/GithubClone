@@ -71,6 +71,7 @@ pub fn app(state: AppState) -> Router {
         .route("/healthz", get(|| async { "ok" }))
         .route("/readyz", get(readyz))
         .merge(git::http::routes())
+        .merge(api::branches::web_routes())
         .fallback(web::spa)
         .layer(TraceLayer::new_for_http())
         .with_state(state)

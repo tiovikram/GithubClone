@@ -5,6 +5,9 @@ pub mod cmd;
 pub mod gc;
 pub mod plumbing;
 pub mod http;
+pub mod objects;
+pub mod read;
+pub mod stats;
 
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::path::{Path, PathBuf};

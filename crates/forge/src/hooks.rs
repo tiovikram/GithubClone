@@ -5,10 +5,14 @@ use crate::state::AppState;
 
 /// `changed` is (refname, old_sha, new_sha); zero sha means created/deleted.
 pub async fn after_refs_changed(
-    _state: &AppState,
-    _ctx: &RepoCtx,
+    state: &AppState,
+    ctx: &RepoCtx,
     _actor: Option<&User>,
-    _changed: &[(String, String, String)],
+    changed: &[(String, String, String)],
 ) -> anyhow::Result<()> {
+    if !changed.is_empty() {
+        // Repository size/language, recomputed in the background.
+        crate::git::stats::schedule_update(state, ctx.repo.id);
+    }
     Ok(())
 }
