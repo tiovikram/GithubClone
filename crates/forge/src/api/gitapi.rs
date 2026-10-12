@@ -168,16 +168,32 @@ pub async fn users_by_email(s: &AppState, emails: &[String]) -> ApiResult<HashMa
     Ok(out)
 }
 
+/// Number of commit comments per sha (one query for the whole batch).
+pub async fn commit_comment_counts(s: &AppState, repo_id: i64, shas: Vec<String>) -> ApiResult<HashMap<String, i64>> {
+    if shas.is_empty() {
+        return Ok(HashMap::new());
+    }
+    let rows: Vec<(String, i64)> = sqlx::query_as(
+        "SELECT commit_id, count(*) FROM commit_comments WHERE repo_id = $1 AND commit_id = ANY($2) GROUP BY commit_id",
+    )
+    .bind(repo_id)
+    .bind(&shas)
+    .fetch_all(&s.db)
+    .await?;
+    Ok(rows.into_iter().collect())
+}
+
 /// Renders `commit`-schema JSON for many commits, resolving author/committer users in one query.
 pub async fn commits_json(s: &AppState, u: &RepoUrls, commits: &[CommitInfo]) -> ApiResult<Vec<serde_json::Value>> {
     let emails: Vec<String> = commits.iter().flat_map(|c| [c.author.email.clone(), c.committer.email.clone()]).collect();
     let users = users_by_email(s, &emails).await?;
+    let counts = commit_comment_counts(s, u.repo_id, commits.iter().map(|c| c.sha.clone()).collect()).await?;
     Ok(commits
         .iter()
         .map(|c| {
             let a = users.get(&c.author.email.to_lowercase());
             let m = users.get(&c.committer.email.to_lowercase());
-            crate::json::git::commit(u, c, a, m, 0)
+            crate::json::git::commit(u, c, a, m, counts.get(&c.sha).copied().unwrap_or(0))
         })
         .collect())
 }
