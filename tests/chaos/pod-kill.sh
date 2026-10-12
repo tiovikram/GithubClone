@@ -148,7 +148,8 @@ run_phase_a() { # $1 = name, $2 = extra kubectl delete flags, $3 = max error rat
   [ "$missing" = 0 ] && [ "$missing_final" = 0 ] || fail "$name: acknowledged commits missing ($missing during, $missing_final final)"
   [ "$push_ok" -gt 0 ] || fail "$name: no successful pushes"
   md
-  cp "$lw/log" "$RAW/$name-git-loop.log" 2>/dev/null
+  # (redact the token: git error messages can echo the remote URL)
+  sed -E "s/$TOKEN/<token>/g" "$lw/log" > "$RAW/$name-git-loop.log" 2>/dev/null
 }
 
 [[ " $PHASES " == *" A1 "* ]] && run_phase_a A1-graceful "" "$MAX_ERR_GRACEFUL"
@@ -275,7 +276,7 @@ for target in $DEP_TARGETS; do
   # (the forge pods were not restarted: they reconnected to Postgres/MinIO on their own)
 done
 md
-md "forge pod restarts during phase C: $($K get pods -l app.kubernetes.io/name=forge -o jsonpath='{range .items[*]}{.status.containerStatuses[0].restartCount}{" "}{end}')"
+md "forge container restart counts at the end (the phase-B kill -9 crashes restart containers in place): $($K get pods -l app.kubernetes.io/name=forge -o jsonpath='{range .items[*]}{.status.containerStatuses[0].restartCount}{" "}{end}')"
 md
 md "## Verdict: **$VERDICT**"
 echo "==> $VERDICT — wrote $REPORT"
