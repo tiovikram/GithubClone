@@ -1,6 +1,6 @@
 # gh compatibility report
 
-gh: `gh version 2.102.0 (2026-09-30)`, host `forge.localhost` (GHES path, http_unix_socket). Generated 2026-10-12T22:17:05Z.
+gh: `gh version 2.102.0 (2026-09-30)`, host `forge.localhost` (GHES path, http_unix_socket). Generated 2026-10-12T22:25:09Z.
 
 **PASS 85/88 (96%)**
 
@@ -86,7 +86,7 @@ gh: `gh version 2.102.0 (2026-09-30)`, host `forge.localhost` (GHES path, http_u
 | 78 | pr merge --rebase | PASS | 0 |  |
 | 79 | pr list --state merged | PASS | 0 |  |
 | 80 | pr merge result (remote log) | PASS | 0 |  |
-| 81 | release create | FAIL | 1 | exit 1 (want 0): HTTP 404: Not Found (https://forge.localhost/api/v3/repos/alice-xu2q3p/demo/releases)  |
+| 81 | release create | FAIL | 1 | exit 1 (want 0): HTTP 404: Not Found (https://forge.localhost/api/v3/repos/alice-1n3sx1/demo/releases)  |
 | 82 | release list | FAIL | 0 | output did not match /v1.0/:  |
 | 83 | release view | FAIL | 1 | exit 1 (want 0): release not found  |
 | 84 | api POST -f (REST) | PASS | 0 |  |

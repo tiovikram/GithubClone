@@ -582,6 +582,43 @@ pub struct RequestReviewsPayload {
     pub pull_request: Option<GPull>,
 }
 
+#[derive(InputObject)]
+pub struct ReactionInput {
+    pub subject_id: ID,
+    pub content: ReactionContent,
+    pub client_mutation_id: Option<String>,
+}
+
+#[derive(SimpleObject)]
+pub struct Reaction {
+    pub content: ReactionContent,
+}
+
+#[derive(SimpleObject)]
+pub struct ReactionPayload {
+    pub client_mutation_id: Option<String>,
+    pub reaction: Option<Reaction>,
+    pub subject: Option<Node>,
+}
+
+fn reaction_key(c: ReactionContent) -> &'static str {
+    ReactionContent::ALL.iter().find(|(x, _)| *x == c).map(|(_, k)| *k).unwrap_or("+1")
+}
+
+/// (reactions.subject_type, subject id) for an Issue/PullRequest/IssueComment node the viewer can see.
+async fn reaction_subject(ctx: &Context<'_>, id: &ID) -> async_graphql::Result<(&'static str, i64)> {
+    match ids::decode(id).map(|(k, _)| k).as_deref() {
+        Some("IssueComment") => match resolve_node(ctx, id).await? {
+            Some(Node::IssueComment(c)) => Ok(("issue_comment", c.row.id)),
+            _ => Err(unresolvable(id)),
+        },
+        _ => {
+            let (_, row) = subject(ctx, id).await?;
+            Ok(("issue", row.id))
+        }
+    }
+}
+
 fn visibility_str(v: RepositoryVisibility) -> &'static str {
     match v {
         RepositoryVisibility::Public => "public",
@@ -1025,6 +1062,27 @@ impl Mutation {
             client_mutation_id: input.client_mutation_id,
             pull_request_review: Some(GReview { row: Arc::new(r), repo: rc, number: row.number }),
         }))
+    }
+
+    async fn add_reaction(&self, ctx: &Context<'_>, input: ReactionInput) -> async_graphql::Result<Option<ReactionPayload>> {
+        let (kind, sid) = reaction_subject(ctx, &input.subject_id).await?;
+        let content = reaction_key(input.content);
+        crate::api::reactions::create_reaction(st(ctx), kind, sid, actor(ctx), content).await.map_err(api_err)?;
+        let subject = resolve_node(ctx, &input.subject_id).await?;
+        Ok(Some(ReactionPayload { client_mutation_id: input.client_mutation_id, reaction: Some(Reaction { content: input.content }), subject }))
+    }
+
+    async fn remove_reaction(&self, ctx: &Context<'_>, input: ReactionInput) -> async_graphql::Result<Option<ReactionPayload>> {
+        let (kind, sid) = reaction_subject(ctx, &input.subject_id).await?;
+        sqlx::query("DELETE FROM reactions WHERE subject_type = $1 AND subject_id = $2 AND user_id = $3 AND content = $4")
+            .bind(kind)
+            .bind(sid)
+            .bind(actor(ctx).id)
+            .bind(reaction_key(input.content))
+            .execute(&st(ctx).db)
+            .await?;
+        let subject = resolve_node(ctx, &input.subject_id).await?;
+        Ok(Some(ReactionPayload { client_mutation_id: input.client_mutation_id, reaction: Some(Reaction { content: input.content }), subject }))
     }
 
     async fn request_reviews(&self, ctx: &Context<'_>, input: RequestReviewsInput) -> async_graphql::Result<Option<RequestReviewsPayload>> {

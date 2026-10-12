@@ -50,7 +50,7 @@ impl ConnArgs {
             // GitHub requires first/last; be forgiving and cap at 100.
             end = end.min(start + 100);
         }
-        Window { start, end, has_next: end < upper, has_prev: start > lower, total }
+        Window { start, end, has_next: end < total, has_prev: start > 0, total }
     }
 
     /// GitHub's search treats `last: N` without `before` like `first: N` (that is how gh uses it).

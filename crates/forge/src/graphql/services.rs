@@ -1,9 +1,8 @@
-//! Mutation facade used by the GraphQL resolvers.
-//!
-//! These are deliberately small, self-contained implementations so gh works end to end on this
-//! branch. The REST areas (issues, pulls, labels, ...) own the canonical service functions; when
-//! they land, re-point each function here at them (signatures mirror the REST service-layer
-//! convention: `(state, repo ctx, actor, input) -> ApiResult<Row>`).
+//! Mutation facade used by the GraphQL resolvers: converts GraphQL node ids into what the REST
+//! service layer takes (numbers, names, logins) and delegates to it:
+//! issues/comments/labels -> `crate::api::{issues, issue_comments, labels}`, pull requests and
+//! reviews -> `crate::pulls`, repositories -> `crate::api::repos::create_repo`.
+//! Only `delete_issue` and `update_repository` (no REST service equivalent) are implemented here.
 
 use crate::db::{self, Perm, RepoCtx, User};
 use crate::error::{ApiError, ApiResult};
