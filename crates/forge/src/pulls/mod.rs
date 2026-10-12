@@ -5,6 +5,7 @@
 //! cross-repo PRs) and `refs/pull/N/merge` (a test merge commit while the PR is mergeable). All
 //! git computations (diffs, commits, merges) therefore run in the base repo.
 pub mod git;
+pub mod outdate;
 pub mod reviews;
 
 use std::collections::{BTreeMap, HashMap};
@@ -548,6 +549,9 @@ async fn refresh(state: &AppState, base_repo_id: i64, items: Vec<RefreshItem>, a
                 .await?;
                 if head_sha != it.pull.pr.head_sha {
                     sqlx::query("UPDATE issues SET updated_at = now() WHERE id = $1").bind(it.pull.issue.id).execute(&state.db).await?;
+                }
+                if head_sha != it.pull.pr.head_sha || a.merge_base != it.pull.pr.merge_base_sha {
+                    outdate::follow_head(state, base_repo_id, it.pull.issue.id, it.pull.pr.merge_base_sha.as_deref(), a.merge_base.as_deref(), &head_sha).await;
                 }
                 if let Some(before) = force_pushed {
                     record_event(&state.db, &it.pull, actor.map(|u| u.id), "head_ref_force_pushed", Some(&head_sha), json!({"before": before, "after": head_sha})).await?;
