@@ -145,11 +145,21 @@ async fn get_refs_legacy(
 }
 
 async fn valid_ref_name(s: &AppState, name: &str) -> bool {
-    if !name.starts_with("refs/") || name.matches('/').count() < 2 || name.starts_with('-') {
+    if !name.starts_with("refs/") || name.matches('/').count() < 2 || name.starts_with('-') || is_managed_ref(name) {
         return false;
     }
     let tmp = std::env::temp_dir();
     matches!(s.git.git.try_run(&tmp, &["check-ref-format", name]).await, Ok((true, _, _)))
+}
+
+/// `refs/pull/*` belongs to pull requests and is maintained by forge only (pushes are rejected
+/// too, see `security::RECEIVE_PACK_CONFIG`).
+fn is_managed_ref(name: &str) -> bool {
+    name.starts_with("refs/pull/")
+}
+
+fn managed_ref_error() -> ApiError {
+    ApiError::unprocessable("Reference cannot be updated")
 }
 
 async fn current_ref(git: &crate::git::GitCmd, path: &std::path::Path, name: &str) -> anyhow::Result<Option<String>> {
@@ -194,6 +204,7 @@ pub async fn update_ref(s: &AppState, ctx: &RepoCtx, actor: &User, name: &str, s
     if !read::is_sha(sha) {
         return Err(ApiError::unprocessable("Object does not exist"));
     }
+    crate::protection::check_ref_update(s, ctx, name, &sha.to_lowercase()).await?;
     let git = s.git.git.clone();
     let (name_c, sha_c) = (name.to_string(), sha.to_lowercase());
     let (kind, updates) = s
@@ -217,6 +228,7 @@ pub async fn update_ref(s: &AppState, ctx: &RepoCtx, actor: &User, name: &str, s
 }
 
 pub async fn delete_ref(s: &AppState, ctx: &RepoCtx, actor: &User, name: &str) -> ApiResult<()> {
+    crate::protection::check_ref_delete(s, ctx, name).await?;
     let git = s.git.git.clone();
     let name_c = name.to_string();
     let ((), updates) = s
@@ -269,6 +281,9 @@ async fn update_ref_h(
 ) -> ApiResult<Json<Value>> {
     let ctx = gitapi::load_for_write(&s, Some(&u), &owner, &repo).await?;
     let sha = b.sha.ok_or_else(|| ApiError::validation("Reference", "sha", "missing_field"))?;
+    if is_managed_ref(&full_ref(&r)) {
+        return Err(managed_ref_error());
+    }
     let r = update_ref(&s, &ctx, &u, &full_ref(&r), &sha, b.force).await?;
     Ok(Json(ref_json(&s, &ctx, &r)))
 }
@@ -279,6 +294,9 @@ async fn delete_ref_h(
     Path((owner, repo, r)): Path<(String, String, String)>,
 ) -> ApiResult<Response> {
     let ctx = gitapi::load_for_write(&s, Some(&u), &owner, &repo).await?;
+    if is_managed_ref(&full_ref(&r)) {
+        return Err(managed_ref_error());
+    }
     delete_ref(&s, &ctx, &u, &full_ref(&r)).await?;
     Ok(super::no_content())
 }

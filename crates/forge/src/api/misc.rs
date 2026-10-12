@@ -38,7 +38,37 @@ fn comrak_options(gfm: bool) -> comrak::Options<'static> {
     o.extension.tasklist = true;
     o.extension.footnotes = true;
     o.render.hardbreaks = gfm;
+    // Raw HTML is passed through by comrak and then sanitized by `sanitize_html`.
+    o.render.r#unsafe = true;
     o
+}
+
+/// Sanitizes rendered markdown to a GitHub-like safe HTML subset: structural and inline
+/// formatting tags (incl. details/summary, sub/sup, kbd, tables, images and links) survive;
+/// scripts, styles, event handlers, iframes/forms and `javascript:` URLs are removed.
+pub fn sanitize_html(html: &str) -> String {
+    static SANITIZER: std::sync::OnceLock<ammonia::Builder<'static>> = std::sync::OnceLock::new();
+    SANITIZER
+        .get_or_init(|| {
+            let mut b = ammonia::Builder::default();
+            b.add_tags(&["details", "summary", "kbd", "sub", "sup", "input", "picture", "source", "section", "dfn", "var", "mark"])
+                .add_generic_attributes(&["id", "align", "aria-hidden", "aria-label"])
+                .add_tag_attributes("a", &["href", "title", "name", "data-footnote-ref", "data-footnote-backref"])
+                .add_tag_attributes("img", &["src", "alt", "width", "height", "title", "align"])
+                .add_tag_attributes("source", &["srcset", "media", "type"])
+                .add_tag_attributes("details", &["open"])
+                .add_tag_attributes("input", &["type", "checked", "disabled"])
+                .add_tag_attributes("code", &["class"])
+                .add_tag_attributes("pre", &["lang"])
+                .add_tag_attributes("ol", &["start"])
+                .add_tag_attributes("td", &["colspan", "rowspan"])
+                .add_tag_attributes("th", &["colspan", "rowspan"])
+                .add_tag_attributes("section", &["data-footnotes"])
+                .link_rel(Some("nofollow"));
+            b
+        })
+        .clean(html)
+        .to_string()
 }
 
 /// Splits rendered HTML into (is_text, chunk) pieces, marking text that is inside
@@ -115,7 +145,7 @@ fn scan_refs(text: &str) -> Vec<(usize, usize, char, String)> {
 /// Renders GitHub-flavoured markdown to sanitized HTML. In `gfm` mode, `@mentions` of existing
 /// users and `#N` references to existing issues in `context` (`owner/repo`) are linked.
 pub async fn render_markdown(s: &AppState, text: &str, gfm: bool, context: Option<&str>) -> ApiResult<String> {
-    let html = comrak::markdown_to_html(text, &comrak_options(gfm));
+    let html = sanitize_html(&comrak::markdown_to_html(text, &comrak_options(gfm)));
     if !gfm {
         return Ok(html);
     }

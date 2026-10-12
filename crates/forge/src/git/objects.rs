@@ -116,7 +116,10 @@ pub async fn build_tree(git: &GitCmd, repo: &Path, base: Option<&str>, changes: 
     let mut nodes: Vec<Node> = vec![Node { entries: root_entries, dirty: true, parent: None }];
     for ch in changes {
         let comps: Vec<&str> = ch.path.split('/').collect();
-        if comps.iter().any(|c| c.is_empty() || *c == "." || *c == ".." || *c == ".git") {
+        // `mktree -z` does not validate names: reject NUL/control characters (which would
+        // inject extra entries) and `.git` in any case (a repo-in-repo on case-insensitive
+        // filesystems).
+        if comps.iter().any(|c| c.is_empty() || *c == "." || *c == ".." || c.eq_ignore_ascii_case(".git") || c.chars().any(char::is_control)) {
             return Err(invalid(format!("tree.path {} is invalid", ch.path)));
         }
         // Resolve the leaf's sha (write blob content if given).

@@ -53,7 +53,10 @@ async fn authorize(
     repo: &str,
     need: Perm,
 ) -> Result<RepoCtx, Response<Body>> {
-    let auth = authenticate(parts, state).await.map_err(|_| plain(StatusCode::INTERNAL_SERVER_ERROR, "auth error"))?;
+    let auth = authenticate(parts, state).await.map_err(|e| match e.status {
+        StatusCode::TOO_MANY_REQUESTS => plain(e.status, &e.message),
+        _ => plain(StatusCode::INTERNAL_SERVER_ERROR, "auth error"),
+    })?;
     let user = match auth {
         AuthResult::User(u) => Some(u),
         AuthResult::Anonymous => None,
@@ -100,7 +103,7 @@ async fn info_refs(
     };
     let sub = service.trim_start_matches("git-");
     let mut cmd = state.git.git.command(&path);
-    cmd.args([sub, "--stateless-rpc", "--advertise-refs", "."]);
+    cmd.args(crate::security::RECEIVE_PACK_CONFIG).args([sub, "--stateless-rpc", "--advertise-refs", "."]);
     let proto = protocol_env(&parts.headers);
     if let Some(p) = &proto {
         cmd.env("GIT_PROTOCOL", p);
@@ -131,7 +134,10 @@ async fn info_refs(
 }
 
 /// Request body as an AsyncRead, transparently gunzipping `Content-Encoding: gzip`.
-fn body_reader(headers: &HeaderMap, body: Body) -> Box<dyn tokio::io::AsyncRead + Send + Unpin> {
+/// At most `limit` bytes (after decoding) are passed on; a larger body is cut short and git
+/// fails the request (bounds gzip bombs and oversized pushes).
+fn body_reader(headers: &HeaderMap, body: Body, limit: u64) -> Box<dyn tokio::io::AsyncRead + Send + Unpin> {
+    use tokio::io::AsyncReadExt;
     let stream = body.into_data_stream().map_err(std::io::Error::other);
     let reader = StreamReader::new(stream);
     let gz = headers
@@ -139,9 +145,9 @@ fn body_reader(headers: &HeaderMap, body: Body) -> Box<dyn tokio::io::AsyncRead 
         .and_then(|v| v.to_str().ok())
         .is_some_and(|v| v.contains("gzip"));
     if gz {
-        Box::new(async_compression::tokio::bufread::GzipDecoder::new(tokio::io::BufReader::new(reader)))
+        Box::new(async_compression::tokio::bufread::GzipDecoder::new(tokio::io::BufReader::new(reader)).take(limit))
     } else {
-        Box::new(reader)
+        Box::new(reader.take(limit))
     }
 }
 
@@ -176,7 +182,7 @@ async fn upload_pack(
     };
     let mut stdin = child.stdin.take().unwrap();
     let stdout = child.stdout.take().unwrap();
-    let mut reader = body_reader(&parts.headers, body);
+    let mut reader = body_reader(&parts.headers, body, crate::security::MAX_UPLOAD_PACK_REQUEST);
     tokio::spawn(async move {
         let _ = tokio::io::copy(&mut reader, &mut stdin).await;
         let _ = stdin.shutdown().await;
@@ -210,7 +216,14 @@ async fn receive_pack(
         _ => return auth_challenge(),
     };
     let proto = protocol_env(&parts.headers);
-    let mut reader = body_reader(&parts.headers, body);
+    let guard = match crate::protection::push_guard(&state, &ctx).await {
+        Ok(g) => g,
+        Err(e) => {
+            tracing::error!(error = %format!("{e:#}"), "branch protection setup failed");
+            return plain(StatusCode::INTERNAL_SERVER_ERROR, "push failed");
+        }
+    };
+    let mut reader = body_reader(&parts.headers, body, crate::security::max_push_bytes());
     let git = state.git.git.clone();
     let repo_id = ctx.repo.id;
     // The report-status output is buffered so the client only sees success after the new
@@ -219,12 +232,16 @@ async fn receive_pack(
         .git
         .write(repo_id, |path| async move {
             let mut cmd = git.command(&path);
-            cmd.args(["receive-pack", "--stateless-rpc", "."])
+            cmd.args(crate::security::RECEIVE_PACK_CONFIG)
+                .args(["receive-pack", "--stateless-rpc", "."])
                 .stdin(Stdio::piped())
                 .stdout(Stdio::piped())
                 .stderr(Stdio::piped());
             if let Some(p) = proto {
                 cmd.env("GIT_PROTOCOL", p);
+            }
+            if let Some(g) = &guard {
+                g.apply(&mut cmd);
             }
             let mut child = cmd.spawn()?;
             let mut stdin = child.stdin.take().unwrap();

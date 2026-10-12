@@ -358,6 +358,7 @@ fn mismatch(path: &str, sha: &str) -> ApiError {
 pub async fn write_file(s: &AppState, ctx: &RepoCtx, actor: &User, w: FileWrite) -> ApiResult<FileCommit> {
     let git = s.git.git.clone();
     let branch = w.branch.clone().filter(|b| !b.is_empty()).unwrap_or_else(|| ctx.repo.default_branch.clone());
+    crate::protection::check_direct_write(s, ctx, &branch, false).await?;
     let refname = format!("refs/heads/{branch}");
     let b2 = branch.clone();
     let (fc, updates) = s
@@ -449,7 +450,7 @@ fn identities(actor: &User, author: Option<&PersonInput>, committer: Option<&Per
 }
 
 fn valid_write_path(p: &str) -> ApiResult<String> {
-    let clean = gitapi::clean_path(p).filter(|c| !c.is_empty() && c.split('/').all(|x| x != ".git"));
+    let clean = gitapi::clean_path(p).filter(|c| !c.is_empty() && c.split('/').all(|x| !x.eq_ignore_ascii_case(".git")));
     clean.ok_or_else(|| ApiError::validation("Content", "path", "invalid"))
 }
 

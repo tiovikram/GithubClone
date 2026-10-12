@@ -3,6 +3,7 @@ pub mod keys;
 pub mod branches;
 pub mod commits;
 pub mod contents;
+pub mod cross_compare;
 pub mod forks;
 pub mod git_data;
 pub mod gitapi;
@@ -29,6 +30,7 @@ pub mod repo_ops;
 pub mod issues;
 pub mod labels;
 pub mod reactions;
+pub mod ref_dispatch;
 pub mod search;
 pub mod search_git;
 pub mod stars;
@@ -78,6 +80,7 @@ pub fn routes() -> Router<AppState> {
         .merge(gists::routes())
         .merge(misc::routes())
         .merge(actions::routes())
+        .merge(ref_dispatch::routes())
         .fallback(|| async { crate::error::ApiError::not_found() })
 }
 
@@ -119,7 +122,8 @@ pub struct PageParams {
 
 impl PageParams {
     pub fn page(&self) -> i64 {
-        self.page.unwrap_or(1).max(1)
+        // Bounded so `offset()` can't overflow (a huge `page` used to wrap to a negative offset).
+        self.page.unwrap_or(1).clamp(1, 1_000_000)
     }
     pub fn per_page(&self) -> i64 {
         self.per_page.unwrap_or(30).clamp(1, 100)
