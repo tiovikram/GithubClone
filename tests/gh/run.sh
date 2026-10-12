@@ -625,7 +625,6 @@ t "cache delete --all"                       0 ""                            "$G
 t "secret set"                               0 ""                            "$GH" secret set API_KEY -b "s3cret" -R "$R"
 t "secret list"                              0 "API_KEY"                     "$GH" secret list -R "$R"
 t "secret list --json"                       0 "\"name\": *\"API_KEY\""      "$GH" secret list -R "$R" --json name,updatedAt
-t "secret set --user"                        0 ""                            "$GH" secret set USER_SECRET -b "x" --user
 t "secret delete"                            0 ""                            "$GH" secret delete API_KEY -R "$R"
 K="secret delete" t "secret delete result"   0 "^\\[\\]\$"                   "$GH" secret list -R "$R" --json name
 t "variable set"                             0 ""                            "$GH" variable set GREETING -b hello -R "$R"

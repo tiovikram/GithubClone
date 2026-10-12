@@ -9,6 +9,7 @@ pub mod gitapi;
 pub mod meta;
 pub mod pulls;
 pub mod actions;
+pub mod actions_secrets;
 pub mod commit_comments;
 pub mod deployments;
 pub mod gists;
@@ -76,6 +77,7 @@ pub fn routes() -> Router<AppState> {
         .merge(gists::routes())
         .merge(misc::routes())
         .merge(actions::routes())
+        .merge(actions_secrets::routes())
         .fallback(|| async { crate::error::ApiError::not_found() })
 }
 
