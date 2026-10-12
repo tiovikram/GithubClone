@@ -1,0 +1,140 @@
+{
+  "$comment": "Curated priority tiers by operationId. Tier 3 = every other operation in the spec. Rationale: docs/conformance.md#priority-tiers. Validate with `node catalogue.mjs`.",
+  "tier1": {
+    "$comment": "Endpoints the gh CLI calls over REST (or that its commands map onto 1:1), restricted to the core forge surface.",
+    "meta": [
+      "meta/root", "meta/get", "rate-limit/get"
+    ],
+    "user": [
+      "users/get-authenticated", "users/get-by-username",
+      "users/list-public-ssh-keys-for-authenticated-user", "users/create-public-ssh-key-for-authenticated-user",
+      "users/delete-public-ssh-key-for-authenticated-user",
+      "users/list-gpg-keys-for-authenticated-user", "users/create-gpg-key-for-authenticated-user",
+      "users/delete-gpg-key-for-authenticated-user"
+    ],
+    "orgs": [
+      "orgs/get", "orgs/list-for-authenticated-user", "orgs/list-for-user",
+      "orgs/get-membership-for-authenticated-user", "orgs/list-members", "orgs/check-membership-for-user"
+    ],
+    "repos": [
+      "repos/get", "repos/create-for-authenticated-user", "repos/create-in-org", "repos/update", "repos/delete",
+      "repos/list-for-authenticated-user", "repos/list-for-user", "repos/list-for-org",
+      "repos/create-fork", "repos/list-forks", "repos/create-using-template", "repos/merge-upstream",
+      "repos/list-branches", "repos/get-branch", "repos/get-all-topics", "repos/replace-all-topics"
+    ],
+    "contents": [
+      "repos/get-content", "repos/get-readme", "repos/create-or-update-file-contents", "repos/delete-file"
+    ],
+    "git-refs": [
+      "git/get-ref", "git/list-matching-refs", "git/create-ref", "git/update-ref", "git/delete-ref"
+    ],
+    "releases": [
+      "repos/list-releases", "repos/get-release", "repos/get-latest-release", "repos/get-release-by-tag",
+      "repos/create-release", "repos/update-release", "repos/delete-release", "repos/generate-release-notes",
+      "repos/list-release-assets", "repos/get-release-asset", "repos/upload-release-asset",
+      "repos/update-release-asset", "repos/delete-release-asset"
+    ],
+    "labels": [
+      "issues/list-labels-for-repo", "issues/create-label", "issues/get-label", "issues/update-label",
+      "issues/delete-label", "issues/list-labels-on-issue", "issues/add-labels", "issues/set-labels",
+      "issues/remove-label", "issues/remove-all-labels"
+    ],
+    "milestones": [
+      "issues/list-milestones", "issues/get-milestone", "issues/create-milestone", "issues/update-milestone",
+      "issues/delete-milestone"
+    ],
+    "issues": [
+      "issues/list", "issues/list-for-authenticated-user", "issues/list-for-repo", "issues/get", "issues/create",
+      "issues/update", "issues/lock", "issues/unlock", "issues/list-assignees", "issues/add-assignees",
+      "issues/remove-assignees"
+    ],
+    "comments": [
+      "issues/list-comments", "issues/list-comments-for-repo", "issues/create-comment", "issues/get-comment",
+      "issues/update-comment", "issues/delete-comment"
+    ],
+    "pulls": [
+      "pulls/list", "pulls/get", "pulls/create", "pulls/update", "pulls/merge", "pulls/check-if-merged",
+      "pulls/list-commits", "pulls/list-files", "pulls/update-branch", "pulls/list-requested-reviewers",
+      "pulls/request-reviewers", "pulls/remove-requested-reviewers"
+    ],
+    "search": [
+      "search/repos", "search/issues-and-pull-requests", "search/code", "search/commits", "search/users"
+    ]
+  },
+  "tier2": {
+    "$comment": "Commonly used by @octokit/rest consumers (bots, CI integrations, GitHub Actions scripts) and by gh for secondary features.",
+    "git-data": [
+      "git/create-blob", "git/get-blob", "git/create-tree", "git/get-tree", "git/create-commit", "git/get-commit",
+      "git/create-tag", "git/get-tag"
+    ],
+    "commits": [
+      "repos/list-commits", "repos/get-commit", "repos/compare-commits",
+      "repos/list-pull-requests-associated-with-commit", "repos/list-branches-for-head-commit",
+      "repos/list-commit-comments-for-repo", "repos/list-comments-for-commit", "repos/create-commit-comment",
+      "repos/get-commit-comment", "repos/update-commit-comment", "repos/delete-commit-comment"
+    ],
+    "branches": [
+      "repos/merge", "repos/rename-branch", "repos/list-tags", "repos/get-branch-protection",
+      "repos/update-branch-protection", "repos/delete-branch-protection",
+      "repos/download-tarball-archive", "repos/download-zipball-archive"
+    ],
+    "repo-misc": [
+      "repos/list-languages", "repos/list-contributors", "licenses/get-for-repo",
+      "repos/list-webhooks", "repos/create-webhook", "repos/get-webhook", "repos/update-webhook",
+      "repos/delete-webhook", "repos/ping-webhook",
+      "repos/list-deployments", "repos/create-deployment", "repos/get-deployment", "repos/delete-deployment",
+      "repos/list-deployment-statuses", "repos/create-deployment-status"
+    ],
+    "collaborators": [
+      "repos/list-collaborators", "repos/check-collaborator", "repos/add-collaborator", "repos/remove-collaborator",
+      "repos/get-collaborator-permission-level", "repos/list-invitations"
+    ],
+    "stars-watching": [
+      "activity/list-stargazers-for-repo", "activity/list-repos-starred-by-authenticated-user",
+      "activity/list-repos-starred-by-user", "activity/check-repo-is-starred-by-authenticated-user",
+      "activity/star-repo-for-authenticated-user", "activity/unstar-repo-for-authenticated-user",
+      "activity/list-watchers-for-repo", "activity/get-repo-subscription", "activity/set-repo-subscription",
+      "activity/delete-repo-subscription", "activity/list-watched-repos-for-authenticated-user",
+      "activity/list-notifications-for-authenticated-user", "activity/list-repo-events"
+    ],
+    "reactions": [
+      "reactions/list-for-issue", "reactions/create-for-issue", "reactions/delete-for-issue",
+      "reactions/list-for-issue-comment", "reactions/create-for-issue-comment", "reactions/delete-for-issue-comment",
+      "reactions/list-for-commit-comment", "reactions/create-for-commit-comment", "reactions/delete-for-commit-comment",
+      "reactions/list-for-pull-request-review-comment", "reactions/create-for-pull-request-review-comment",
+      "reactions/delete-for-pull-request-comment", "reactions/list-for-release", "reactions/create-for-release",
+      "reactions/delete-for-release"
+    ],
+    "reviews": [
+      "pulls/list-reviews", "pulls/create-review", "pulls/get-review", "pulls/update-review", "pulls/submit-review",
+      "pulls/dismiss-review", "pulls/delete-pending-review", "pulls/list-comments-for-review",
+      "pulls/list-review-comments", "pulls/list-review-comments-for-repo", "pulls/create-review-comment",
+      "pulls/get-review-comment", "pulls/update-review-comment", "pulls/delete-review-comment",
+      "pulls/create-reply-for-review-comment"
+    ],
+    "statuses-checks": [
+      "repos/create-commit-status", "repos/list-commit-statuses-for-ref", "repos/get-combined-status-for-ref",
+      "checks/list-for-ref", "checks/list-suites-for-ref", "checks/get", "checks/get-suite", "checks/list-annotations"
+    ],
+    "issue-events": [
+      "issues/list-events", "issues/list-events-for-repo", "issues/list-events-for-timeline", "issues/get-event",
+      "issues/check-user-can-be-assigned"
+    ],
+    "users-orgs": [
+      "users/list", "users/update-authenticated", "users/list-emails-for-authenticated-user",
+      "users/list-followers-for-user", "users/list-following-for-user", "users/list-public-keys-for-user",
+      "orgs/list", "teams/list"
+    ],
+    "gists": [
+      "gists/list", "gists/create", "gists/get", "gists/update", "gists/delete"
+    ],
+    "actions-read": [
+      "actions/list-repo-workflows", "actions/list-workflow-runs-for-repo", "actions/get-workflow-run",
+      "actions/list-jobs-for-workflow-run"
+    ],
+    "misc": [
+      "markdown/render", "emojis/get", "licenses/get-all-commonly-used", "gitignore/get-all-templates",
+      "meta/get-octocat", "meta/get-zen", "search/labels", "search/topics"
+    ]
+  }
+}

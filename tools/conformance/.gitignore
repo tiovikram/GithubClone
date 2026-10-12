@@ -1,0 +1,5 @@
+node_modules/
+spec/*
+!spec/.gitkeep
+reports/*.json
+reports/recordings/

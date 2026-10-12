@@ -1,0 +1,22 @@
+{
+  "name": "forge-rest-conformance",
+  "version": "0.1.0",
+  "private": true,
+  "description": "REST API conformance oracle: validates a server against GitHub's published OpenAPI description",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "fetch-spec": "node fetch-spec.mjs",
+    "update-spec": "node fetch-spec.mjs --update && node catalogue.mjs && node catalogue.mjs --spec dotcom",
+    "catalogue": "node catalogue.mjs && node catalogue.mjs --spec dotcom",
+    "test": "node selftest-offline.mjs",
+    "selftest": "node run.mjs --base https://api.github.com --readonly --spec dotcom --report reports/selftest-github.json --md reports/selftest-github.md",
+    "local": "node run.mjs --base http://localhost:3000/api/v3"
+  },
+  "dependencies": {
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1"
+  }
+}
