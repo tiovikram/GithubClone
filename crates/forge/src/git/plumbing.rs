@@ -133,6 +133,10 @@ pub async fn delete_ref(git: &GitCmd, repo: &Path, refname: &str) -> anyhow::Res
 
 /// Resolves a revision to a full sha, or None.
 pub async fn rev_parse(git: &GitCmd, repo: &Path, rev: &str) -> Option<String> {
-    let (ok, out, _) = git.try_run(repo, &["rev-parse", "--verify", "--quiet", &format!("{rev}^{{commit}}")]).await.ok()?;
+    if !super::read::safe_rev(rev) {
+        return None;
+    }
+    let spec = format!("{rev}^{{commit}}");
+    let (ok, out, _) = git.try_run(repo, &["rev-parse", "--verify", "--quiet", "--end-of-options", &spec]).await.ok()?;
     ok.then(|| String::from_utf8_lossy(&out).trim().to_string()).filter(|s| !s.is_empty())
 }

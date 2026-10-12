@@ -182,6 +182,18 @@ pub async fn create_hook(s: &AppState, scope: &Scope, actor: &User, req: CreateH
         Scope::Repo(c) => (Some(c.repo.id), None),
         Scope::Org(o) => (None, Some(o.id)),
     };
+    // GitHub allows 20 hooks per event per repo/org; unbounded hooks multiply every event into
+    // slow delivery jobs that starve the shared queue.
+    let existing: i64 = sqlx::query_scalar("SELECT count(*) FROM webhooks WHERE repo_id IS NOT DISTINCT FROM $1 AND org_id IS NOT DISTINCT FROM $2")
+        .bind(repo_id)
+        .bind(org_id)
+        .fetch_one(&s.db)
+        .await?;
+    if existing >= 20 {
+        let mut e = ApiError::validation("Hook", "hook", "custom");
+        e.errors = Some(json!([{"resource": "Hook", "code": "custom", "message": "The \"push\" event cannot have more than 20 hooks"}]));
+        return Err(e);
+    }
     let h: HookRow = sqlx::query_as(
         "INSERT INTO webhooks (repo_id, org_id, config, events, active) VALUES ($1,$2,$3,$4,$5) RETURNING *",
     )

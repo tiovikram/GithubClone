@@ -22,6 +22,20 @@ pub fn routes() -> Router<AppState> {
         .route("/tokens", post(create_token).get(list_tokens))
         .route("/tokens/{id}", delete(delete_token))
         .route("/healthz", axum::routing::get(|| async { "ok" }))
+        .layer(axum::middleware::from_fn(require_csrf_header))
+}
+
+/// Browser-originated state changes here (login, signup, logout, tokens) must carry the
+/// `X-Forge-CSRF` header, which a cross-site form cannot send. Without it a third-party page
+/// could log a victim into an attacker's account (login CSRF) or sign them out. Requests that
+/// authenticate with an `Authorization` header are not ambient-credential requests.
+async fn require_csrf_header(req: axum::extract::Request, next: axum::middleware::Next) -> Response {
+    let safe = matches!(*req.method(), axum::http::Method::GET | axum::http::Method::HEAD | axum::http::Method::OPTIONS);
+    let h = req.headers();
+    if safe || h.contains_key(auth::CSRF_HEADER) || h.contains_key(header::AUTHORIZATION) {
+        return next.run(req).await;
+    }
+    ApiError::forbidden("Missing X-Forge-CSRF header.").into_response()
 }
 
 pub fn valid_login(login: &str) -> bool {
@@ -107,8 +121,8 @@ struct Login {
     password: String,
 }
 
-async fn login(State(s): State<AppState>, Json(req): Json<Login>) -> ApiResult<Response> {
-    let u = auth::user_for_password(&s, &req.login, &req.password)
+async fn login(State(s): State<AppState>, parts: axum::http::request::Parts, Json(req): Json<Login>) -> ApiResult<Response> {
+    let u = auth::user_for_password(&s, &req.login, &req.password, crate::security::client_ip(&parts))
         .await?
         .ok_or_else(|| ApiError::new(StatusCode::UNAUTHORIZED, "Incorrect username or password."))?;
     session_response(&s, &u, StatusCode::OK).await

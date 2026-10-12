@@ -449,7 +449,7 @@ fn identities(actor: &User, author: Option<&PersonInput>, committer: Option<&Per
 }
 
 fn valid_write_path(p: &str) -> ApiResult<String> {
-    let clean = gitapi::clean_path(p).filter(|c| !c.is_empty() && c.split('/').all(|x| x != ".git"));
+    let clean = gitapi::clean_path(p).filter(|c| !c.is_empty() && c.split('/').all(|x| !x.eq_ignore_ascii_case(".git")));
     clean.ok_or_else(|| ApiError::validation("Content", "path", "invalid"))
 }
 

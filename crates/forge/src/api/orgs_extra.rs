@@ -280,7 +280,10 @@ pub fn team_json(s: &AppState, org: &User, t: &TeamRow, parent: Option<&TeamRow>
 
 async fn teams_json(s: &AppState, org: &User, rows: &[TeamRow]) -> ApiResult<Vec<Value>> {
     let pids: Vec<i64> = rows.iter().filter_map(|t| t.parent_id).collect();
-    let parents: Vec<TeamRow> = sqlx::query_as("SELECT * FROM teams WHERE id = ANY($1)").bind(&pids).fetch_all(&s.db).await?;
+    // Only same-org parents: `parent_team_id` is client input and must not expose another
+    // organization's (possibly secret) team.
+    let parents: Vec<TeamRow> =
+        sqlx::query_as("SELECT * FROM teams WHERE id = ANY($1) AND org_id = $2").bind(&pids).bind(org.id).fetch_all(&s.db).await?;
     Ok(rows
         .iter()
         .map(|t| team_json(s, org, t, t.parent_id.and_then(|p| parents.iter().find(|x| x.id == p))))

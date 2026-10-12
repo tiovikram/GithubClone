@@ -926,7 +926,13 @@ impl GCommit {
     async fn info(&self, ctx: &Context<'_>) -> Option<&CommitInfo> {
         self.info
             .get_or_init(|| async {
-                git_log(st(ctx), self.repo.repo.id, &["-1", &self.oid]).await.ok().and_then(|mut v| v.pop())
+                // The oid can come from a client-supplied node id or a stored review commit id:
+                // only a full hex object id may reach git (anything else could be parsed as an
+                // option, e.g. `--output=<file>`).
+                if !crate::git::read::is_sha(&self.oid) {
+                    return None;
+                }
+                git_log(st(ctx), self.repo.repo.id, &["-1", "--end-of-options", &self.oid]).await.ok().and_then(|mut v| v.pop())
             })
             .await
             .as_ref()

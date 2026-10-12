@@ -539,7 +539,11 @@ const LICENSE_NAMES: &[&str] = &["license", "license.md", "license.txt", "licenc
 /// Finds and identifies the license file at the root of `branch`.
 /// Returns (path, blob sha, size, content, license-simple JSON).
 pub async fn find_license(s: &AppState, ctx: &RepoCtx, refname: &str) -> ApiResult<Option<(String, String, i64, Vec<u8>, Value)>> {
-    let Some(out) = super::plat::git_read(s, ctx.repo.id, &["ls-tree", "-l", refname]).await? else { return Ok(None) };
+    // `refname` may be a client-supplied `?ref=`: never let it be parsed as an option.
+    if !crate::git::read::safe_rev(refname) {
+        return Ok(None);
+    }
+    let Some(out) = super::plat::git_read(s, ctx.repo.id, &["ls-tree", "-l", "--end-of-options", refname]).await? else { return Ok(None) };
     let text = String::from_utf8_lossy(&out);
     let mut cands: Vec<(usize, String, String, i64)> = Vec::new();
     for line in text.lines() {
@@ -600,7 +604,13 @@ async fn repo_license(
 // ---------------------------------------------------------------------------------------------
 // Events
 
+/// "Public event" filter evaluated against the repository's *current* visibility: the `public`
+/// flag is fixed when the event is recorded, so a repo made private later would otherwise keep
+/// leaking its issue/push payloads through the public feeds.
+const PUBLIC_NOW: &str = "(public AND (repo_id IS NULL OR EXISTS(SELECT 1 FROM repositories vr WHERE vr.id = activity_events.repo_id AND NOT vr.private)))";
+
 async fn events_page(s: &AppState, uri: &OriginalUri, where_sql: &str, id: i64, p: PageParams) -> ApiResult<Paged> {
+    let where_sql = where_sql.replace("PUBLIC_NOW", PUBLIC_NOW);
     let sql = format!("SELECT * FROM activity_events WHERE {where_sql} ORDER BY id DESC LIMIT $2 OFFSET $3");
     let rows: Vec<EventRow> = sqlx::query_as(sqlx::AssertSqlSafe(sql)).bind(id).bind(p.limit()).bind(p.offset()).fetch_all(&s.db).await?;
     let items = crate::activity::render(s, &rows).await?;
@@ -619,7 +629,7 @@ async fn repo_events(
 }
 
 async fn public_events(State(s): State<AppState>, uri: OriginalUri, Query(p): Query<PageParams>) -> ApiResult<Paged> {
-    events_page(&s, &uri, "public AND $1 = $1", 0, p).await
+    events_page(&s, &uri, "PUBLIC_NOW AND $1 = $1", 0, p).await
 }
 
 async fn user_events(
@@ -633,13 +643,13 @@ async fn user_events(
     if v.as_ref().is_some_and(|v| v.id == u.id) {
         events_page(&s, &uri, "actor_id = $1", u.id, p).await
     } else {
-        events_page(&s, &uri, "actor_id = $1 AND public", u.id, p).await
+        events_page(&s, &uri, "actor_id = $1 AND PUBLIC_NOW", u.id, p).await
     }
 }
 
 async fn user_public_events(State(s): State<AppState>, uri: OriginalUri, Path(login): Path<String>, Query(p): Query<PageParams>) -> ApiResult<Paged> {
     let u = db::user_by_login(&s.db, &login).await?;
-    events_page(&s, &uri, "actor_id = $1 AND public", u.id, p).await
+    events_page(&s, &uri, "actor_id = $1 AND PUBLIC_NOW", u.id, p).await
 }
 
 async fn received_events(State(s): State<AppState>, uri: OriginalUri, Path(login): Path<String>, Query(p): Query<PageParams>) -> ApiResult<Paged> {
@@ -647,7 +657,7 @@ async fn received_events(State(s): State<AppState>, uri: OriginalUri, Path(login
     events_page(
         &s,
         &uri,
-        "public AND (actor_id IN (SELECT followee_id FROM follows WHERE follower_id = $1)
+        "PUBLIC_NOW AND (actor_id IN (SELECT followee_id FROM follows WHERE follower_id = $1)
             OR repo_id IN (SELECT repo_id FROM watches WHERE user_id = $1)
             OR repo_id IN (SELECT repo_id FROM stars WHERE user_id = $1))",
         u.id,
@@ -665,7 +675,7 @@ async fn org_events(State(s): State<AppState>, uri: OriginalUri, MaybeUser(v): M
     if member {
         events_page(&s, &uri, "org_id = $1", o.id, p).await
     } else {
-        events_page(&s, &uri, "org_id = $1 AND public", o.id, p).await
+        events_page(&s, &uri, "org_id = $1 AND PUBLIC_NOW", o.id, p).await
     }
 }
 

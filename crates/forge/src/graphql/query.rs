@@ -96,7 +96,9 @@ pub async fn resolve_node(ctx: &Context<'_>, id: &str) -> async_graphql::Result<
         }
         ("PullRequestReview", Some(i)) => {
             let row: Option<ReviewRow> = sqlx::query_as("SELECT * FROM pull_reviews WHERE id = $1").bind(i).fetch_optional(&s.db).await?;
-            match row {
+            // Pending (draft) reviews are visible to their author only.
+            let viewer_id = ctx.data_unchecked::<Viewer>().0.id;
+            match row.filter(|r| r.state != "PENDING" || r.user_id == Some(viewer_id)) {
                 Some(r) => match issue::by_id(ctx, r.issue_id).await? {
                     Some(IssueOrPullRequest::PullRequest(p)) => {
                         Some(Node::PullRequestReview(GReview { row: Arc::new(r), repo: p.repo.clone(), number: p.row.number }))
@@ -121,7 +123,10 @@ pub async fn resolve_node(ctx: &Context<'_>, id: &str) -> async_graphql::Result<
             let Ok(rid) = rid.parse::<i64>() else { return Ok(None) };
             let Some(r) = loaders::repo(ctx, rid).await? else { return Ok(None) };
             if kind == "Commit" {
-                Some(Node::Commit(GCommit::new(r, rest.to_string())))
+                if !crate::git::read::is_sha(rest) {
+                    return Ok(None);
+                }
+                Some(Node::Commit(GCommit::new(r, rest.to_lowercase())))
             } else {
                 let refs = repo::repo_refs(ctx, rid).await?;
                 refs.get(rest).map(|oid| Node::Ref(GRef { repo: r, name: rest.to_string(), oid: oid.clone() }))
@@ -178,6 +183,10 @@ impl Query {
     }
 
     async fn nodes(&self, ctx: &Context<'_>, ids: Vec<ID>) -> async_graphql::Result<Vec<Option<Node>>> {
+        // GitHub caps `nodes(ids:)` at 100.
+        if ids.len() > 100 {
+            return Err(async_graphql::Error::new("You may not request more than 100 nodes at once."));
+        }
         let mut out = Vec::with_capacity(ids.len());
         for id in &ids {
             out.push(resolve_node(ctx, id).await?);

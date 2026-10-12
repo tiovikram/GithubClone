@@ -133,7 +133,8 @@ pub async fn locate(state: &AppState, pull: &Pull, commit_id: &str, p: &Placemen
     let path = p.path.clone().filter(|s| !s.is_empty()).ok_or_else(|| ApiError::validation("PullRequestReviewComment", "path", "missing_field"))?;
     let repo = repo_for_reading(state, pull).await?;
     let g = &state.git.git;
-    if !git::has_commit(g, &repo, commit_id).await {
+    // Only full object ids reach git (a revision starting with `-` would be an option).
+    if !crate::git::read::is_sha(commit_id) || !git::has_commit(g, &repo, commit_id).await {
         return Err(custom("commit_id", "commit_id is not part of the pull request"));
     }
     let base = if commit_id == pull.pr.head_sha {
@@ -386,6 +387,11 @@ pub async fn create_review(state: &AppState, ctx: &RepoCtx, actor: &User, number
         }
     }
     let commit = input.commit_id.clone().filter(|c| !c.is_empty()).unwrap_or_else(|| pull.pr.head_sha.clone());
+    // Stored and later handed to git (GraphQL `PullRequestReview.commit`): full object ids only.
+    if !crate::git::read::is_sha(&commit) {
+        return Err(ApiError::validation("PullRequestReview", "commit_id", "invalid"));
+    }
+    let commit = commit.to_lowercase();
     let mut locs = Vec::with_capacity(input.comments.len());
     for c in &input.comments {
         if c.body.trim().is_empty() {
