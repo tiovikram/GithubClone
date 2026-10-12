@@ -13,6 +13,7 @@ pub mod graphql;
 pub mod hooks;
 pub mod ids;
 pub mod json;
+pub mod pulls;
 pub mod state;
 pub mod web;
 
