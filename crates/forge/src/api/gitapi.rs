@@ -121,6 +121,8 @@ pub fn typed(content_type: &str, body: Vec<u8>) -> Response {
     if let Ok(v) = content_type.parse() {
         r.headers_mut().insert(header::CONTENT_TYPE, v);
     }
+    // Raw/HTML/diff bodies are repository content: no sniffing, no script execution.
+    crate::security::harden_user_content(&mut r);
     r
 }
 

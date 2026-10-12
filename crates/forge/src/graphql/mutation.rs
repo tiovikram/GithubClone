@@ -666,6 +666,9 @@ impl Mutation {
         let me = actor(ctx);
         let tid = dec(&input.repository_id, &["Repository"])?;
         let template = repo_ctx(ctx, tid, &input.repository_id).await?;
+        if !template.repo.is_template {
+            return Err(async_graphql::Error::new(format!("{} is not a template repository", template.full_name())));
+        }
         let oid = dec(&input.owner_id, USER_KINDS)?;
         let owner = crate::db::user_by_id(&s.db, oid).await.map_err(|_| unresolvable(&input.owner_id))?;
         let rc = services::create_repository(

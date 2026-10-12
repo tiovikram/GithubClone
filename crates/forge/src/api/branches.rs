@@ -519,7 +519,9 @@ async fn raw_file(
     match read::cat_object(git, &path, &format!("{sha}:{file}")).await {
         Ok(Some(o)) if o.kind == "blob" => {
             let mime = if o.data.iter().take(8000).any(|b| *b == 0) { "application/octet-stream" } else { "text/plain; charset=utf-8" };
-            ([(header::CONTENT_TYPE, mime)], o.data).into_response()
+            let mut res = ([(header::CONTENT_TYPE, mime)], o.data).into_response();
+            crate::security::harden_user_content(&mut res);
+            res
         }
         _ => plain(StatusCode::NOT_FOUND, "404: Not Found"),
     }

@@ -49,6 +49,10 @@ pub fn schema() -> &'static ForgeSchema {
         Schema::build(query::Query, mutation::Mutation, EmptySubscription)
             .validation_mode(ValidationMode::Fast)
             .limit_recursive_depth(64)
+            // Bound query shape (aliases multiply work): gh's deepest queries (and
+            // introspection) stay far below these.
+            .limit_depth(32)
+            .limit_complexity(5_000)
             .finish()
     })
 }

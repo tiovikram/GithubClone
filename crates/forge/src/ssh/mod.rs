@@ -380,9 +380,16 @@ async fn pump_in(
     mut stdin: tokio::process::ChildStdin,
     tap: Option<Arc<Mutex<PushRequestParser>>>,
 ) {
+    // Pushes (tapped) are bounded like over HTTP; a larger pack is cut short and git fails it.
+    let limit = if tap.is_some() { crate::security::max_push_bytes() } else { u64::MAX };
+    let mut seen: u64 = 0;
     while let Some(msg) = read.wait().await {
         match msg {
             ChannelMsg::Data { data } => {
+                seen += data.len() as u64;
+                if seen > limit {
+                    break;
+                }
                 if let Some(t) = &tap {
                     t.lock().unwrap().feed(&data);
                 }
@@ -488,7 +495,11 @@ async fn serve_push(
         .git
         .write(ctx.repo.id, |path| async move {
             let mut cmd = git.command(&path);
-            cmd.args(["receive-pack", "."]).stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::piped());
+            cmd.args(crate::security::RECEIVE_PACK_CONFIG)
+                .args(["receive-pack", "."])
+                .stdin(Stdio::piped())
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped());
             if let Some(p) = proto {
                 cmd.env("GIT_PROTOCOL", p);
             }

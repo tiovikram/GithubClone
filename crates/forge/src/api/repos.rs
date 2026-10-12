@@ -67,6 +67,15 @@ pub async fn create_repo(state: &AppState, owner: &User, creator: &User, req: Cr
     }
     let private = req.private.unwrap_or(false) || matches!(req.visibility.as_deref(), Some("private" | "internal"));
     let branch = req.default_branch.clone().unwrap_or_else(|| "main".into());
+    // Written into HEAD and used in ref names: must be a plausible branch name.
+    if branch.is_empty()
+        || branch.len() > 255
+        || branch.starts_with('-')
+        || branch.contains("..")
+        || branch.chars().any(|c| c.is_control() || matches!(c, ' ' | '~' | '^' | ':' | '?' | '*' | '[' | '\\'))
+    {
+        return Err(ApiError::validation("Repository", "default_branch", "invalid"));
+    }
     let repo: Option<Repo> = sqlx::query_as(
         "INSERT INTO repositories (owner_id, name, description, homepage, private, visibility, default_branch,
             has_issues, has_projects, has_wiki, has_discussions, is_template,

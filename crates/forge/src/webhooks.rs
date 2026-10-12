@@ -101,7 +101,9 @@ pub async fn enqueue_event(state: &AppState, repo_id: i64, event: &str, payload:
 
 /// Like [`enqueue_event`] when the caller already has the `RepoCtx`.
 pub async fn enqueue_event_ctx(state: &AppState, ctx: &RepoCtx, event: &str, mut payload: Value) -> anyhow::Result<()> {
-    if let Some(kind) = activity_type(event) {
+    // Draft releases are visible to writers only: they never become (public) activity events.
+    let draft_release = event == "release" && payload.pointer("/release/draft").and_then(Value::as_bool) == Some(true);
+    if let Some(kind) = activity_type(event).filter(|_| !draft_release) {
         let actor_id = payload.pointer("/sender/id").and_then(Value::as_i64);
         let mut ap = payload.clone();
         if let Some(o) = ap.as_object_mut() {
@@ -195,6 +197,9 @@ fn client(insecure: bool) -> &'static reqwest::Client {
             .timeout(Duration::from_secs(10))
             .connect_timeout(Duration::from_secs(5))
             .redirect(reqwest::redirect::Policy::none())
+            // SSRF: names resolving to loopback/private/link-local addresses are refused at
+            // connect time (literal IPs are checked in `deliver`).
+            .dns_resolver(crate::security::PublicOnlyResolver)
             .tls_danger_accept_invalid_certs(insecure)
             .user_agent("GitHub-Hookshot/forge")
             .build()
@@ -246,8 +251,19 @@ pub async fn deliver(state: &AppState, delivery_id: i64) -> anyhow::Result<()> {
         record_result(state, &d, &hook, 0, "Invalid URL", None, None, None, 0.0).await?;
         return Ok(());
     };
+    // SSRF: never deliver to internal addresses (cloud metadata, the forge itself, cluster
+    // services) unless explicitly allowed. Names are checked by the client's resolver.
+    let parsed = url::Url::parse(&url).ok().filter(|u| matches!(u.scheme(), "http" | "https"));
+    let blocked = match parsed.as_ref().and_then(|u| u.host()) {
+        None => true,
+        Some(h) => !crate::security::webhook_allow_private() && crate::security::blocked_literal_host(&h),
+    };
+    if blocked {
+        record_result(state, &d, &hook, 0, "Invalid URL: destination is not a public address", None, None, None, 0.0).await?;
+        return Ok(());
+    }
     let json_body = serde_json::to_vec(&d.payload)?;
-    let form = cfg_str(&hook.config, "content_type") == Some("form");
+    let form =cfg_str(&hook.config, "content_type") == Some("form");
     let body: Vec<u8> = if form {
         url::form_urlencoded::Serializer::new(String::new())
             .append_pair("payload", std::str::from_utf8(&json_body)?)
@@ -295,7 +311,17 @@ pub async fn deliver(state: &AppState, delivery_id: i64) -> anyhow::Result<()> {
                 .iter()
                 .map(|(k, v)| (k.as_str().to_string(), json!(v.to_str().unwrap_or(""))))
                 .collect();
-            let mut text = r.text().await.unwrap_or_default();
+            // Read at most 64 KiB of the response (a receiver could stream gigabytes).
+            let mut raw: Vec<u8> = Vec::new();
+            let mut r = r;
+            while raw.len() < 65536 {
+                match r.chunk().await {
+                    Ok(Some(c)) => raw.extend_from_slice(&c),
+                    _ => break,
+                }
+            }
+            raw.truncate(65536);
+            let mut text = String::from_utf8_lossy(&raw).into_owned();
             if text.len() > 65536 {
                 let mut cut = 65536;
                 while !text.is_char_boundary(cut) {

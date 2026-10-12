@@ -32,7 +32,8 @@ const MAX_COMMITS_PER_REPO: usize = 1000;
 async fn scope_repos(s: &AppState, viewer: Option<&User>, terms: &[Term]) -> ApiResult<Vec<RepoCtx>> {
     let mut out: Vec<RepoCtx> = Vec::new();
     let repos: Vec<&Term> = terms.iter().filter(|t| t.key.as_deref() == Some("repo") && !t.negated).collect();
-    for t in &repos {
+    // Each repo costs a full-tree `git grep`/`git log`: cap explicit `repo:` qualifiers too.
+    for t in repos.iter().take(MAX_REPOS as usize) {
         if let Some((o, n)) = t.value.split_once('/') {
             if let Ok(ctx) = db::load_repo(&s.db, viewer, o, n).await {
                 out.push(ctx);

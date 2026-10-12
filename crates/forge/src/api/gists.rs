@@ -102,13 +102,13 @@ fn mime_of(name: &str) -> String {
 
 const TRUNCATE_AT: usize = 1024 * 1024;
 
-fn file_json(s: &AppState, owner: &User, g: &GistRow, version: &str, name: &str, content: &str, with_content: bool) -> Value {
+fn file_json(s: &AppState, owner: &User, g: &GistRow, version: &str, name: &str, content: &str, with_content: bool, size: Option<i64>) -> Value {
     let mut v = json!({
         "filename": name,
         "type": mime_of(name),
         "language": language(name),
         "raw_url": format!("{}/gist/{}/{}/raw/{version}/{}", s.base_url(), owner.login, g.gist_id, crate::json::release::seg(name)),
-        "size": content.len(),
+        "size": size.unwrap_or(content.len() as i64),
     });
     if with_content {
         let truncated = content.len() > TRUNCATE_AT;
@@ -138,12 +138,13 @@ fn history_json(s: &AppState, g: &GistRow, h: &HistoryRow, user: Option<&User>) 
 }
 
 /// Base gist JSON (shared by list and detail views).
-fn base_json(s: &AppState, g: &GistRow, owner: &User, files: &BTreeMap<String, String>, version: &str, with_content: bool) -> Value {
+fn base_json(s: &AppState, g: &GistRow, owner: &User, files: &BTreeMap<String, String>, version: &str, with_content: bool, sizes: Option<&BTreeMap<String, i64>>) -> Value {
     let api = s.api_url();
     let url = format!("{api}/gists/{}", g.gist_id);
     let mut fm = Map::new();
     for (name, content) in files {
-        fm.insert(name.clone(), file_json(s, owner, g, version, name, content, with_content));
+        let size = sizes.and_then(|m| m.get(name).copied());
+        fm.insert(name.clone(), file_json(s, owner, g, version, name, content, with_content, size));
     }
     json!({
         "url": url,
@@ -193,7 +194,19 @@ async fn latest_versions(s: &AppState, ids: &[i64]) -> ApiResult<HashMap<i64, St
 /// List view (`base-gist`, no file contents), batched.
 pub async fn gists_json(s: &AppState, rows: &[GistRow]) -> ApiResult<Vec<Value>> {
     let ids: Vec<i64> = rows.iter().map(|g| g.id).collect();
-    let files = files_of(s, &ids).await?;
+    // Names and sizes only: list views never show contents, and loading them would let a few
+    // huge gists pull gigabytes into memory per request.
+    let meta: Vec<(i64, String, i64)> =
+        sqlx::query_as("SELECT gist_id, filename, octet_length(content)::bigint FROM gist_files WHERE gist_id = ANY($1)")
+            .bind(&ids)
+            .fetch_all(&s.db)
+            .await?;
+    let mut files: HashMap<i64, BTreeMap<String, String>> = HashMap::new();
+    let mut sizes: HashMap<i64, BTreeMap<String, i64>> = HashMap::new();
+    for (g, f, n) in meta {
+        files.entry(g).or_default().insert(f.clone(), String::new());
+        sizes.entry(g).or_default().insert(f, n);
+    }
     let versions = latest_versions(s, &ids).await?;
     let owner_ids: Vec<i64> = rows.iter().map(|g| g.owner_id).collect();
     let owners = crate::json::issue::users_by_ids(&s.db, &owner_ids).await?;
@@ -203,7 +216,7 @@ pub async fn gists_json(s: &AppState, rows: &[GistRow]) -> ApiResult<Vec<Value>>
         .filter_map(|g| {
             let o = owners.get(&g.owner_id)?;
             let v = versions.get(&g.id).cloned().unwrap_or_default();
-            Some(base_json(s, g, o, files.get(&g.id).unwrap_or(&empty), &v, false))
+            Some(base_json(s, g, o, files.get(&g.id).unwrap_or(&empty), &v, false, sizes.get(&g.id)))
         })
         .collect())
 }
@@ -219,7 +232,7 @@ pub async fn gist_detail_json(s: &AppState, g: &GistRow) -> ApiResult<Value> {
     let uids: Vec<i64> = history.iter().filter_map(|h| h.user_id).collect();
     let users = crate::json::issue::users_by_ids(&s.db, &uids).await?;
     let version = history.first().map(|h| h.version.clone()).unwrap_or_default();
-    let mut v = base_json(s, g, &owner, &files, &version, true);
+    let mut v = base_json(s, g, &owner, &files, &version, true, None);
     v["history"] = Value::Array(history.iter().map(|h| history_json(s, g, h, h.user_id.and_then(|u| users.get(&u)))).collect());
     let forks: Vec<GistRow> = sqlx::query_as("SELECT * FROM gists WHERE fork_of = $1 ORDER BY id LIMIT 100").bind(g.id).fetch_all(&s.db).await?;
     let fork_owner_ids: Vec<i64> = forks.iter().map(|f| f.owner_id).collect();
@@ -591,7 +604,7 @@ async fn get_revision(State(s): State<AppState>, Path((id, sha)): Path<(String, 
         .ok_or_else(ApiError::not_found)?;
     let owner = db::user_by_id(&s.db, g.owner_id).await?;
     let files: BTreeMap<String, String> = serde_json::from_value(h.files.clone()).unwrap_or_default();
-    let mut v = base_json(&s, &g, &owner, &files, &h.version, true);
+    let mut v = base_json(&s, &g, &owner, &files, &h.version, true, None);
     v["history"] = json!([history_json(&s, &g, &h, None)]);
     Ok(Json(v))
 }
@@ -620,5 +633,6 @@ async fn raw(State(s): State<AppState>, Path((_login, id, rest)): Path<(String, 
     let content = content.ok_or_else(ApiError::not_found)?;
     let mut res = content.into_response();
     res.headers_mut().insert(header::CONTENT_TYPE, HeaderValue::from_static("text/plain; charset=utf-8"));
+    crate::security::harden_user_content(&mut res);
     Ok(res)
 }
