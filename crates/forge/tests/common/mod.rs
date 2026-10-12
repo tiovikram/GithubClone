@@ -25,6 +25,11 @@ pub fn unique(prefix: &str) -> String {
 
 impl TestServer {
     pub async fn start() -> TestServer {
+        Self::start_with(|_| {}).await
+    }
+
+    /// Like `start`, but lets the test adjust the config (e.g. SSH settings) first.
+    pub async fn start_with(customize: impl FnOnce(&mut forge::config::Config)) -> TestServer {
         let dir = tempfile::tempdir().unwrap();
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
         let port = listener.local_addr().unwrap().port();
@@ -38,7 +43,13 @@ impl TestServer {
             cache_dir: dir.path().join("cache"),
             git_bin: "git".into(),
             skip_migrations: false,
+            ssh_listen: None,
+            ssh_host_key: None,
+            ssh_url_host: None,
+            ssh_url_port: None,
         };
+        let mut cfg = cfg;
+        customize(&mut cfg);
         let state = forge::build_state(cfg).await.expect("build state");
         let app = forge::app(state.clone());
         tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });

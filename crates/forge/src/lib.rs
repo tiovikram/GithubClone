@@ -13,6 +13,7 @@ pub mod graphql;
 pub mod hooks;
 pub mod ids;
 pub mod json;
+pub mod ssh;
 pub mod state;
 pub mod web;
 
@@ -41,6 +42,7 @@ pub async fn build_state(cfg: Config) -> anyhow::Result<AppState> {
     if !cfg.skip_migrations {
         migrate(&db).await?;
     }
+    ssh::register_config(&cfg);
     let store = state::build_object_store(&cfg.storage)?;
     let git = Arc::new(git::GitStore::new(db.clone(), store.clone(), cfg.cache_dir.clone(), cfg.git_bin.clone()));
     Ok(AppState { db, cfg: Arc::new(cfg), store, git })
@@ -72,6 +74,7 @@ pub fn app(state: AppState) -> Router {
         .route("/readyz", get(readyz))
         .merge(git::http::routes())
         .fallback(web::spa)
+        .layer(middleware::from_fn_with_state(state.clone(), api::keys::dot_keys_middleware))
         .layer(TraceLayer::new_for_http())
         .with_state(state)
 }

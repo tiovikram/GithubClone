@@ -1,4 +1,5 @@
 //! REST API mounted at /api/v3. One module per area; each exposes `routes()`.
+pub mod keys;
 pub mod meta;
 pub mod repos;
 pub mod users;
@@ -18,6 +19,7 @@ pub fn routes() -> Router<AppState> {
         .merge(meta::routes())
         .merge(users::routes())
         .merge(repos::routes())
+        .merge(keys::routes())
         .fallback(|| async { crate::error::ApiError::not_found() })
 }
 
