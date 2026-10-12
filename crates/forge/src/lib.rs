@@ -76,6 +76,7 @@ pub fn app(state: AppState) -> Router {
         .nest("/api/uploads", api::releases::upload_routes().layer(middleware::from_fn(api::github_headers)))
         .merge(api::releases::download_routes())
         .merge(api::gists::raw_routes())
+        .merge(api::gist_git::routes())
         .route("/avatars/{login}", get(web::avatar))
         .route("/healthz", get(|| async { "ok" }))
         .route("/readyz", get(readyz))

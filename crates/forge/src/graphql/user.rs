@@ -141,6 +141,19 @@ impl GUser {
     pub async fn login(&self) -> String {
         self.0.login.clone()
     }
+    #[allow(clippy::too_many_arguments)]
+    async fn gists(
+        &self,
+        ctx: &Context<'_>,
+        first: Option<i32>,
+        after: Option<String>,
+        last: Option<i32>,
+        before: Option<String>,
+        privacy: Option<super::gists::GistPrivacy>,
+        order_by: Option<super::gists::GistOrder>,
+    ) -> async_graphql::Result<super::gists::GistConnection> {
+        super::gists::for_user(ctx, self.0.clone(), privacy, order_by, super::connection::ConnArgs::new(first, after, last, before)).await
+    }
     async fn name(&self) -> Option<String> {
         self.0.name.clone().filter(|n| !n.is_empty())
     }
@@ -258,6 +271,18 @@ impl GOrg {
     }
     pub async fn login(&self) -> String {
         self.0.login.clone()
+    }
+    async fn rulesets(
+        &self,
+        ctx: &Context<'_>,
+        first: Option<i32>,
+        after: Option<String>,
+        last: Option<i32>,
+        before: Option<String>,
+        include_parents: Option<bool>,
+    ) -> async_graphql::Result<super::rulesets::RepositoryRulesetConnection> {
+        let _ = include_parents;
+        super::rulesets::for_org(ctx, self.0.clone(), super::connection::ConnArgs::new(first, after, last, before)).await
     }
     async fn name(&self) -> Option<String> {
         self.0.name.clone()

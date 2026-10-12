@@ -10,6 +10,7 @@
 //! * Feature-gated fields from §5.2 are deliberately absent so gh takes the simplest GHES path.
 pub mod connection;
 pub mod enums;
+pub mod gists;
 pub mod issue;
 pub mod loaders;
 pub mod mutation;
@@ -17,7 +18,9 @@ pub mod pull;
 pub mod query;
 pub mod repo;
 pub mod search;
+pub mod rulesets;
 pub mod services;
+pub mod tree;
 pub mod user;
 
 use std::sync::OnceLock;

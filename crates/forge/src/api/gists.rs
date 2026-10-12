@@ -23,7 +23,7 @@ pub fn routes() -> Router<AppState> {
         .route("/gists/public", get(list_public))
         .route("/gists/starred", get(list_starred))
         .route("/users/{username}/gists", get(list_for_user))
-        .route("/gists/{gist_id}", get(get_one).patch(update).delete(delete))
+        .route("/gists/{gist_id}", get(get_one).patch(update).post(update).delete(delete))
         .route("/gists/{gist_id}/star", get(is_starred).put(star).delete(unstar))
         .route("/gists/{gist_id}/forks", get(list_forks).post(fork))
         .route("/gists/{gist_id}/commits", get(list_commits))

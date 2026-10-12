@@ -12,6 +12,7 @@ pub mod actions;
 pub mod commit_comments;
 pub mod deployments;
 pub mod gists;
+pub mod gist_git;
 pub mod misc;
 pub mod orgs_extra;
 pub mod plat;
@@ -31,6 +32,9 @@ pub mod search;
 pub mod search_git;
 pub mod stars;
 pub mod users;
+pub mod autolinks;
+pub mod rulesets;
+pub mod signing_keys;
 pub mod webhooks;
 
 use axum::extract::{OriginalUri, Request};
@@ -75,6 +79,9 @@ pub fn routes() -> Router<AppState> {
         .merge(deployments::routes())
         .merge(gists::routes())
         .merge(misc::routes())
+        .merge(autolinks::routes())
+        .merge(rulesets::routes())
+        .merge(signing_keys::routes())
         .merge(actions::routes())
         .fallback(|| async { crate::error::ApiError::not_found() })
 }
