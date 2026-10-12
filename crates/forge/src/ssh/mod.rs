@@ -489,6 +489,7 @@ async fn serve_push(
     proto: Option<String>,
 ) -> anyhow::Result<u32> {
     let git = state.git.git.clone();
+    let guard = crate::protection::push_guard(state, ctx).await?;
     let tap = Arc::new(Mutex::new(PushRequestParser::default()));
     let tap2 = tap.clone();
     let result = state
@@ -502,6 +503,9 @@ async fn serve_push(
                 .stderr(Stdio::piped());
             if let Some(p) = proto {
                 cmd.env("GIT_PROTOCOL", p);
+            }
+            if let Some(g) = &guard {
+                g.apply(&mut cmd);
             }
             let mut child = cmd.spawn()?;
             let stdin = child.stdin.take().unwrap();

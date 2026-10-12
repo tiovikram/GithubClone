@@ -8,7 +8,6 @@ use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use axum::Router;
 use base64::Engine;
-use object_store::path::Path as ObjPath;
 #[allow(unused_imports)]
 use object_store::ObjectStoreExt;
 use serde::Deserialize;
@@ -22,10 +21,10 @@ use crate::error::{ApiError, ApiResult};
 use crate::extract::Json;
 use crate::state::AppState;
 
-pub fn routes() -> Router<AppState> {
+/// Branch protection routes, mounted behind `ref_dispatch` (branch names may contain `/`).
+pub fn protection_routes() -> Router<AppState> {
     let prot = "/repos/{owner}/{repo}/branches/{branch}/protection";
     Router::new()
-        .route("/repos/{template_owner}/{template_repo}/generate", post(generate))
         .route(prot, get(get_protection).put(put_protection).delete(delete_protection))
         .route(&format!("{prot}/enforce_admins"), get(get_enforce_admins).post(set_enforce_admins).delete(del_enforce_admins))
         .route(&format!("{prot}/required_signatures"), get(get_signatures).post(set_signatures).delete(del_signatures))
@@ -37,6 +36,11 @@ pub fn routes() -> Router<AppState> {
             &format!("{prot}/required_status_checks"),
             get(get_status_checks).patch(patch_status_checks).delete(del_status_checks),
         )
+}
+
+pub fn routes() -> Router<AppState> {
+    Router::new()
+        .route("/repos/{template_owner}/{template_repo}/generate", post(generate))
         .route("/repos/{owner}/{repo}/license", get(repo_license))
         .route("/repos/{owner}/{repo}/events", get(repo_events))
         .route("/networks/{owner}/{repo}/events", get(repo_events))
@@ -75,8 +79,9 @@ pub struct GenerateReq {
     pub private: Option<bool>,
 }
 
-/// Creates a repository from a template by copying the template's packs (server-side object
-/// copy) and its default branch (or all branches) into a new storage manifest.
+/// Creates a repository from a template like GitHub does: the default branch (or, with
+/// `include_all_branches`, every branch) becomes a fresh root commit ("Initial commit", authored
+/// by the actor) with the template branch tip's tree. The template's history is not copied.
 pub async fn generate_from_template(s: &AppState, tpl: &RepoCtx, actor: &User, req: GenerateReq) -> ApiResult<RepoCtx> {
     if !tpl.repo.is_template {
         let mut e = ApiError::unprocessable("Validation Failed");
@@ -95,7 +100,14 @@ pub async fn generate_from_template(s: &AppState, tpl: &RepoCtx, actor: &User, r
             return Err(ApiError::forbidden("You do not have permission to create repositories for this owner."));
         }
     }
-    let manifest = s.git.manifest(tpl.repo.id).await?;
+    let (_, tpl_refs) = s.git.refs(tpl.repo.id).await?;
+    let default_ref = format!("refs/heads/{}", tpl.repo.default_branch);
+    let all = req.include_all_branches.unwrap_or(false);
+    let branches: Vec<String> = tpl_refs
+        .keys()
+        .filter(|n| (all && n.starts_with("refs/heads/")) || **n == default_ref)
+        .cloned()
+        .collect();
     let ctx = super::repos::create_repo(
         s,
         &owner,
@@ -111,44 +123,36 @@ pub async fn generate_from_template(s: &AppState, tpl: &RepoCtx, actor: &User, r
     .await?;
     let new_id = ctx.repo.id;
     let res: anyhow::Result<()> = async {
-        // Packs are immutable and content-addressed: a server-side copy is a consistent snapshot.
-        // Retry with a fresh manifest if gc removed a pack meanwhile.
-        let mut m = manifest;
-        for attempt in 0..3 {
-            let mut ok = true;
-            for pack in &m.packs {
-                for ext in ["pack", "idx"] {
-                    let from = ObjPath::from(format!("repos/{}/packs/{pack}.{ext}", tpl.repo.id));
-                    let to = ObjPath::from(format!("repos/{new_id}/packs/{pack}.{ext}"));
-                    if let Err(e) = s.store.copy(&from, &to).await {
-                        if attempt == 2 {
-                            return Err(e.into());
-                        }
-                        ok = false;
+        if !branches.is_empty() {
+            let tpl_path = s.git.sync(tpl.repo.id).await?;
+            let git = s.git.git.clone();
+            let me = super::git_data::user_signature(actor);
+            let head = default_ref.clone();
+            s.git
+                .write(new_id, |path| async move {
+                    // Shallow fetch: only the tips' trees and blobs (plus the tip commits, which
+                    // stay unreachable) — never the template's history.
+                    let src = format!("file://{}", tpl_path.display());
+                    let mut args: Vec<String> =
+                        ["fetch", "-q", "--no-tags", "--no-write-fetch-head", "--depth=1", &src].iter().map(|x| x.to_string()).collect();
+                    for b in &branches {
+                        args.push(format!("+{b}:refs/forge-template/{}", b.trim_start_matches("refs/heads/")));
                     }
-                }
-            }
-            if ok {
-                break;
-            }
-            m = s.git.manifest(tpl.repo.id).await?;
+                    let argv: Vec<&str> = args.iter().map(String::as_str).collect();
+                    git.run(&path, &argv).await?;
+                    for b in &branches {
+                        let tmp = format!("refs/forge-template/{}", b.trim_start_matches("refs/heads/"));
+                        let tree = git.run_str(&path, &["rev-parse", &format!("{tmp}^{{tree}}")]).await?.trim().to_string();
+                        let sha = crate::git::objects::write_commit(&git, &path, &tree, &[], &me, &me, "Initial commit", None).await?;
+                        git.run(&path, &["update-ref", b, &sha]).await?;
+                        git.run(&path, &["update-ref", "-d", &tmp]).await?;
+                    }
+                    let _ = tokio::fs::remove_file(path.join("shallow")).await;
+                    git.run(&path, &["symbolic-ref", "HEAD", &head]).await?;
+                    Ok(())
+                })
+                .await?;
         }
-        let refs = crate::git::parse_refs(&m.refs);
-        let default_ref = format!("refs/heads/{}", tpl.repo.default_branch);
-        let all = req.include_all_branches.unwrap_or(false);
-        let mut text = String::new();
-        for (name, sha) in &refs {
-            if (all && name.starts_with("refs/heads/")) || *name == default_ref {
-                text.push_str(&format!("{sha} {name}\n"));
-            }
-        }
-        sqlx::query("UPDATE repo_storage SET version = version + 1, head = $2, refs = $3, packs = $4, updated_at = now() WHERE repo_id = $1")
-            .bind(new_id)
-            .bind(&default_ref)
-            .bind(&text)
-            .bind(&m.packs)
-            .execute(&s.db)
-            .await?;
         sqlx::query("INSERT INTO repo_templates (repo_id, template_id) VALUES ($1, $2)").bind(new_id).bind(tpl.repo.id).execute(&s.db).await?;
         sqlx::query("UPDATE repositories SET pushed_at = now() WHERE id = $1").bind(new_id).execute(&s.db).await?;
         Ok(())

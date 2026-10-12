@@ -29,8 +29,6 @@ use crate::state::AppState;
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/repos/{owner}/{repo}/branches", get(list_branches))
-        .route("/repos/{owner}/{repo}/branches/{branch}", get(get_branch))
-        .route("/repos/{owner}/{repo}/branches/{branch}/rename", post(rename_branch_h))
         .route("/repos/{owner}/{repo}/merges", post(merge_h))
         .route("/repos/{owner}/{repo}/merge-upstream", post(merge_upstream_h))
         .route("/repos/{owner}/{repo}/tags", get(list_tags))
@@ -40,6 +38,13 @@ pub fn routes() -> Router<AppState> {
         .route("/repos/{owner}/{repo}/zipball/{*ref}", get(zipball))
 }
 
+/// Per-branch routes, mounted behind `ref_dispatch` (branch names may contain `/`).
+pub fn branch_ref_routes() -> Router<AppState> {
+    Router::new()
+        .route("/repos/{owner}/{repo}/branches/{branch}", get(get_branch))
+        .route("/repos/{owner}/{repo}/branches/{branch}/rename", post(rename_branch_h))
+}
+
 /// Routes outside /api/v3 (merged at the top level in `lib.rs`): archive streaming and raw files.
 pub fn web_routes() -> Router<AppState> {
     Router::new()
@@ -47,10 +52,9 @@ pub fn web_routes() -> Router<AppState> {
         .route("/{owner}/{repo}/raw/{*rest}", get(raw_file))
 }
 
-/// Names of protected branches. Integration point for branch protection (owned elsewhere);
-/// returns the empty set until protection rules exist.
-pub async fn protected_branches(_s: &AppState, _ctx: &RepoCtx) -> HashSet<String> {
-    HashSet::new()
+/// Names of protected branches (`crate::protection`).
+pub async fn protected_branches(s: &AppState, ctx: &RepoCtx) -> HashSet<String> {
+    crate::protection::protected_branches(&s.db, ctx.repo.id).await
 }
 
 /// `branch-with-protection` JSON for `name` at `sha`.
@@ -59,7 +63,16 @@ pub async fn branch_json(s: &AppState, ctx: &RepoCtx, name: &str, sha: &str) -> 
     let path = gitapi::sync(s, ctx).await?;
     let c = read::read_commit(&s.git.git, &path, sha).await.api()?.ok_or_else(ApiError::not_found)?;
     let commit = gitapi::commits_json(s, &u, &[c]).await?.pop().unwrap_or(Value::Null);
-    let protected = protected_branches(s, ctx).await.contains(name);
+    let rules = crate::protection::rules(&s.db, ctx.repo.id, name).await?;
+    let protected = rules.is_some();
+    let contexts = rules.as_ref().map(|r| r.required_contexts()).unwrap_or_default();
+    let has_checks = rules.as_ref().is_some_and(|r| r.cfg.get("required_status_checks").is_some_and(|v| v.is_object()));
+    let level = match &rules {
+        Some(r) if has_checks && r.enforce_admins() => "everyone",
+        Some(_) if has_checks => "non_admins",
+        _ => "off",
+    };
+    let checks: Vec<Value> = contexts.iter().map(|c| json!({"context": c, "app_id": null})).collect();
     let n = gj::enc_component(name);
     Ok(json!({
         "name": name,
@@ -68,7 +81,7 @@ pub async fn branch_json(s: &AppState, ctx: &RepoCtx, name: &str, sha: &str) -> 
         "protected": protected,
         "protection": {
             "enabled": protected,
-            "required_status_checks": { "enforcement_level": "off", "contexts": [], "checks": [] },
+            "required_status_checks": { "enforcement_level": level, "contexts": contexts, "checks": checks },
         },
         "protection_url": format!("{}/branches/{n}/protection", u.repo_api),
     }))
@@ -217,6 +230,7 @@ pub enum MergeOutcome {
 
 /// Merges `head` (branch or sha) into branch `base` with a merge commit (POST /merges).
 pub async fn merge_branch(s: &AppState, ctx: &RepoCtx, actor: &User, base: &str, head: &str, message: Option<String>) -> ApiResult<MergeOutcome> {
+    crate::protection::check_direct_write(s, ctx, base, true).await?;
     let git = s.git.git.clone();
     let base_ref = format!("refs/heads/{base}");
     let (base_s, head_s) = (base.to_string(), head.to_string());
@@ -405,7 +419,12 @@ async fn archive_redirect(s: &AppState, viewer: Option<&User>, owner: &str, repo
     let rev = rev.filter(|r| !r.is_empty()).unwrap_or_else(|| ctx.repo.default_branch.clone());
     let path = gitapi::sync(s, &ctx).await?;
     read::resolve_commit(&s.git.git, &path, &rev).await.api()?.ok_or_else(ApiError::not_found)?;
-    let loc = format!("{}/{}/archive/{}.{ext}", s.base_url(), ctx.full_name(), gj::enc_path(&rev));
+    let mut loc = format!("{}/{}/archive/{}.{ext}", s.base_url(), ctx.full_name(), gj::enc_path(&rev));
+    if ctx.repo.private {
+        // The client does not resend Authorization to the redirect target: sign the URL.
+        let token = crate::signed_url::archive_token(&s.db, ctx.repo.id, &rev).await.map_err(ApiError::internal)?;
+        loc.push_str(&format!("?token={token}"));
+    }
     let mut r = StatusCode::FOUND.into_response();
     r.headers_mut().insert(header::LOCATION, HeaderValue::from_str(&loc).map_err(ApiError::internal)?);
     Ok(r)
@@ -428,11 +447,34 @@ fn plain(status: StatusCode, msg: &str) -> Response {
     (status, [(header::CONTENT_TYPE, "text/plain; charset=utf-8")], format!("{msg}\n")).into_response()
 }
 
+#[derive(Deserialize, Default)]
+struct ArchiveQuery {
+    token: Option<String>,
+}
+
+/// The repository for an archive request authorized by a signed `?token=` (issued by the
+/// tarball/zipball redirect) instead of credentials.
+async fn token_ctx(s: &AppState, owner: &str, repo: &str, rev: &str, token: Option<&str>) -> Option<RepoCtx> {
+    let token = token?;
+    let owner = db::user_by_login(&s.db, owner).await.ok()?;
+    let repo: db::Repo = sqlx::query_as("SELECT * FROM repositories WHERE owner_id = $1 AND lower(name) = lower($2)")
+        .bind(owner.id)
+        .bind(repo.strip_suffix(".git").unwrap_or(repo))
+        .fetch_optional(&s.db)
+        .await
+        .ok()??;
+    if !crate::signed_url::verify_archive_token(&s.db, repo.id, rev, token).await {
+        return None;
+    }
+    Some(RepoCtx { repo, owner, perm: db::Perm::Read })
+}
+
 /// Streams `git archive` for `/{owner}/{repo}/archive/{ref}.{tar.gz|tgz|tar|zip}`.
 async fn archive_download(
     State(s): State<AppState>,
     MaybeUser(u): MaybeUser,
     Path((owner, repo, file)): Path<(String, String, String)>,
+    Query(q): Query<ArchiveQuery>,
 ) -> Response {
     let (rev, format, ext) = if let Some(r) = file.strip_suffix(".tar.gz") {
         (r, "tar.gz", "tar.gz")
@@ -445,8 +487,12 @@ async fn archive_download(
     } else {
         return plain(StatusCode::NOT_FOUND, "Not Found");
     };
-    let Ok(ctx) = gitapi::load(&s, u.as_ref(), &owner, &repo).await else {
-        return plain(StatusCode::NOT_FOUND, "Not Found");
+    let ctx = match gitapi::load(&s, u.as_ref(), &owner, &repo).await {
+        Ok(c) => c,
+        Err(_) => match token_ctx(&s, &owner, &repo, rev, q.token.as_deref()).await {
+            Some(c) => c,
+            None => return plain(StatusCode::NOT_FOUND, "Not Found"),
+        },
     };
     let Ok(path) = gitapi::sync(&s, &ctx).await else {
         return plain(StatusCode::INTERNAL_SERVER_ERROR, "storage unavailable");

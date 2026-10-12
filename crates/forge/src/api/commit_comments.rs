@@ -19,9 +19,13 @@ pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/repos/{owner}/{repo}/comments", get(list_for_repo))
         .route("/repos/{owner}/{repo}/comments/{comment_id}", get(get_one).patch(update).delete(delete))
-        .route("/repos/{owner}/{repo}/commits/{commit_sha}/comments", get(list_for_commit).post(create))
         .route("/repos/{owner}/{repo}/comments/{comment_id}/reactions", get(list_reactions).post(create_reaction))
         .route("/repos/{owner}/{repo}/comments/{comment_id}/reactions/{reaction_id}", axum::routing::delete(delete_reaction))
+}
+
+/// Per-ref routes, mounted behind `ref_dispatch` (refs may contain `/`).
+pub fn commit_ref_routes() -> Router<AppState> {
+    Router::new().route("/repos/{owner}/{repo}/commits/{commit_sha}/comments", get(list_for_commit).post(create))
 }
 
 pub const SUBJECT: &str = "commit_comment";

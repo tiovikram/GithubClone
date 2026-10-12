@@ -23,10 +23,15 @@ use crate::state::AppState;
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/repos/{owner}/{repo}/commits", get(list_commits))
-        .route("/repos/{owner}/{repo}/commits/{ref}", get(get_commit))
-        .route("/repos/{owner}/{repo}/commits/{ref}/branches-where-head", get(branches_where_head))
         .route("/repos/{owner}/{repo}/compare/{*basehead}", get(compare))
         .route("/repos/{owner}/{repo}/contributors", get(contributors))
+}
+
+/// Per-ref routes, mounted behind `ref_dispatch` (refs may contain `/`).
+pub fn commit_ref_routes() -> Router<AppState> {
+    Router::new()
+        .route("/repos/{owner}/{repo}/commits/{ref}", get(get_commit))
+        .route("/repos/{owner}/{repo}/commits/{ref}/branches-where-head", get(branches_where_head))
 }
 
 #[derive(Deserialize, Default)]
@@ -223,21 +228,6 @@ impl Comparison {
     }
 }
 
-/// Strips a same-repository `owner:` (or `owner:repo:`) prefix from a compare side.
-fn strip_owner<'a>(ctx: &RepoCtx, side: &'a str) -> Option<&'a str> {
-    match side.split_once(':') {
-        None => Some(side),
-        Some((owner, rest)) if owner.eq_ignore_ascii_case(&ctx.owner.login) => {
-            match rest.split_once(':') {
-                Some((repo, r)) if repo.eq_ignore_ascii_case(&ctx.repo.name) => Some(r),
-                Some(_) => None,
-                None => Some(rest),
-            }
-        }
-        Some(_) => None,
-    }
-}
-
 /// Compares `base...head` (three-dot: files are diffed from the merge base).
 pub async fn compare_revs(
     s: &AppState,
@@ -248,6 +238,19 @@ pub async fn compare_revs(
     with_patch: bool,
 ) -> ApiResult<Comparison> {
     let path = gitapi::sync(s, ctx).await?;
+    compare_at(s, &path, base, head, page, with_patch).await
+}
+
+/// `compare_revs` in an explicit repository directory (see `cross_compare`).
+pub async fn compare_at(
+    s: &AppState,
+    path: &std::path::Path,
+    base: &str,
+    head: &str,
+    page: Option<PageParams>,
+    with_patch: bool,
+) -> ApiResult<Comparison> {
+    let path = path.to_path_buf();
     let git = &s.git.git;
     let b = read::resolve_commit(git, &path, base).await.api()?.ok_or_else(ApiError::not_found)?;
     let h = read::resolve_commit(git, &path, head).await.api()?.ok_or_else(ApiError::not_found)?;
@@ -299,11 +302,11 @@ async fn compare(
         _ => (basehead.clone(), None),
     };
     let (base_raw, head_raw) = spec.split_once("...").or_else(|| spec.split_once("..")).ok_or_else(ApiError::not_found)?;
-    let base = strip_owner(&ctx, base_raw).ok_or_else(ApiError::not_found)?;
-    let head = strip_owner(&ctx, head_raw).ok_or_else(ApiError::not_found)?;
+    let sides = super::cross_compare::resolve(&s, u.as_ref(), &ctx, base_raw, head_raw).await?;
+    let (base, head) = (sides.base.as_str(), sides.head.as_str());
     let media = media_suffix.or(gitapi::media(&headers));
     if matches!(media, Some("diff") | Some("patch")) {
-        let path = gitapi::sync(&s, &ctx).await?;
+        let path = sides.path.clone();
         let git = &s.git.git;
         let b = read::resolve_commit(git, &path, base).await.api()?.ok_or_else(ApiError::not_found)?;
         let h = read::resolve_commit(git, &path, head).await.api()?.ok_or_else(ApiError::not_found)?;
@@ -316,7 +319,7 @@ async fn compare(
         });
     }
     let page = (q.page.is_some() || q.per_page.is_some()).then_some(PageParams { page: q.page, per_page: q.per_page });
-    let cmp = compare_revs(&s, &ctx, base, head, page, true).await?;
+    let cmp = compare_at(&s, &sides.path, base, head, page, true).await?;
     let urls = gitapi::urls(&s, &ctx);
     Ok(Json(comparison_json(&s, &ctx, &urls, &spec, &cmp).await?).into_response())
 }

@@ -358,6 +358,7 @@ fn mismatch(path: &str, sha: &str) -> ApiError {
 pub async fn write_file(s: &AppState, ctx: &RepoCtx, actor: &User, w: FileWrite) -> ApiResult<FileCommit> {
     let git = s.git.git.clone();
     let branch = w.branch.clone().filter(|b| !b.is_empty()).unwrap_or_else(|| ctx.repo.default_branch.clone());
+    crate::protection::check_direct_write(s, ctx, &branch, false).await?;
     let refname = format!("refs/heads/{branch}");
     let b2 = branch.clone();
     let (fc, updates) = s

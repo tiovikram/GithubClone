@@ -18,6 +18,8 @@ pub mod json;
 pub mod ssh;
 pub mod pulls;
 pub mod security;
+pub mod protection;
+pub mod signed_url;
 pub mod state;
 pub mod web;
 pub mod webhooks;
