@@ -156,7 +156,9 @@ t "repo list OWNER --json"           0 "\"nameWithOwner\": *\"$ALICE/readme\"" "
 t "repo edit"                        0 ""                            "$GH" repo edit "$R" --description "Edited description" --homepage "https://example.com"
 t "repo view after edit"             0 "Edited description"          "$GH" repo view "$R" --json description,homepageUrl
 
-# Seed the demo repo over git (setup, not a gh test).
+# Bob becomes a collaborator (so he can be requested as reviewer / assigned), then seed the demo
+# repo over git (setup, not gh tests).
+"$GH" api -X PUT "repos/$ALICE/demo/collaborators/$BOB" -f permission=push >/dev/null 2>&1
 SEED="$WORK/seed"
 git_q clone "https://$HOST/$ALICE/demo.git" "$SEED"
 ( cd "$SEED" && echo "# demo" >README.md && git add . && git commit -qm "Initial commit" && git push -q origin HEAD:main ) >/dev/null 2>&1
@@ -173,11 +175,11 @@ t "repo list --fork (other user)"    0 "$BOB/demo"                   as_bob "$GH
 # ------------------------------------------------------------------------------------------------
 # labels
 
-t "label create (REST)"              0 ""                            "$GH" label create bug --color ff0000 --description "Something is broken" -R "$R"
+t "label create (REST)"              0 ""                            "$GH" label create triage --color ff0000 --description "Needs triage" -R "$R"
+t "label create --force (REST)"      0 ""                            "$GH" label create triage --color 00ff00 --description "Updated" --force -R "$R"
 REPO_ID="$("$GH" api graphql -f query="query { repository(owner: \"$ALICE\", name: \"demo\") { id } }" --jq .data.repository.id 2>/dev/null)"
-t "api graphql mutation (createLabel)" 0 "\"name\": *\"enhancement\"" "$GH" api graphql -f query='mutation($r: ID!) { createLabel(input: {repositoryId: $r, name: "enhancement", color: "a2eeef"}) { label { name color } } }' -f r="$REPO_ID"
-"$GH" api graphql -f query='mutation($r: ID!) { createLabel(input: {repositoryId: $r, name: "bug", color: "d73a4a"}) { label { name } } }' -f r="$REPO_ID" >/dev/null 2>&1
-t "label list"                       0 "enhancement"                 "$GH" label list -R "$R"
+t "api graphql mutation (createLabel)" 0 "\"name\": *\"gql-label\"" "$GH" api graphql -f query='mutation($r: ID!) { createLabel(input: {repositoryId: $r, name: "gql-label", color: "a2eeef"}) { label { name color } } }' -f r="$REPO_ID"
+t "label list"                       0 "triage"                 "$GH" label list -R "$R"
 t "label list --json"                0 "\"name\": *\"bug\""          "$GH" label list -R "$R" --json name,color,description
 
 # ------------------------------------------------------------------------------------------------
@@ -231,6 +233,7 @@ t "pr edit"                          0 "/pull/4"                     "$GH" pr ed
 t "pr ready --undo"                  0 ""                            "$GH" pr ready 7 -R "$R" --undo
 t "pr ready"                         0 ""                            "$GH" pr ready 6 -R "$R"
 t "pr view after ready"              0 "\"isDraft\": *false"         "$GH" pr view 6 -R "$R" --json isDraft
+t "pr ready (undo the undo)"         0 ""                            "$GH" pr ready 7 -R "$R"
 
 # commit status for `pr checks` (REST statuses API; falls back to SQL if not implemented)
 HEAD_SHA="$(git -C "$SEED" rev-parse feature)"

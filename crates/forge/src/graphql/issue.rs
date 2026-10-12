@@ -30,16 +30,7 @@ pub enum IssueOrPullRequest {
 crate::gql_connection!(IssueConnection, IssueEdge, "IssueConnection", "IssueEdge", GIssue);
 crate::gql_connection!(IssueCommentConnection, IssueCommentEdge, "IssueCommentConnection", "IssueCommentEdge", GComment);
 
-#[derive(Clone, Debug, sqlx::FromRow)]
-pub struct CommentRow {
-    pub id: i64,
-    pub issue_id: i64,
-    pub repo_id: i64,
-    pub user_id: Option<i64>,
-    pub body: String,
-    pub created_at: chrono::DateTime<Utc>,
-    pub updated_at: chrono::DateTime<Utc>,
-}
+pub use crate::json::issue::CommentRow;
 
 /// Wraps rows into Issue/PullRequest objects (batched repo + PR loads).
 pub async fn materialize(ctx: &Context<'_>, rows: Vec<IssueRow>) -> async_graphql::Result<Vec<IssueOrPullRequest>> {

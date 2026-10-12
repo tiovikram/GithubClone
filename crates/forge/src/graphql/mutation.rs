@@ -795,8 +795,9 @@ impl Mutation {
     async fn update_issue_comment(&self, ctx: &Context<'_>, input: UpdateIssueCommentInput) -> async_graphql::Result<Option<UpdateIssueCommentPayload>> {
         let cid = dec(&input.id, &["IssueComment"])?;
         let s = st(ctx);
-        let c = services::comment_by_id(s, cid).await.map_err(|_| unresolvable(&input.id))?;
-        let rc = repo_ctx(ctx, c.repo_id, &input.id).await?;
+        let repo_id: i64 = sqlx::query_scalar("SELECT repo_id FROM issue_comments WHERE id = $1").bind(cid).fetch_optional(&s.db).await?.ok_or_else(|| unresolvable(&input.id))?;
+        let rc = repo_ctx(ctx, repo_id, &input.id).await?;
+        let c = services::comment_by_id(s, &rc, cid).await.map_err(|_| unresolvable(&input.id))?;
         let parent: IssueRow = sqlx::query_as("SELECT * FROM issues WHERE id = $1").bind(c.issue_id).fetch_one(&s.db).await?;
         let c = services::update_comment(s, &rc, actor(ctx), &c, &input.body).await.map_err(api_err)?;
         Ok(Some(UpdateIssueCommentPayload {
@@ -808,8 +809,9 @@ impl Mutation {
     async fn delete_issue_comment(&self, ctx: &Context<'_>, input: DeleteIssueCommentInput) -> async_graphql::Result<Option<DeleteIssueCommentPayload>> {
         let cid = dec(&input.id, &["IssueComment"])?;
         let s = st(ctx);
-        let c = services::comment_by_id(s, cid).await.map_err(|_| unresolvable(&input.id))?;
-        let rc = repo_ctx(ctx, c.repo_id, &input.id).await?;
+        let repo_id: i64 = sqlx::query_scalar("SELECT repo_id FROM issue_comments WHERE id = $1").bind(cid).fetch_optional(&s.db).await?.ok_or_else(|| unresolvable(&input.id))?;
+        let rc = repo_ctx(ctx, repo_id, &input.id).await?;
+        let c = services::comment_by_id(s, &rc, cid).await.map_err(|_| unresolvable(&input.id))?;
         services::delete_comment(s, &rc, actor(ctx), &c).await.map_err(api_err)?;
         Ok(Some(DeleteIssueCommentPayload { client_mutation_id: input.client_mutation_id }))
     }
@@ -830,9 +832,7 @@ impl Mutation {
 
     async fn clear_labels_from_labelable(&self, ctx: &Context<'_>, input: ClearLabelsFromLabelableInput) -> async_graphql::Result<Option<ClearLabelsFromLabelablePayload>> {
         let (rc, row) = subject(ctx, &input.labelable_id).await?;
-        services::update_issue(st(ctx), &rc, actor(ctx), &row, IssuePatch { labels: Some(Vec::new()), ..Default::default() })
-            .await
-            .map_err(api_err)?;
+        services::clear_labels(st(ctx), &rc, actor(ctx), &row).await.map_err(api_err)?;
         Ok(Some(ClearLabelsFromLabelablePayload { client_mutation_id: input.client_mutation_id, labelable: as_labelable(reload(ctx, row.id).await?) }))
     }
 

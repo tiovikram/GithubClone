@@ -4,19 +4,14 @@
 //! branch. The REST areas (issues, pulls, labels, ...) own the canonical service functions; when
 //! they land, re-point each function here at them (signatures mirror the REST service-layer
 //! convention: `(state, repo ctx, actor, input) -> ApiResult<Row>`).
-use axum::http::StatusCode;
 
 use crate::db::{self, Perm, RepoCtx, User};
 use crate::error::{ApiError, ApiResult};
 use crate::json::issue::{IssueRow, LabelRow};
 use crate::state::AppState;
 
-use super::issue::CommentRow;
+use crate::json::issue::CommentRow;
 use super::pull::ReviewRow;
-
-fn gone(msg: &str) -> ApiError {
-    ApiError::new(StatusCode::GONE, msg)
-}
 
 // ---------------------------------------------------------------------------------------------
 // Repositories
@@ -105,7 +100,8 @@ pub async fn update_repository(state: &AppState, ctx: &RepoCtx, actor: &User, p:
 }
 
 // ---------------------------------------------------------------------------------------------
-// Issues
+// Issues, comments, labels: delegate to the issues area (`crate::api::issues`, `issue_comments`,
+// `labels`). GraphQL passes node ids; the REST services take names/logins/numbers.
 
 #[derive(Default, Debug, Clone)]
 pub struct NewIssue {
@@ -116,75 +112,55 @@ pub struct NewIssue {
     pub milestone: Option<i64>,
 }
 
-async fn check_labels(state: &AppState, ctx: &RepoCtx, ids: &[i64]) -> ApiResult<()> {
+async fn label_names(state: &AppState, ctx: &RepoCtx, ids: &[i64]) -> ApiResult<Vec<String>> {
     if ids.is_empty() {
-        return Ok(());
+        return Ok(Vec::new());
     }
-    let n: i64 = sqlx::query_scalar("SELECT count(*) FROM labels WHERE repo_id = $1 AND id = ANY($2)")
+    let names: Vec<String> = sqlx::query_scalar("SELECT name FROM labels WHERE repo_id = $1 AND id = ANY($2)")
         .bind(ctx.repo.id)
         .bind(ids)
-        .fetch_one(&state.db)
+        .fetch_all(&state.db)
         .await?;
-    if n as usize != ids.iter().collect::<std::collections::HashSet<_>>().len() {
+    if names.len() != ids.iter().collect::<std::collections::HashSet<_>>().len() {
         return Err(ApiError::validation("Label", "labelIds", "invalid"));
     }
-    Ok(())
+    Ok(names)
 }
 
-async fn check_milestone(state: &AppState, ctx: &RepoCtx, id: i64) -> ApiResult<()> {
-    let ok: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM milestones WHERE repo_id = $1 AND id = $2)")
+async fn logins(state: &AppState, ids: &[i64]) -> ApiResult<Vec<String>> {
+    if ids.is_empty() {
+        return Ok(Vec::new());
+    }
+    Ok(sqlx::query_scalar("SELECT login FROM users WHERE id = ANY($1)").bind(ids).fetch_all(&state.db).await?)
+}
+
+async fn milestone_number(state: &AppState, ctx: &RepoCtx, id: i64) -> ApiResult<i64> {
+    sqlx::query_scalar("SELECT number FROM milestones WHERE repo_id = $1 AND id = $2")
         .bind(ctx.repo.id)
         .bind(id)
-        .fetch_one(&state.db)
-        .await?;
-    if ok { Ok(()) } else { Err(ApiError::validation("Issue", "milestone", "invalid")) }
+        .fetch_optional(&state.db)
+        .await?
+        .ok_or_else(|| ApiError::validation("Issue", "milestone", "invalid"))
 }
 
 pub async fn create_issue(state: &AppState, ctx: &RepoCtx, actor: &User, input: NewIssue) -> ApiResult<IssueRow> {
-    if !ctx.repo.has_issues {
-        return Err(gone("Issues are disabled for this repo"));
-    }
-    if input.title.trim().is_empty() {
-        return Err(ApiError::validation("Issue", "title", "missing_field"));
-    }
-    let triage = ctx.perm >= Perm::Triage;
-    if triage {
-        check_labels(state, ctx, &input.labels).await?;
-        if let Some(m) = input.milestone {
-            check_milestone(state, ctx, m).await?;
-        }
-    }
-    let mut tx = state.db.begin().await?;
-    let number = db::next_issue_number(&mut *tx, ctx.repo.id).await?;
-    let row: IssueRow = sqlx::query_as(
-        "INSERT INTO issues (repo_id, number, title, body, user_id, milestone_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
+    let milestone = match input.milestone {
+        Some(m) => Some(milestone_number(state, ctx, m).await?),
+        None => None,
+    };
+    crate::api::issues::create_issue(
+        state,
+        ctx,
+        actor,
+        crate::api::issues::CreateIssue {
+            title: input.title,
+            body: input.body.filter(|b| !b.is_empty()),
+            labels: label_names(state, ctx, &input.labels).await?,
+            assignees: logins(state, &input.assignees).await?,
+            milestone,
+        },
     )
-    .bind(ctx.repo.id)
-    .bind(number)
-    .bind(&input.title)
-    .bind(input.body.as_ref().filter(|b| !b.is_empty()))
-    .bind(actor.id)
-    .bind(if triage { input.milestone } else { None })
-    .fetch_one(&mut *tx)
-    .await?;
-    if triage {
-        sqlx::query("INSERT INTO issue_labels (issue_id, label_id) SELECT $1, unnest($2::bigint[]) ON CONFLICT DO NOTHING")
-            .bind(row.id)
-            .bind(&input.labels)
-            .execute(&mut *tx)
-            .await?;
-        sqlx::query("INSERT INTO issue_assignees (issue_id, user_id) SELECT $1, unnest($2::bigint[]) ON CONFLICT DO NOTHING")
-            .bind(row.id)
-            .bind(&input.assignees)
-            .execute(&mut *tx)
-            .await?;
-    }
-    sqlx::query("UPDATE repositories SET open_issues_count = open_issues_count + 1 WHERE id = $1")
-        .bind(ctx.repo.id)
-        .execute(&mut *tx)
-        .await?;
-    tx.commit().await?;
-    Ok(row)
+    .await
 }
 
 #[derive(Default, Debug, Clone)]
@@ -201,247 +177,104 @@ pub struct IssuePatch {
 }
 
 pub async fn update_issue(state: &AppState, ctx: &RepoCtx, actor: &User, issue: &IssueRow, p: IssuePatch) -> ApiResult<IssueRow> {
-    let author = issue.user_id == Some(actor.id);
-    let triage = ctx.perm >= Perm::Triage;
-    if !(triage || author) {
-        return Err(ApiError::forbidden(format!("{} does not have the correct permissions to execute `UpdateIssue`", actor.login)));
-    }
-    if (p.milestone.is_some() || p.assignees.is_some() || p.labels.is_some()) && !triage {
-        return Err(ApiError::forbidden("Must have triage access to change labels, assignees or milestones."));
-    }
-    if let Some(t) = &p.title {
-        if t.trim().is_empty() {
-            return Err(ApiError::validation("Issue", "title", "missing_field"));
-        }
-    }
-    if let Some(ls) = &p.labels {
-        check_labels(state, ctx, ls).await?;
-    }
-    if let Some(Some(m)) = p.milestone {
-        check_milestone(state, ctx, m).await?;
-    }
-    let mut tx = state.db.begin().await?;
-    let new_state = p.state.clone().filter(|s| s != &issue.state);
-    let reason: Option<Option<String>> = match new_state.as_deref() {
-        Some("closed") => Some(Some(p.state_reason.clone().unwrap_or_else(|| "completed".into()))),
-        Some("open") => Some(Some("reopened".into())),
-        _ => None,
+    let milestone = match p.milestone {
+        Some(Some(m)) => Some(Some(milestone_number(state, ctx, m).await?)),
+        Some(None) => Some(None),
+        None => None,
     };
-    let row: IssueRow = sqlx::query_as(
-        "UPDATE issues SET title = COALESCE($2, title), body = CASE WHEN $3::bool THEN $4 ELSE body END,
-            state = COALESCE($5, state),
-            state_reason = CASE WHEN $6::bool THEN $7 ELSE state_reason END,
-            closed_at = CASE WHEN $5 = 'closed' THEN now() WHEN $5 = 'open' THEN NULL ELSE closed_at END,
-            closed_by_id = CASE WHEN $5 = 'closed' THEN $8 WHEN $5 = 'open' THEN NULL ELSE closed_by_id END,
-            milestone_id = CASE WHEN $9::bool THEN $10 ELSE milestone_id END,
-            updated_at = now()
-          WHERE id = $1 RETURNING *",
+    let labels = match &p.labels {
+        Some(ids) => Some(label_names(state, ctx, ids).await?),
+        None => None,
+    };
+    let assignees = match &p.assignees {
+        Some(ids) => Some(logins(state, ids).await?),
+        None => None,
+    };
+    crate::api::issues::update_issue(
+        state,
+        ctx,
+        actor,
+        issue.number,
+        crate::api::issues::UpdateIssue {
+            title: p.title,
+            body: p.body.map(|b| Some(b).filter(|b| !b.is_empty())),
+            state: p.state,
+            state_reason: p.state_reason.map(Some),
+            labels,
+            assignees,
+            milestone,
+        },
     )
-    .bind(issue.id)
-    .bind(&p.title)
-    .bind(p.body.is_some())
-    .bind(p.body.as_ref().filter(|b| !b.is_empty()))
-    .bind(&new_state)
-    .bind(reason.is_some())
-    .bind(reason.flatten())
-    .bind(actor.id)
-    .bind(p.milestone.is_some())
-    .bind(p.milestone.flatten())
-    .fetch_one(&mut *tx)
-    .await?;
-    if let Some(ls) = &p.labels {
-        sqlx::query("DELETE FROM issue_labels WHERE issue_id = $1").bind(issue.id).execute(&mut *tx).await?;
-        sqlx::query("INSERT INTO issue_labels (issue_id, label_id) SELECT $1, unnest($2::bigint[]) ON CONFLICT DO NOTHING")
-            .bind(issue.id)
-            .bind(ls)
-            .execute(&mut *tx)
-            .await?;
-    }
-    if let Some(us) = &p.assignees {
-        sqlx::query("DELETE FROM issue_assignees WHERE issue_id = $1").bind(issue.id).execute(&mut *tx).await?;
-        sqlx::query("INSERT INTO issue_assignees (issue_id, user_id) SELECT $1, unnest($2::bigint[]) ON CONFLICT DO NOTHING")
-            .bind(issue.id)
-            .bind(us)
-            .execute(&mut *tx)
-            .await?;
-    }
-    if let Some(s) = new_state.as_deref() {
-        let ev = if s == "closed" { "closed" } else { "reopened" };
-        sqlx::query("INSERT INTO issue_events (issue_id, repo_id, actor_id, event) VALUES ($1, $2, $3, $4)")
-            .bind(issue.id)
-            .bind(ctx.repo.id)
-            .bind(actor.id)
-            .bind(ev)
-            .execute(&mut *tx)
-            .await?;
-        let delta = if s == "closed" { -1 } else { 1 };
-        sqlx::query("UPDATE repositories SET open_issues_count = GREATEST(open_issues_count + $2, 0) WHERE id = $1")
-            .bind(ctx.repo.id)
-            .bind(delta)
-            .execute(&mut *tx)
-            .await?;
-    }
-    tx.commit().await?;
-    Ok(row)
+    .await
 }
 
 pub async fn add_labels(state: &AppState, ctx: &RepoCtx, actor: &User, issue: &IssueRow, label_ids: &[i64]) -> ApiResult<()> {
-    let _ = actor;
-    ctx.require(Perm::Triage)?;
-    check_labels(state, ctx, label_ids).await?;
-    sqlx::query("INSERT INTO issue_labels (issue_id, label_id) SELECT $1, unnest($2::bigint[]) ON CONFLICT DO NOTHING")
-        .bind(issue.id)
-        .bind(label_ids)
-        .execute(&state.db)
-        .await?;
-    touch(state, issue.id).await
+    let names = label_names(state, ctx, label_ids).await?;
+    crate::api::issues::add_labels(state, ctx, actor, issue.number, names).await.map(|_| ())
 }
 
 pub async fn remove_labels(state: &AppState, ctx: &RepoCtx, actor: &User, issue: &IssueRow, label_ids: &[i64]) -> ApiResult<()> {
-    let _ = actor;
-    ctx.require(Perm::Triage)?;
-    sqlx::query("DELETE FROM issue_labels WHERE issue_id = $1 AND label_id = ANY($2)")
-        .bind(issue.id)
-        .bind(label_ids)
-        .execute(&state.db)
-        .await?;
-    touch(state, issue.id).await
-}
-
-pub async fn add_assignees(state: &AppState, ctx: &RepoCtx, actor: &User, issue: &IssueRow, user_ids: &[i64]) -> ApiResult<()> {
-    let _ = actor;
-    ctx.require(Perm::Triage)?;
-    sqlx::query("INSERT INTO issue_assignees (issue_id, user_id) SELECT $1, unnest($2::bigint[]) ON CONFLICT DO NOTHING")
-        .bind(issue.id)
-        .bind(user_ids)
-        .execute(&state.db)
-        .await?;
-    touch(state, issue.id).await
-}
-
-pub async fn remove_assignees(state: &AppState, ctx: &RepoCtx, actor: &User, issue: &IssueRow, user_ids: &[i64]) -> ApiResult<()> {
-    let _ = actor;
-    ctx.require(Perm::Triage)?;
-    sqlx::query("DELETE FROM issue_assignees WHERE issue_id = $1 AND user_id = ANY($2)")
-        .bind(issue.id)
-        .bind(user_ids)
-        .execute(&state.db)
-        .await?;
-    touch(state, issue.id).await
-}
-
-async fn touch(state: &AppState, issue_id: i64) -> ApiResult<()> {
-    sqlx::query("UPDATE issues SET updated_at = now() WHERE id = $1").bind(issue_id).execute(&state.db).await?;
+    let names = label_names(state, ctx, label_ids).await?;
+    let current: Vec<String> = crate::api::issues::issue_labels(&state.db, issue.id).await?.into_iter().map(|l| l.name).collect();
+    for n in names.iter().filter(|n| current.iter().any(|c| c.eq_ignore_ascii_case(n))) {
+        crate::api::issues::remove_label(state, ctx, actor, issue.number, n).await?;
+    }
     Ok(())
 }
 
+pub async fn clear_labels(state: &AppState, ctx: &RepoCtx, actor: &User, issue: &IssueRow) -> ApiResult<()> {
+    crate::api::issues::set_labels(state, ctx, actor, issue.number, Vec::new()).await.map(|_| ())
+}
+
+pub async fn add_assignees(state: &AppState, ctx: &RepoCtx, actor: &User, issue: &IssueRow, user_ids: &[i64]) -> ApiResult<()> {
+    let l = logins(state, user_ids).await?;
+    crate::api::issues::add_assignees(state, ctx, actor, issue.number, l).await.map(|_| ())
+}
+
+pub async fn remove_assignees(state: &AppState, ctx: &RepoCtx, actor: &User, issue: &IssueRow, user_ids: &[i64]) -> ApiResult<()> {
+    let l = logins(state, user_ids).await?;
+    crate::api::issues::remove_assignees(state, ctx, actor, issue.number, l).await.map(|_| ())
+}
+
+/// GitHub's `deleteIssue` (no REST equivalent): admins only; counters follow via DB triggers.
 pub async fn delete_issue(state: &AppState, ctx: &RepoCtx, actor: &User, issue: &IssueRow) -> ApiResult<()> {
     let _ = actor;
     ctx.require(Perm::Admin)?;
     if issue.is_pull {
         return Err(ApiError::unprocessable("Pull requests cannot be deleted."));
     }
-    let mut tx = state.db.begin().await?;
-    sqlx::query("DELETE FROM issues WHERE id = $1").bind(issue.id).execute(&mut *tx).await?;
-    if issue.state == "open" {
-        sqlx::query("UPDATE repositories SET open_issues_count = GREATEST(open_issues_count - 1, 0) WHERE id = $1")
-            .bind(ctx.repo.id)
-            .execute(&mut *tx)
-            .await?;
-    }
-    tx.commit().await?;
+    sqlx::query("DELETE FROM issues WHERE id = $1").bind(issue.id).execute(&state.db).await?;
     Ok(())
 }
 
-// ---------------------------------------------------------------------------------------------
-// Comments
-
 pub async fn create_comment(state: &AppState, ctx: &RepoCtx, actor: &User, issue: &IssueRow, body: &str) -> ApiResult<CommentRow> {
-    if issue.locked && ctx.perm < Perm::Write {
-        return Err(ApiError::forbidden("Unable to create comment because issue is locked."));
-    }
-    if body.trim().is_empty() {
-        return Err(ApiError::validation("IssueComment", "body", "missing_field"));
-    }
-    let mut tx = state.db.begin().await?;
-    let row: CommentRow = sqlx::query_as(
-        "INSERT INTO issue_comments (issue_id, repo_id, user_id, body) VALUES ($1, $2, $3, $4)
-         RETURNING id, issue_id, repo_id, user_id, body, created_at, updated_at",
-    )
-    .bind(issue.id)
-    .bind(ctx.repo.id)
-    .bind(actor.id)
-    .bind(body)
-    .fetch_one(&mut *tx)
-    .await?;
-    sqlx::query("UPDATE issues SET comments_count = comments_count + 1, updated_at = now() WHERE id = $1")
-        .bind(issue.id)
-        .execute(&mut *tx)
-        .await?;
-    tx.commit().await?;
-    Ok(row)
+    crate::api::issue_comments::create_comment(state, ctx, actor, issue.number, body).await
 }
 
-pub async fn comment_by_id(state: &AppState, id: i64) -> ApiResult<CommentRow> {
-    sqlx::query_as("SELECT id, issue_id, repo_id, user_id, body, created_at, updated_at FROM issue_comments WHERE id = $1")
-        .bind(id)
-        .fetch_optional(&state.db)
-        .await?
-        .ok_or_else(ApiError::not_found)
+pub async fn comment_by_id(state: &AppState, ctx: &RepoCtx, id: i64) -> ApiResult<CommentRow> {
+    crate::api::issue_comments::comment_by_id(state, ctx, id).await
 }
 
 pub async fn update_comment(state: &AppState, ctx: &RepoCtx, actor: &User, comment: &CommentRow, body: &str) -> ApiResult<CommentRow> {
-    if comment.user_id != Some(actor.id) && ctx.perm < Perm::Write {
-        return Err(ApiError::forbidden("Resource not accessible by personal access token"));
-    }
-    Ok(sqlx::query_as(
-        "UPDATE issue_comments SET body = $2, updated_at = now() WHERE id = $1
-         RETURNING id, issue_id, repo_id, user_id, body, created_at, updated_at",
-    )
-    .bind(comment.id)
-    .bind(body)
-    .fetch_one(&state.db)
-    .await?)
+    crate::api::issue_comments::update_comment(state, ctx, actor, comment.id, body).await
 }
 
 pub async fn delete_comment(state: &AppState, ctx: &RepoCtx, actor: &User, comment: &CommentRow) -> ApiResult<()> {
-    if comment.user_id != Some(actor.id) && ctx.perm < Perm::Write {
-        return Err(ApiError::forbidden("Resource not accessible by personal access token"));
-    }
-    let mut tx = state.db.begin().await?;
-    sqlx::query("DELETE FROM issue_comments WHERE id = $1").bind(comment.id).execute(&mut *tx).await?;
-    sqlx::query("UPDATE issues SET comments_count = GREATEST(comments_count - 1, 0) WHERE id = $1")
-        .bind(comment.issue_id)
-        .execute(&mut *tx)
-        .await?;
-    tx.commit().await?;
-    Ok(())
+    crate::api::issue_comments::delete_comment(state, ctx, actor, comment.id).await
 }
-
-// ---------------------------------------------------------------------------------------------
-// Labels
 
 pub async fn create_label(state: &AppState, ctx: &RepoCtx, actor: &User, name: &str, color: &str, description: Option<&str>) -> ApiResult<LabelRow> {
     let _ = actor;
-    ctx.require(Perm::Write)?;
-    let color = color.trim_start_matches('#').to_lowercase();
-    if name.trim().is_empty() {
-        return Err(ApiError::validation("Label", "name", "missing_field"));
-    }
-    if color.len() != 6 || !color.chars().all(|c| c.is_ascii_hexdigit()) {
-        return Err(ApiError::validation("Label", "color", "invalid"));
-    }
-    let row: Option<LabelRow> = sqlx::query_as(
-        "INSERT INTO labels (repo_id, name, color, description) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING
-         RETURNING id, repo_id, name, color, description, is_default, created_at",
-    )
-    .bind(ctx.repo.id)
-    .bind(name)
-    .bind(&color)
-    .bind(description)
-    .fetch_optional(&state.db)
-    .await?;
-    row.ok_or_else(|| ApiError::validation("Label", "name", "already_exists"))
+    crate::api::labels::create_label(state, ctx, name, Some(color), description).await
+}
+
+async fn label_name(state: &AppState, ctx: &RepoCtx, id: i64) -> ApiResult<String> {
+    sqlx::query_scalar("SELECT name FROM labels WHERE id = $1 AND repo_id = $2")
+        .bind(id)
+        .bind(ctx.repo.id)
+        .fetch_optional(&state.db)
+        .await?
+        .ok_or_else(ApiError::not_found)
 }
 
 pub async fn update_label(
@@ -454,31 +287,14 @@ pub async fn update_label(
     description: Option<&str>,
 ) -> ApiResult<LabelRow> {
     let _ = actor;
-    ctx.require(Perm::Write)?;
-    let color = color.map(|c| c.trim_start_matches('#').to_lowercase());
-    sqlx::query_as(
-        "UPDATE labels SET name = COALESCE($3, name), color = COALESCE($4, color), description = COALESCE($5, description)
-          WHERE id = $1 AND repo_id = $2 RETURNING id, repo_id, name, color, description, is_default, created_at",
-    )
-    .bind(id)
-    .bind(ctx.repo.id)
-    .bind(name)
-    .bind(color)
-    .bind(description)
-    .fetch_optional(&state.db)
-    .await
-    .map_err(|e| match e {
-        sqlx::Error::Database(d) if d.is_unique_violation() => ApiError::validation("Label", "name", "already_exists"),
-        e => e.into(),
-    })?
-    .ok_or_else(ApiError::not_found)
+    let cur = label_name(state, ctx, id).await?;
+    crate::api::labels::update_label(state, ctx, &cur, name, color, description.map(Some)).await
 }
 
 pub async fn delete_label(state: &AppState, ctx: &RepoCtx, actor: &User, id: i64) -> ApiResult<()> {
     let _ = actor;
-    ctx.require(Perm::Write)?;
-    sqlx::query("DELETE FROM labels WHERE id = $1 AND repo_id = $2").bind(id).bind(ctx.repo.id).execute(&state.db).await?;
-    Ok(())
+    let cur = label_name(state, ctx, id).await?;
+    crate::api::labels::delete_label(state, ctx, &cur).await
 }
 
 // ---------------------------------------------------------------------------------------------
