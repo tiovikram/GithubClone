@@ -10,6 +10,11 @@ pub async fn after_refs_changed(
     actor: Option<&User>,
     changed: &[(String, String, String)],
 ) -> anyhow::Result<()> {
+    if !changed.is_empty() {
+        // Repository size/language, recomputed in the background.
+        crate::git::stats::schedule_update(state, ctx.repo.id);
+    }
     crate::pulls::on_refs_changed(state, ctx, actor, changed).await?;
+    crate::api::issues::on_refs_changed(state, ctx, actor, changed).await;
     Ok(())
 }

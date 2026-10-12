@@ -129,6 +129,7 @@ pub async fn create_repo(state: &AppState, owner: &User, creator: &User, req: Cr
             .await?;
         sqlx::query("UPDATE repositories SET pushed_at = now() WHERE id = $1").bind(repo.id).execute(&state.db).await?;
     }
+    super::labels::on_repo_created(state, repo.id, creator).await?;
     let repo = db::repo_by_id(&state.db, repo.id).await?;
     Ok(RepoCtx { repo, owner: owner.clone(), perm: Perm::Admin })
 }

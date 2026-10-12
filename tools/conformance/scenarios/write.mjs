@@ -310,6 +310,8 @@ export const scenarios = [
       await t.call('pulls/list-requested-reviewers', { params: P(s, { pull_number: s.pr }) });
       await t.call('repos/list-pull-requests-associated-with-commit', { params: P(s, { commit_sha: headSha }) });
       if (s.collaborator) {
+        // GitHub only allows requesting reviews from collaborators.
+        await t.call('repos/add-collaborator', { params: P(s, { username: s.collaborator }), body: { permission: 'push' } });
         await t.call('pulls/request-reviewers', { params: P(s, { pull_number: s.pr }), body: { reviewers: [s.collaborator] }, expect: [201] });
         await t.call('pulls/remove-requested-reviewers', { params: P(s, { pull_number: s.pr }), body: { reviewers: [s.collaborator] } });
       }
