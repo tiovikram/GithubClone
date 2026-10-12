@@ -62,7 +62,7 @@ pub fn repo(api: &str, base: &str, c: &RepoCtx) -> Value {
         "updated_at": ts(r.updated_at),
         "pushed_at": ts_opt(r.pushed_at),
         "git_url": format!("git://{}/{full_name}.git", host_of(base)),
-        "ssh_url": format!("git@{}:{full_name}.git", host_of(base)),
+        "ssh_url": crate::ssh::ssh_url(base, &full_name),
         "clone_url": format!("{base}/{full_name}.git"),
         "svn_url": format!("{base}/{full_name}"),
         "homepage": opt_str(&r.homepage),
