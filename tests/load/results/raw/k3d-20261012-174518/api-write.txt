@@ -1,0 +1,25 @@
+checks: 100.00%
+  threshold rate>0.99: PASS
+data_received: 9511880 (30171.8/s)
+data_sent: 1075032 (3410.0/s)
+dropped_iterations: 2 (0.0/s)
+http_req_blocked: avg=0.0 p50=0.0 p95=0.0 p99=0.0 max=0.8
+http_req_connecting: avg=0.0 p50=0.0 p95=0.0 p99=0.0 max=0.7
+http_req_duration: avg=2.2 p50=1.2 p95=5.5 p99=7.9 max=101.0
+http_req_duration{expected_response:true}: avg=2.2 p50=1.2 p95=5.5 p99=7.9 max=101.0
+http_req_duration{kind:optional}: avg=1.0 p50=0.8 p95=1.9 p99=3.6 max=22.1
+  threshold p(95)<1000: PASS
+http_req_duration{name:PATCH /repos/{o}/{r}}: avg=3.5 p50=3.0 p95=5.9 p99=7.4 max=26.6
+  threshold p(95)<500: PASS
+http_req_duration{name:POST /user/repos}: avg=4.4 p50=3.5 p95=7.3 p99=12.1 max=101.0
+  threshold p(95)<800: PASS
+http_req_failed: 0.00%
+http_req_failed{kind:core}: 0.00%
+  threshold rate<0.01: PASS
+http_req_receiving: avg=0.1 p50=0.0 p95=0.1 p99=0.2 max=10.7
+http_req_sending: avg=0.0 p50=0.0 p95=0.0 p99=0.1 max=0.6
+http_req_tls_handshaking: avg=0.0 p50=0.0 p95=0.0 p99=0.0 max=0.0
+http_req_waiting: avg=2.1 p50=1.1 p95=5.3 p99=7.7 max=100.9
+http_reqs: 2998 (9.5/s)
+iteration_duration: avg=2.4 p50=1.4 p95=5.8 p99=8.4 max=101.3
+iterations: 2998 (9.5/s)

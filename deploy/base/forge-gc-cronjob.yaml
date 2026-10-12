@@ -1,0 +1,57 @@
+# Repacks fragmented repositories and deletes unreferenced packs (see docs/ARCHITECTURE.md).
+# Safe to run concurrently with serving pods: it takes the same per-repo advisory lock.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: forge-gc
+  labels: {app.kubernetes.io/name: forge-gc}
+spec:
+  schedule: "17 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 2
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 3000
+      template:
+        metadata:
+          labels: {app.kubernetes.io/name: forge-gc}
+        spec:
+          restartPolicy: Never
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            runAsGroup: 10001
+            fsGroup: 10001
+          containers:
+            - name: gc
+              image: forge:dev
+              imagePullPolicy: IfNotPresent
+              args: ["gc"]
+              envFrom:
+                - configMapRef: {name: forge-config}
+              env:
+                - name: FORGE_CACHE_DIR
+                  value: /var/cache/forge
+                - name: DATABASE_URL
+                  valueFrom: {secretKeyRef: {name: forge-secrets, key: DATABASE_URL}}
+                - name: AWS_ACCESS_KEY_ID
+                  valueFrom: {secretKeyRef: {name: forge-secrets, key: AWS_ACCESS_KEY_ID}}
+                - name: AWS_SECRET_ACCESS_KEY
+                  valueFrom: {secretKeyRef: {name: forge-secrets, key: AWS_SECRET_ACCESS_KEY}}
+              resources:
+                requests: {cpu: 100m, memory: 128Mi}
+                limits: {cpu: "1", memory: 1Gi}
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities: {drop: [ALL]}
+              volumeMounts:
+                - {name: cache, mountPath: /var/cache/forge}
+                - {name: tmp, mountPath: /tmp}
+          volumes:
+            - name: cache
+              emptyDir: {}
+            - name: tmp
+              emptyDir: {}

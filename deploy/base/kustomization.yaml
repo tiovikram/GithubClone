@@ -1,0 +1,43 @@
+# forge on any Kubernetes: Postgres + S3-compatible object storage (MinIO) + stateless forge pods.
+# Nothing here is cluster- or cloud-specific: default StorageClass, plain Services, a NodePort
+# for ingress (see docs/deploy.md for why), and only core/v1, apps/v1, batch/v1,
+# autoscaling/v2 and policy/v1 APIs.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: forge
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: forge
+    includeSelectors: false
+resources:
+  - namespace.yaml
+  - postgres.yaml
+  - minio.yaml
+  - minio-bucket-job.yaml
+  - forge.yaml
+  - forge-hpa.yaml
+  - forge-gc-cronjob.yaml
+configMapGenerator:
+  - name: forge-config
+    literals:
+      # External URL used in API responses and clone URLs (host port 8080 -> NodePort 30080).
+      - FORGE_BASE_URL=http://localhost:8080
+      - FORGE_STORAGE=s3://forge/data
+      - AWS_ENDPOINT_URL=http://minio:9000
+      - AWS_ALLOW_HTTP=true
+      - AWS_REGION=us-east-1
+      - FORGE_DB_POOL=20
+      - RUST_LOG=forge=info,tower_http=warn
+# Development credentials. For a real deployment replace this generator with your secret
+# manager (External Secrets, sealed-secrets, ...) producing the same keys.
+secretGenerator:
+  - name: forge-secrets
+    literals:
+      - POSTGRES_USER=forge
+      - POSTGRES_PASSWORD=forge-dev-password
+      - DATABASE_URL=postgres://forge:forge-dev-password@postgres:5432/forge
+      - AWS_ACCESS_KEY_ID=forge-minio
+      - AWS_SECRET_ACCESS_KEY=forge-minio-dev-secret
+      - MINIO_ROOT_USER=forge-minio
+      - MINIO_ROOT_PASSWORD=forge-minio-dev-secret
+      - MC_HOST_minio=http://forge-minio:forge-minio-dev-secret@minio:9000

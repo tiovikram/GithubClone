@@ -1,0 +1,6 @@
+# Intentionally identical to overlays/kind: the same manifests run on both clusters.
+# Only scripts/k8s/up.sh (cluster creation) differs between k3d and kind.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base

@@ -1,0 +1,16 @@
+# Keep the build context small and reproducible.
+target/
+**/target/
+data/
+**/node_modules/
+web/dist/
+.git/
+.claude/
+deploy/
+tests/
+tools/
+docs/
+scripts/
+*.md
+!web/**/*.md
+.DS_Store

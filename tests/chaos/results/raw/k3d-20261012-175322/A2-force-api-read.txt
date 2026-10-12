@@ -1,0 +1,23 @@
+checks: 100.00%
+  threshold rate>0.99: PASS
+data_received: 1573831357 (14300544.9/s)
+data_sent: 13973332 (126968.0/s)
+http_req_blocked: avg=0.0 p50=0.0 p95=0.0 p99=0.0 max=6.1
+http_req_connecting: avg=0.0 p50=0.0 p95=0.0 p99=0.0 max=5.6
+http_req_duration: avg=21.0 p50=4.0 p95=91.7 p99=272.7 max=652.7
+http_req_duration{expected_response:true}: avg=21.0 p50=4.0 p95=91.7 p99=272.7 max=652.7
+http_req_duration{kind:core}: avg=29.2 p50=5.6 p95=119.4 p99=314.0 max=652.7
+  threshold p(99)<600: PASS
+  threshold p(95)<250: PASS
+http_req_duration{kind:optional}: avg=3.3 p50=1.7 p95=10.7 p99=27.5 max=136.8
+  threshold p(95)<800: PASS
+http_req_failed: 0.00%
+http_req_failed{kind:core}: 0.00%
+  threshold rate<0.01: PASS
+http_req_receiving: avg=0.8 p50=0.0 p95=2.7 p99=15.3 max=238.8
+http_req_sending: avg=0.0 p50=0.0 p95=0.0 p99=0.0 max=11.3
+http_req_tls_handshaking: avg=0.0 p50=0.0 p95=0.0 p99=0.0 max=0.0
+http_req_waiting: avg=20.1 p50=3.9 p95=87.8 p99=254.5 max=644.8
+http_reqs: 52238 (474.7/s)
+iteration_duration: avg=21.1 p50=4.1 p95=91.8 p99=272.8 max=652.8
+iterations: 52238 (474.7/s)
