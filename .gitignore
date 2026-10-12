@@ -4,3 +4,4 @@ node_modules/
 web/dist/
 .DS_Store
 scripts/.installed-by-forge
+/.claude/
