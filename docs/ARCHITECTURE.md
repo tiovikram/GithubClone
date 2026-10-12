@@ -29,6 +29,9 @@ Configuration is environment only:
 | `FORGE_CACHE_DIR` | local, disposable git repo cache | `$PWD/data/cache` |
 | `FORGE_GIT_BIN` | git executable | `git` |
 | `FORGE_UNIX_SOCKET` | also serve HTTP on this unix socket (gh tests use `http_unix_socket`) | unset |
+| `FORGE_SSH_LISTEN` | start the git-over-SSH server on this address (e.g. `0.0.0.0:2222`) | unset (no SSH) |
+| `FORGE_SSH_HOST_KEY` | OpenSSH private host key file | unset = shared ed25519 key in Postgres |
+| `FORGE_SSH_URL_HOST`, `FORGE_SSH_URL_PORT` | host (`host` or `host:port`) / port used in `ssh_url` | base URL host, `FORGE_SSH_LISTEN` port |
 
 ## URL layout (mirrors GitHub Enterprise Server)
 - `/api/v3/...` — REST API (GitHub shapes).
@@ -79,6 +82,48 @@ Git operations shell out to the `git` binary (`git upload-pack/receive-pack --st
 `git cat-file`, `git merge-tree --write-tree`, `git commit-tree`, `git diff`...). Code lives in
 `crates/forge/src/git/`.
 
+## SSH (`crates/forge/src/ssh/`)
+An embedded `russh` server, started by `forge serve` when `FORGE_SSH_LISTEN` is set (k8s: one more
+`Service` port; any pod can serve any connection, same as HTTP).
+- **Host key.** `FORGE_SSH_HOST_KEY` (OpenSSH private key file, e.g. a mounted Secret) or, if
+  unset, an ed25519 key in `ssh_host_keys` generated once by the first pod
+  (`INSERT .. ON CONFLICT DO NOTHING`, then re-read). Every replica presents the same identity,
+  so clients never see a host-key change when routed to another pod. The DB copy is stored
+  unencrypted, so production should prefer the Secret.
+- **Auth.** Public key only, username `git`. The key's SHA256 fingerprint (OpenSSH format,
+  `SHA256:…`) is looked up in `ssh_keys` (user keys), then in `deploy_keys` (per repo, read-only
+  unless created with `read_only=false`). A fingerprint can be registered only once across both
+  tables (422 `key is already in use`).
+- **Commands.** Exec `git-upload-pack`, `git-receive-pack`, `git-upload-archive` (the
+  `git upload-pack` spelling works too). The path may be quoted or bare, with an optional leading
+  `/` or `~/` and an optional `.git`. Any other command gets `Invalid command` and a shell request
+  gets `Hi <login>! You've successfully authenticated, but forge does not provide shell access.`;
+  both exit 1. Authorization follows the HTTP rules: `Perm::Read` for upload/archive,
+  `Perm::Write` for receive, and deploy keys only on their own repo. Repos the caller can't see
+  get `ERROR: Repository not found.`. `GIT_PROTOCOL` env requests are honoured (protocol v2 for fetch).
+- **Reads** sync the cache, then run `git upload-pack .` full-duplex over the channel (no
+  `--stateless-rpc`).
+- **Push guarantee.** `git receive-pack .` runs inside `GitStore::write` (cluster-wide lock,
+  pack upload, manifest commit). Over SSH, receive-pack would stream its report-status to the
+  client before the closure returns, so before the manifest commit. Hooks can't fix this:
+  `pre-receive` runs before the refs exist, and `post-receive` runs inside the very write it would
+  have to commit. Instead forge interposes on receive-pack's stdout. The ref advertisement (up to
+  the first flush-pkt) is forwarded live. Everything after it (report-status, sideband progress)
+  is held in memory until `GitStore::write` has uploaded the packs and committed `repo_storage`.
+  Only then does forge send the report, run `events::on_push` and send exit-status 0. If
+  receive-pack or the commit fails, forge discards the held report. The client instead gets a
+  synthesized report-status that rejects every ref it asked to update
+  (`ng <ref> storage commit failed`, side-band wrapped if negotiated). forge builds that report
+  from the client's command list, which it parses as it streams in. The client also gets an
+  `ERROR:` line on stderr and exit-status 1. Guarantee: **a client never sees `ok` for a ref
+  update that is not durably committed.** As with HTTP, a crash after the commit but before the
+  report reaches the client can make a successful push look failed (retrying is safe). Also as
+  with HTTP, the repo lock is held while the client uploads its pack.
+- **`ssh_url`** in repository JSON is `git@host:o/r.git` on port 22, otherwise
+  `ssh://git@host:port/o/r.git` (`ssh::ssh_url`; `build_state` registers the prefix per base URL).
+- **REST**: `/user/keys`, `/user/keys/{id}`, `/users/{u}/keys`, `/repos/{o}/{r}/keys[/{id}]`
+  (repo admin), and plain-text `GET /{login}.keys` (a middleware that runs before the router).
+
 ## Crate layout (`crates/forge/src`)
 ```
 main.rs          CLI entry
@@ -93,6 +138,7 @@ api/<area>.rs    one file per area: users, repos, contents, git_data, issues, co
                  milestones, pulls, reviews, releases, search, meta, orgs, stars ...
 graphql/         async-graphql schema (gh subset)
 git/             storage sync, smart HTTP, plumbing helpers
+ssh/             embedded SSH server (git over SSH), SSH/deploy key service layer
 web.rs           SPA static assets (rust-embed of web/dist)
 forge_api.rs     /api/forge endpoints (signup, session)
 ```
