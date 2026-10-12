@@ -1,5 +1,6 @@
 #![recursion_limit = "512"]
 //! forge: a GitHub-compatible code forge. See docs/ARCHITECTURE.md.
+pub mod activity;
 pub mod api;
 pub mod auth;
 pub mod config;
@@ -12,11 +13,13 @@ pub mod git;
 pub mod graphql;
 pub mod hooks;
 pub mod ids;
+pub mod jobs;
 pub mod json;
 pub mod ssh;
 pub mod pulls;
 pub mod state;
 pub mod web;
+pub mod webhooks;
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -70,6 +73,9 @@ pub fn app(state: AppState) -> Router {
         .nest("/api/v3", api)
         .nest("/api/graphql", graphql)
         .nest("/api/forge", forge_api::routes())
+        .nest("/api/uploads", api::releases::upload_routes().layer(middleware::from_fn(api::github_headers)))
+        .merge(api::releases::download_routes())
+        .merge(api::gists::raw_routes())
         .route("/avatars/{login}", get(web::avatar))
         .route("/healthz", get(|| async { "ok" }))
         .route("/readyz", get(readyz))

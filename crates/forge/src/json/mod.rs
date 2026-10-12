@@ -3,6 +3,7 @@ pub mod git;
 pub mod issue;
 pub mod key;
 pub mod pull;
+pub mod release;
 pub mod repo;
 pub mod user;
 

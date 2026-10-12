@@ -16,5 +16,9 @@ pub async fn after_refs_changed(
     }
     crate::pulls::on_refs_changed(state, ctx, actor, changed).await?;
     crate::api::issues::on_refs_changed(state, ctx, actor, changed).await;
+    // platform: push/create/delete webhooks + PushEvent/CreateEvent/DeleteEvent activity.
+    if let Err(e) = crate::webhooks::on_refs_changed(state, ctx, actor, changed).await {
+        tracing::error!(error = %format!("{e:#}"), "webhooks/activity for ref changes failed");
+    }
     Ok(())
 }
