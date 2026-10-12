@@ -11,7 +11,6 @@ use super::loaders::{self, lerr, loader, Assoc, AssigneesOf, CommentReactions, I
 use super::pull::{GPull, PullRequestConnection};
 use super::repo::{body_html, html_escape, st, viewer, GLabel, GMilestone, GRepo, LabelConnection, ProjectCardConnection, ProjectV2ItemConnection};
 use super::user::{Actor, Assignee, AssigneeConnection, GUser, UserConnection};
-use super::GResult;
 use crate::db::{Perm, RepoCtx};
 use crate::ids;
 use crate::json::issue::IssueRow;
@@ -43,7 +42,7 @@ pub struct CommentRow {
 }
 
 /// Wraps rows into Issue/PullRequest objects (batched repo + PR loads).
-pub async fn materialize(ctx: &Context<'_>, rows: Vec<IssueRow>) -> GResult<Vec<IssueOrPullRequest>> {
+pub async fn materialize(ctx: &Context<'_>, rows: Vec<IssueRow>) -> async_graphql::Result<Vec<IssueOrPullRequest>> {
     let ld = loader(ctx);
     let repos = ld.load_many(rows.iter().map(|r| RepoId(r.repo_id))).await.map_err(lerr)?;
     let pulls = ld.load_many(rows.iter().filter(|r| r.is_pull).map(|r| PullOf(r.id))).await.map_err(lerr)?;
@@ -60,7 +59,7 @@ pub async fn materialize(ctx: &Context<'_>, rows: Vec<IssueRow>) -> GResult<Vec<
     Ok(out)
 }
 
-pub async fn by_number(ctx: &Context<'_>, repo: &Arc<RepoCtx>, number: i64) -> GResult<Option<IssueOrPullRequest>> {
+pub async fn by_number(ctx: &Context<'_>, repo: &Arc<RepoCtx>, number: i64) -> async_graphql::Result<Option<IssueOrPullRequest>> {
     let row: Option<IssueRow> = sqlx::query_as("SELECT * FROM issues WHERE repo_id = $1 AND number = $2")
         .bind(repo.repo.id)
         .bind(number)
@@ -70,7 +69,7 @@ pub async fn by_number(ctx: &Context<'_>, repo: &Arc<RepoCtx>, number: i64) -> G
 }
 
 /// Loads an Issue or PullRequest by database id, checking repository visibility.
-pub async fn by_id(ctx: &Context<'_>, id: i64) -> GResult<Option<IssueOrPullRequest>> {
+pub async fn by_id(ctx: &Context<'_>, id: i64) -> async_graphql::Result<Option<IssueOrPullRequest>> {
     let row = loader(ctx).load_one(loaders::IssueId(id)).await.map_err(lerr)?;
     match row {
         Some(r) => Ok(materialize(ctx, vec![(*r).clone()]).await?.pop()),
@@ -113,7 +112,7 @@ pub struct IssueQuery {
 }
 
 impl IssueQuery {
-    fn push_where(&self, qb: &mut QueryBuilder<'_, Postgres>) {
+    fn push_where(&self, qb: &mut QueryBuilder<Postgres>) {
         qb.push(" FROM issues i LEFT JOIN pull_requests p ON p.issue_id = i.id JOIN repositories r ON r.id = i.repo_id WHERE TRUE");
         if self.impossible {
             qb.push(" AND FALSE");
@@ -229,7 +228,7 @@ impl IssueQuery {
             qb.push(" AND COALESCE(p.draft, FALSE) = ").push_bind(d);
         }
         if let Some(rr) = &self.review_requested {
-            qb.push(" AND EXISTS(SELECT 1 FROM review_requests rq JOIN users u ON u.id = rq.user_id WHERE rq.issue_id = i.id AND lower(u.login) = lower(")
+            qb.push(" AND EXISTS(SELECT 1 FROM pull_review_requests rq JOIN users u ON u.id = rq.user_id WHERE rq.issue_id = i.id AND lower(u.login) = lower(")
                 .push_bind(rr.clone())
                 .push("))");
         }
@@ -248,7 +247,7 @@ impl IssueQuery {
     }
 
     /// Runs the query for a connection window; returns rows and the window.
-    pub async fn run(&self, ctx: &Context<'_>, args: &ConnArgs) -> GResult<(Vec<IssueRow>, Window)> {
+    pub async fn run(&self, ctx: &Context<'_>, args: &ConnArgs) -> async_graphql::Result<(Vec<IssueRow>, Window)> {
         let db = &st(ctx).db;
         let mut qc = QueryBuilder::<Postgres>::new("SELECT count(*)");
         self.push_where(&mut qc);
@@ -285,7 +284,7 @@ pub async fn list_issues(
     states: Option<Vec<IssueState>>,
     labels: Option<Vec<String>>,
     filter_by: Option<IssueFilters>,
-) -> GResult<IssueConnection> {
+) -> async_graphql::Result<IssueConnection> {
     let f = filter_by.unwrap_or_default();
     let states = states.or(f.states.clone()).map(|v| {
         v.iter()
@@ -330,29 +329,29 @@ pub fn html_url(ctx: &Context<'_>, repo: &RepoCtx, row: &IssueRow) -> String {
     )
 }
 
-pub async fn author(ctx: &Context<'_>, row: &IssueRow) -> GResult<Option<Actor>> {
+pub async fn author(ctx: &Context<'_>, row: &IssueRow) -> async_graphql::Result<Option<Actor>> {
     Ok(loaders::user(ctx, row.user_id).await?.map(Actor::from_user))
 }
 
-pub async fn association(ctx: &Context<'_>, repo_id: i64, user_id: Option<i64>) -> GResult<CommentAuthorAssociation> {
+pub async fn association(ctx: &Context<'_>, repo_id: i64, user_id: Option<i64>) -> async_graphql::Result<CommentAuthorAssociation> {
     let Some(uid) = user_id else { return Ok(CommentAuthorAssociation::NoAssociation) };
     let a = loader(ctx).load_one(Assoc(repo_id, uid)).await.map_err(lerr)?;
     Ok(CommentAuthorAssociation::parse(a.as_deref().unwrap_or("NONE")))
 }
 
-pub async fn assignees(ctx: &Context<'_>, row: &IssueRow, args: ConnArgs) -> GResult<UserConnection> {
+pub async fn assignees(ctx: &Context<'_>, row: &IssueRow, args: ConnArgs) -> async_graphql::Result<UserConnection> {
     let users = loader(ctx).load_one(AssigneesOf(row.id)).await.map_err(lerr)?.unwrap_or_default();
     let all = users.iter().cloned().map(GUser).collect();
     Ok(UserConnection::from_all(all, &args))
 }
 
-pub async fn assigned_actors(ctx: &Context<'_>, row: &IssueRow, args: ConnArgs) -> GResult<AssigneeConnection> {
+pub async fn assigned_actors(ctx: &Context<'_>, row: &IssueRow, args: ConnArgs) -> async_graphql::Result<AssigneeConnection> {
     let users = loader(ctx).load_one(AssigneesOf(row.id)).await.map_err(lerr)?.unwrap_or_default();
     let all = users.iter().cloned().map(|u| Assignee::User(GUser(u))).collect();
     Ok(AssigneeConnection::from_all(all, &args))
 }
 
-pub async fn labels(ctx: &Context<'_>, row: &IssueRow, repo: &RepoCtx, args: ConnArgs, order: Option<LabelOrder>) -> GResult<Option<LabelConnection>> {
+pub async fn labels(ctx: &Context<'_>, row: &IssueRow, repo: &RepoCtx, args: ConnArgs, order: Option<LabelOrder>) -> async_graphql::Result<Option<LabelConnection>> {
     let ls = loader(ctx).load_one(LabelsOf(row.id)).await.map_err(lerr)?.unwrap_or_default();
     let mut all: Vec<GLabel> = ls.iter().cloned().map(|l| GLabel::new(l, repo)).collect();
     if let Some(o) = order {
@@ -366,7 +365,7 @@ pub async fn labels(ctx: &Context<'_>, row: &IssueRow, repo: &RepoCtx, args: Con
     Ok(Some(LabelConnection::from_all(all, &args)))
 }
 
-pub async fn milestone(ctx: &Context<'_>, row: &IssueRow, repo: &Arc<RepoCtx>) -> GResult<Option<GMilestone>> {
+pub async fn milestone(ctx: &Context<'_>, row: &IssueRow, repo: &Arc<RepoCtx>) -> async_graphql::Result<Option<GMilestone>> {
     let Some(mid) = row.milestone_id else { return Ok(None) };
     Ok(loader(ctx)
         .load_one(MilestoneId(mid))
@@ -375,7 +374,7 @@ pub async fn milestone(ctx: &Context<'_>, row: &IssueRow, repo: &Arc<RepoCtx>) -
         .map(|m| GMilestone { row: m, repo: repo.clone() }))
 }
 
-pub async fn comments(ctx: &Context<'_>, row: &IssueRow, repo: &Arc<RepoCtx>, args: ConnArgs) -> GResult<IssueCommentConnection> {
+pub async fn comments(ctx: &Context<'_>, row: &IssueRow, repo: &Arc<RepoCtx>, args: ConnArgs) -> async_graphql::Result<IssueCommentConnection> {
     let db = &st(ctx).db;
     let total: i64 = sqlx::query_scalar("SELECT count(*) FROM issue_comments WHERE issue_id = $1").bind(row.id).fetch_one(db).await?;
     let w = args.window(total as usize);
@@ -404,7 +403,7 @@ pub async fn reaction_groups(ctx: &Context<'_>, counts: Option<Arc<std::collecti
         .collect()
 }
 
-pub async fn issue_reaction_groups(ctx: &Context<'_>, row: &IssueRow) -> GResult<Vec<ReactionGroup>> {
+pub async fn issue_reaction_groups(ctx: &Context<'_>, row: &IssueRow) -> async_graphql::Result<Vec<ReactionGroup>> {
     let counts = loader(ctx).load_one(IssueReactions(row.id)).await.map_err(lerr)?;
     Ok(reaction_groups(ctx, counts).await)
 }
@@ -427,7 +426,7 @@ pub fn viewer_did_author(ctx: &Context<'_>, user_id: Option<i64>) -> bool {
 #[allow(clippy::too_many_arguments)]
 #[Object(name = "Issue")]
 impl GIssue {
-    async fn id(&self) -> ID {
+    pub async fn id(&self) -> ID {
         ID(ids::encode("Issue", self.row.id))
     }
     async fn database_id(&self) -> Option<i64> {
@@ -456,10 +455,10 @@ impl GIssue {
     async fn body_html(&self) -> Html {
         body_html(self.row.body.as_deref().unwrap_or(""))
     }
-    async fn url(&self, ctx: &Context<'_>) -> Uri {
+    pub async fn url(&self, ctx: &Context<'_>) -> Uri {
         Uri(html_url(ctx, &self.repo, &self.row))
     }
-    async fn resource_path(&self) -> Uri {
+    pub async fn resource_path(&self) -> Uri {
         Uri(format!("/{}/issues/{}", self.repo.full_name(), self.row.number))
     }
     async fn state(&self) -> IssueState {
@@ -486,22 +485,22 @@ impl GIssue {
     async fn last_edited_at(&self) -> Option<DateTime> {
         None
     }
-    async fn author(&self, ctx: &Context<'_>) -> GResult<Option<Actor>> {
+    async fn author(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<Actor>> {
         author(ctx, &self.row).await
     }
     async fn editor(&self) -> Option<Actor> {
         None
     }
-    async fn author_association(&self, ctx: &Context<'_>) -> GResult<CommentAuthorAssociation> {
+    async fn author_association(&self, ctx: &Context<'_>) -> async_graphql::Result<CommentAuthorAssociation> {
         association(ctx, self.repo.repo.id, self.row.user_id).await
     }
     async fn includes_created_edit(&self) -> bool {
         false
     }
-    async fn assignees(&self, ctx: &Context<'_>, first: Option<i32>, after: Option<String>, last: Option<i32>, before: Option<String>) -> GResult<UserConnection> {
+    async fn assignees(&self, ctx: &Context<'_>, first: Option<i32>, after: Option<String>, last: Option<i32>, before: Option<String>) -> async_graphql::Result<UserConnection> {
         assignees(ctx, &self.row, ConnArgs::new(first, after, last, before)).await
     }
-    async fn assigned_actors(&self, ctx: &Context<'_>, first: Option<i32>, after: Option<String>, last: Option<i32>, before: Option<String>) -> GResult<AssigneeConnection> {
+    async fn assigned_actors(&self, ctx: &Context<'_>, first: Option<i32>, after: Option<String>, last: Option<i32>, before: Option<String>) -> async_graphql::Result<AssigneeConnection> {
         assigned_actors(ctx, &self.row, ConnArgs::new(first, after, last, before)).await
     }
     async fn labels(
@@ -512,10 +511,10 @@ impl GIssue {
         last: Option<i32>,
         before: Option<String>,
         order_by: Option<LabelOrder>,
-    ) -> GResult<Option<LabelConnection>> {
+    ) -> async_graphql::Result<Option<LabelConnection>> {
         labels(ctx, &self.row, &self.repo, ConnArgs::new(first, after, last, before), order_by).await
     }
-    async fn milestone(&self, ctx: &Context<'_>) -> GResult<Option<GMilestone>> {
+    async fn milestone(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<GMilestone>> {
         milestone(ctx, &self.row, &self.repo).await
     }
     async fn comments(
@@ -526,11 +525,11 @@ impl GIssue {
         last: Option<i32>,
         before: Option<String>,
         order_by: Option<IssueCommentOrder>,
-    ) -> GResult<IssueCommentConnection> {
+    ) -> async_graphql::Result<IssueCommentConnection> {
         let _ = order_by;
         comments(ctx, &self.row, &self.repo, ConnArgs::new(first, after, last, before)).await
     }
-    async fn reaction_groups(&self, ctx: &Context<'_>) -> GResult<Option<Vec<ReactionGroup>>> {
+    async fn reaction_groups(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<Vec<ReactionGroup>>> {
         Ok(Some(issue_reaction_groups(ctx, &self.row).await?))
     }
     async fn repository(&self) -> GRepo {
@@ -605,12 +604,12 @@ impl GIssue {
     async fn viewer_subscription(&self) -> Option<SubscriptionState> {
         Some(SubscriptionState::Unsubscribed)
     }
-    async fn participants(&self, ctx: &Context<'_>, first: Option<i32>, after: Option<String>, last: Option<i32>, before: Option<String>) -> GResult<UserConnection> {
+    async fn participants(&self, ctx: &Context<'_>, first: Option<i32>, after: Option<String>, last: Option<i32>, before: Option<String>) -> async_graphql::Result<UserConnection> {
         participants(ctx, &self.row, ConnArgs::new(first, after, last, before)).await
     }
 }
 
-pub async fn participants(ctx: &Context<'_>, row: &IssueRow, args: ConnArgs) -> GResult<UserConnection> {
+pub async fn participants(ctx: &Context<'_>, row: &IssueRow, args: ConnArgs) -> async_graphql::Result<UserConnection> {
     let ids: Vec<i64> = sqlx::query_scalar(
         "SELECT DISTINCT uid FROM (SELECT user_id AS uid FROM issues WHERE id = $1
            UNION SELECT user_id FROM issue_comments WHERE issue_id = $1) x WHERE uid IS NOT NULL",
@@ -644,7 +643,7 @@ pub struct IssueType;
 
 #[Object]
 impl IssueType {
-    async fn id(&self) -> ID {
+    pub async fn id(&self) -> ID {
         ID(String::new())
     }
     async fn name(&self) -> String {
@@ -716,7 +715,7 @@ impl GComment {
 
 #[Object(name = "IssueComment")]
 impl GComment {
-    async fn id(&self) -> ID {
+    pub async fn id(&self) -> ID {
         ID(ids::encode("IssueComment", self.row.id))
     }
     async fn database_id(&self) -> Option<i64> {
@@ -735,10 +734,10 @@ impl GComment {
     async fn body_html(&self) -> Html {
         body_html(&self.row.body)
     }
-    async fn author(&self, ctx: &Context<'_>) -> GResult<Option<Actor>> {
+    async fn author(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<Actor>> {
         Ok(loaders::user(ctx, self.row.user_id).await?.map(Actor::from_user))
     }
-    async fn author_association(&self, ctx: &Context<'_>) -> GResult<CommentAuthorAssociation> {
+    async fn author_association(&self, ctx: &Context<'_>) -> async_graphql::Result<CommentAuthorAssociation> {
         association(ctx, self.repo.repo.id, self.row.user_id).await
     }
     async fn created_at(&self) -> DateTime {
@@ -762,14 +761,14 @@ impl GComment {
     async fn minimized_reason(&self) -> Option<String> {
         None
     }
-    async fn reaction_groups(&self, ctx: &Context<'_>) -> GResult<Option<Vec<ReactionGroup>>> {
+    async fn reaction_groups(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<Vec<ReactionGroup>>> {
         let counts = loader(ctx).load_one(CommentReactions(self.row.id)).await.map_err(lerr)?;
         Ok(Some(reaction_groups(ctx, counts).await))
     }
-    async fn url(&self, ctx: &Context<'_>) -> Uri {
+    pub async fn url(&self, ctx: &Context<'_>) -> Uri {
         Uri(self.html_url(ctx))
     }
-    async fn resource_path(&self) -> Uri {
+    pub async fn resource_path(&self) -> Uri {
         Uri(format!(
             "/{}/{}/{}#issuecomment-{}",
             self.repo.full_name(),

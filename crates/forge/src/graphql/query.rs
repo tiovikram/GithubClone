@@ -11,7 +11,7 @@ use super::pull::{GPull, GReview, ReviewRow};
 use super::repo::{self, find_repo, st, GCommit, GLabel, GMilestone, GRef, GRelease, GRepo};
 use super::search::{self, SearchResultItemConnection};
 use super::user::{GBot, GOrg, GUser, RepositoryOwner};
-use super::{not_found, GResult, Viewer};
+use super::{not_found, Viewer};
 use crate::db::User;
 use crate::ids;
 use crate::json::issue::{LabelRow, MilestoneRow};
@@ -46,7 +46,7 @@ fn user_node(u: User) -> Node {
 }
 
 /// Resolves a global node id (see `crate::ids`) to an object the viewer may see.
-pub async fn resolve_node(ctx: &Context<'_>, id: &str) -> GResult<Option<Node>> {
+pub async fn resolve_node(ctx: &Context<'_>, id: &str) -> async_graphql::Result<Option<Node>> {
     let Some((kind, key)) = ids::decode(id) else { return Ok(None) };
     let s = st(ctx);
     let int = key.parse::<i64>().ok();
@@ -138,21 +138,21 @@ impl Query {
         GUser(Arc::new(ctx.data_unchecked::<Viewer>().0.clone()))
     }
 
-    async fn user(&self, ctx: &Context<'_>, login: String) -> GResult<Option<GUser>> {
+    async fn user(&self, ctx: &Context<'_>, login: String) -> async_graphql::Result<Option<GUser>> {
         match crate::db::user_by_login(&st(ctx).db, &login).await {
             Ok(u) if u.kind == "User" => Ok(Some(GUser(Arc::new(u)))),
             _ => Err(not_found(format!("Could not resolve to a User with the login of '{login}'."))),
         }
     }
 
-    async fn organization(&self, ctx: &Context<'_>, login: String) -> GResult<Option<GOrg>> {
+    async fn organization(&self, ctx: &Context<'_>, login: String) -> async_graphql::Result<Option<GOrg>> {
         match crate::db::user_by_login(&st(ctx).db, &login).await {
             Ok(u) if u.kind == "Organization" => Ok(Some(GOrg(Arc::new(u)))),
             _ => Err(not_found(format!("Could not resolve to an Organization with the login of '{login}'."))),
         }
     }
 
-    async fn repository_owner(&self, ctx: &Context<'_>, login: String) -> GResult<Option<RepositoryOwner>> {
+    async fn repository_owner(&self, ctx: &Context<'_>, login: String) -> async_graphql::Result<Option<RepositoryOwner>> {
         match crate::db::user_by_login(&st(ctx).db, &login).await {
             Ok(u) if u.kind != "Bot" => Ok(Some(RepositoryOwner::from_user(Arc::new(u)))),
             _ => Ok(None),
@@ -165,19 +165,19 @@ impl Query {
         owner: String,
         name: String,
         #[graphql(default = true)] follow_renames: bool,
-    ) -> GResult<Option<GRepo>> {
+    ) -> async_graphql::Result<Option<GRepo>> {
         let _ = follow_renames;
         Ok(Some(find_repo(ctx, &owner, &name).await?))
     }
 
-    async fn node(&self, ctx: &Context<'_>, id: ID) -> GResult<Option<Node>> {
+    async fn node(&self, ctx: &Context<'_>, id: ID) -> async_graphql::Result<Option<Node>> {
         match resolve_node(ctx, &id).await? {
             Some(n) => Ok(Some(n)),
             None => Err(not_found(format!("Could not resolve to a node with the global id of '{}'", id.as_str()))),
         }
     }
 
-    async fn nodes(&self, ctx: &Context<'_>, ids: Vec<ID>) -> GResult<Vec<Option<Node>>> {
+    async fn nodes(&self, ctx: &Context<'_>, ids: Vec<ID>) -> async_graphql::Result<Vec<Option<Node>>> {
         let mut out = Vec::with_capacity(ids.len());
         for id in &ids {
             out.push(resolve_node(ctx, id).await?);
@@ -195,7 +195,7 @@ impl Query {
         after: Option<String>,
         last: Option<i32>,
         before: Option<String>,
-    ) -> GResult<SearchResultItemConnection> {
+    ) -> async_graphql::Result<SearchResultItemConnection> {
         search::search(ctx, query, kind, ConnArgs::new(first, after, last, before)).await
     }
 

@@ -12,7 +12,7 @@ use super::issue::{self, GIssue, IssueConnection, IssueOrPullRequest};
 use super::loaders::{self, lerr, loader, RepoId};
 use super::pull::{self, GPull, PullRequestConnection};
 use super::user::{GUser, RepositoryOwner, UserConnection};
-use super::{not_found, GResult, Viewer};
+use super::{not_found, Viewer};
 use crate::db::{Perm, RepoCtx, User};
 use crate::ids;
 use crate::json::issue::{LabelRow, MilestoneRow};
@@ -38,7 +38,7 @@ impl GRepo {
     pub fn full_name(&self) -> String {
         self.ctx.full_name()
     }
-    fn url(&self, ctx: &Context<'_>) -> String {
+    fn html_url(&self, ctx: &Context<'_>) -> String {
         format!("{}/{}", st(ctx).base_url(), self.full_name())
     }
 }
@@ -74,7 +74,7 @@ pub async fn list_repositories(
     owner_affiliations: Option<Vec<RepositoryAffiliation>>,
     affiliations: Option<Vec<RepositoryAffiliation>>,
     order_by: Option<RepositoryOrder>,
-) -> GResult<RepositoryConnection> {
+) -> async_graphql::Result<RepositoryConnection> {
     let s = st(ctx);
     let affs = owner_affiliations
         .or(affiliations)
@@ -143,13 +143,13 @@ pub async fn list_repositories(
 }
 
 /// Loads repositories (in the given order), skipping invisible ones.
-pub async fn repos_by_ids(ctx: &Context<'_>, ids: &[i64]) -> GResult<Vec<GRepo>> {
+pub async fn repos_by_ids(ctx: &Context<'_>, ids: &[i64]) -> async_graphql::Result<Vec<GRepo>> {
     let m = loader(ctx).load_many(ids.iter().map(|i| RepoId(*i))).await.map_err(lerr)?;
     Ok(ids.iter().filter_map(|i| m.get(&RepoId(*i)).cloned().map(GRepo::new)).collect())
 }
 
 /// Resolves `owner/name` for the viewer with GitHub's NOT_FOUND error.
-pub async fn find_repo(ctx: &Context<'_>, owner: &str, name: &str) -> GResult<GRepo> {
+pub async fn find_repo(ctx: &Context<'_>, owner: &str, name: &str) -> async_graphql::Result<GRepo> {
     match crate::db::load_repo(&st(ctx).db, viewer(ctx), owner, name).await {
         Ok(c) => Ok(GRepo::new(Arc::new(c))),
         Err(_) => Err(not_found(format!("Could not resolve to a Repository with the name '{owner}/{name}'."))),
@@ -157,14 +157,14 @@ pub async fn find_repo(ctx: &Context<'_>, owner: &str, name: &str) -> GResult<GR
 }
 
 /// Committed refs of a repository (from Postgres; no git needed).
-pub async fn repo_refs(ctx: &Context<'_>, repo_id: i64) -> GResult<crate::git::Refs> {
+pub async fn repo_refs(ctx: &Context<'_>, repo_id: i64) -> async_graphql::Result<crate::git::Refs> {
     Ok(st(ctx).git.refs(repo_id).await.map_err(|e| async_graphql::Error::new(e.to_string()))?.1)
 }
 
 #[allow(clippy::too_many_arguments)]
 #[Object(name = "Repository")]
 impl GRepo {
-    async fn id(&self) -> ID {
+    pub async fn id(&self) -> ID {
         ID(ids::encode("Repository", self.ctx.repo.id))
     }
     async fn database_id(&self) -> Option<i64> {
@@ -192,10 +192,10 @@ impl GRepo {
     async fn homepage_url(&self) -> Option<Uri> {
         self.ctx.repo.homepage.clone().filter(|h| !h.is_empty()).map(Uri)
     }
-    async fn url(&self, ctx: &Context<'_>) -> Uri {
-        Uri(self.url(ctx))
+    pub async fn url(&self, ctx: &Context<'_>) -> Uri {
+        Uri(self.html_url(ctx))
     }
-    async fn resource_path(&self) -> Uri {
+    pub async fn resource_path(&self) -> Uri {
         Uri(format!("/{}", self.full_name()))
     }
     async fn ssh_url(&self, ctx: &Context<'_>) -> GitSshRemote {
@@ -253,7 +253,7 @@ impl GRepo {
     async fn is_template(&self) -> bool {
         self.ctx.repo.is_template
     }
-    async fn is_empty(&self, ctx: &Context<'_>) -> GResult<bool> {
+    async fn is_empty(&self, ctx: &Context<'_>) -> async_graphql::Result<bool> {
         Ok(!repo_refs(ctx, self.ctx.repo.id).await?.keys().any(|r| r.starts_with("refs/heads/")))
     }
     async fn is_in_organization(&self) -> bool {
@@ -319,7 +319,7 @@ impl GRepo {
     async fn viewer_can_update_topics(&self) -> bool {
         self.ctx.perm >= Perm::Admin
     }
-    async fn viewer_has_starred(&self, ctx: &Context<'_>) -> GResult<bool> {
+    async fn viewer_has_starred(&self, ctx: &Context<'_>) -> async_graphql::Result<bool> {
         let Some(v) = viewer(ctx) else { return Ok(false) };
         Ok(sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM stars WHERE user_id = $1 AND repo_id = $2)")
             .bind(v.id)
@@ -327,7 +327,7 @@ impl GRepo {
             .fetch_one(&st(ctx).db)
             .await?)
     }
-    async fn viewer_subscription(&self, ctx: &Context<'_>) -> GResult<Option<SubscriptionState>> {
+    async fn viewer_subscription(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<SubscriptionState>> {
         let Some(v) = viewer(ctx) else { return Ok(None) };
         let w: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM watches WHERE user_id = $1 AND repo_id = $2)")
             .bind(v.id)
@@ -352,7 +352,7 @@ impl GRepo {
     async fn viewer_possible_commit_emails(&self, ctx: &Context<'_>) -> Option<Vec<String>> {
         viewer(ctx).map(|v| v.email.clone().into_iter().collect())
     }
-    async fn parent(&self, ctx: &Context<'_>) -> GResult<Option<GRepo>> {
+    async fn parent(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<GRepo>> {
         match self.ctx.repo.fork_parent_id {
             Some(pid) => Ok(loaders::repo(ctx, pid).await?.map(GRepo::new)),
             None => Ok(None),
@@ -361,13 +361,13 @@ impl GRepo {
     async fn template_repository(&self) -> Option<GRepo> {
         None
     }
-    async fn default_branch_ref(&self, ctx: &Context<'_>) -> GResult<Option<GRef>> {
+    async fn default_branch_ref(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<GRef>> {
         let refs = repo_refs(ctx, self.ctx.repo.id).await?;
         let name = format!("refs/heads/{}", self.ctx.repo.default_branch);
         Ok(refs.get(&name).map(|oid| GRef { repo: self.ctx.clone(), name, oid: oid.clone() }))
     }
     #[graphql(name = "ref")]
-    async fn ref_(&self, ctx: &Context<'_>, qualified_name: String) -> GResult<Option<GRef>> {
+    async fn ref_(&self, ctx: &Context<'_>, qualified_name: String) -> async_graphql::Result<Option<GRef>> {
         let refs = repo_refs(ctx, self.ctx.repo.id).await?;
         for cand in [qualified_name.clone(), format!("refs/heads/{qualified_name}"), format!("refs/tags/{qualified_name}")] {
             if let Some(oid) = refs.get(&cand) {
@@ -387,7 +387,7 @@ impl GRepo {
         query: Option<String>,
         order_by: Option<RefOrder>,
         direction: Option<OrderDirection>,
-    ) -> GResult<RefConnection> {
+    ) -> async_graphql::Result<RefConnection> {
         let refs = repo_refs(ctx, self.ctx.repo.id).await?;
         let mut all: Vec<GRef> = refs
             .iter()
@@ -410,7 +410,7 @@ impl GRepo {
         before: Option<String>,
         order_by: Option<LabelOrder>,
         query: Option<String>,
-    ) -> GResult<Option<LabelConnection>> {
+    ) -> async_graphql::Result<Option<LabelConnection>> {
         let (col, dir) = match order_by {
             Some(o) => (
                 match o.field {
@@ -434,7 +434,7 @@ impl GRepo {
         let all = rows.into_iter().map(|l| GLabel::new(l, &self.ctx)).collect();
         Ok(Some(LabelConnection::from_all(all, &ConnArgs::new(first, after, last, before))))
     }
-    async fn label(&self, ctx: &Context<'_>, name: String) -> GResult<Option<GLabel>> {
+    async fn label(&self, ctx: &Context<'_>, name: String) -> async_graphql::Result<Option<GLabel>> {
         let row: Option<LabelRow> = sqlx::query_as(
             "SELECT id, repo_id, name, color, description, is_default, created_at FROM labels WHERE repo_id = $1 AND lower(name) = lower($2)",
         )
@@ -454,7 +454,7 @@ impl GRepo {
         states: Option<Vec<MilestoneState>>,
         order_by: Option<MilestoneOrder>,
         query: Option<String>,
-    ) -> GResult<Option<MilestoneConnection>> {
+    ) -> async_graphql::Result<Option<MilestoneConnection>> {
         let (col, dir) = match order_by {
             Some(o) => (
                 match o.field {
@@ -488,7 +488,7 @@ impl GRepo {
         let all = rows.into_iter().map(|m| GMilestone { row: Arc::new(m), repo: self.ctx.clone() }).collect();
         Ok(Some(MilestoneConnection::from_all(all, &ConnArgs::new(first, after, last, before))))
     }
-    async fn milestone(&self, ctx: &Context<'_>, number: i32) -> GResult<Option<GMilestone>> {
+    async fn milestone(&self, ctx: &Context<'_>, number: i32) -> async_graphql::Result<Option<GMilestone>> {
         let row: Option<MilestoneRow> = sqlx::query_as("SELECT * FROM milestones WHERE repo_id = $1 AND number = $2")
             .bind(self.ctx.repo.id)
             .bind(number as i64)
@@ -504,7 +504,7 @@ impl GRepo {
         last: Option<i32>,
         before: Option<String>,
         query: Option<String>,
-    ) -> GResult<UserConnection> {
+    ) -> async_graphql::Result<UserConnection> {
         let all = assignable(ctx, &self.ctx, query).await?;
         Ok(UserConnection::from_all(all, &ConnArgs::new(first, after, last, before)))
     }
@@ -516,7 +516,7 @@ impl GRepo {
         last: Option<i32>,
         before: Option<String>,
         query: Option<String>,
-    ) -> GResult<UserConnection> {
+    ) -> async_graphql::Result<UserConnection> {
         let all = assignable(ctx, &self.ctx, query).await?;
         Ok(UserConnection::from_all(all, &ConnArgs::new(first, after, last, before)))
     }
@@ -528,7 +528,7 @@ impl GRepo {
         last: Option<i32>,
         before: Option<String>,
         query: Option<String>,
-    ) -> GResult<Option<UserConnection>> {
+    ) -> async_graphql::Result<Option<UserConnection>> {
         let all = assignable(ctx, &self.ctx, query).await?;
         Ok(Some(UserConnection::from_all(all, &ConnArgs::new(first, after, last, before))))
     }
@@ -539,7 +539,7 @@ impl GRepo {
         after: Option<String>,
         last: Option<i32>,
         before: Option<String>,
-    ) -> GResult<UserConnection> {
+    ) -> async_graphql::Result<UserConnection> {
         let users: Vec<User> =
             sqlx::query_as("SELECT u.* FROM watches w JOIN users u ON u.id = w.user_id WHERE w.repo_id = $1 ORDER BY w.created_at")
                 .bind(self.ctx.repo.id)
@@ -555,7 +555,7 @@ impl GRepo {
         after: Option<String>,
         last: Option<i32>,
         before: Option<String>,
-    ) -> GResult<UserConnection> {
+    ) -> async_graphql::Result<UserConnection> {
         let users: Vec<User> =
             sqlx::query_as("SELECT u.* FROM stars s JOIN users u ON u.id = s.user_id WHERE s.repo_id = $1 ORDER BY s.created_at")
                 .bind(self.ctx.repo.id)
@@ -575,22 +575,22 @@ impl GRepo {
         states: Option<Vec<IssueState>>,
         labels: Option<Vec<String>>,
         filter_by: Option<IssueFilters>,
-    ) -> GResult<IssueConnection> {
+    ) -> async_graphql::Result<IssueConnection> {
         issue::list_issues(ctx, &self.ctx, ConnArgs::new(first, after, last, before), order_by, states, labels, filter_by).await
     }
-    async fn issue(&self, ctx: &Context<'_>, number: i32) -> GResult<Option<GIssue>> {
+    async fn issue(&self, ctx: &Context<'_>, number: i32) -> async_graphql::Result<Option<GIssue>> {
         match issue::by_number(ctx, &self.ctx, number as i64).await? {
             Some(IssueOrPullRequest::Issue(i)) => Ok(Some(i)),
             _ => Err(not_found(format!("Could not resolve to an Issue with the number of {number}."))),
         }
     }
-    async fn pull_request(&self, ctx: &Context<'_>, number: i32) -> GResult<Option<GPull>> {
+    async fn pull_request(&self, ctx: &Context<'_>, number: i32) -> async_graphql::Result<Option<GPull>> {
         match issue::by_number(ctx, &self.ctx, number as i64).await? {
             Some(IssueOrPullRequest::PullRequest(p)) => Ok(Some(p)),
             _ => Err(not_found(format!("Could not resolve to a PullRequest with the number of {number}."))),
         }
     }
-    async fn issue_or_pull_request(&self, ctx: &Context<'_>, number: i32) -> GResult<Option<IssueOrPullRequest>> {
+    async fn issue_or_pull_request(&self, ctx: &Context<'_>, number: i32) -> async_graphql::Result<Option<IssueOrPullRequest>> {
         match issue::by_number(ctx, &self.ctx, number as i64).await? {
             Some(x) => Ok(Some(x)),
             None => Err(not_found(format!("Could not resolve to an issue or pull request with the number of {number}."))),
@@ -608,7 +608,7 @@ impl GRepo {
         after: Option<String>,
         last: Option<i32>,
         before: Option<String>,
-    ) -> GResult<PullRequestConnection> {
+    ) -> async_graphql::Result<PullRequestConnection> {
         pull::list_pulls(
             ctx,
             &self.ctx,
@@ -629,7 +629,7 @@ impl GRepo {
         last: Option<i32>,
         before: Option<String>,
         order_by: Option<ReleaseOrder>,
-    ) -> GResult<ReleaseConnection> {
+    ) -> async_graphql::Result<ReleaseConnection> {
         let mut all = load_releases(ctx, &self.ctx).await?;
         let o = order_by.unwrap_or(ReleaseOrder { field: ReleaseOrderField::CreatedAt, direction: OrderDirection::Desc });
         match o.field {
@@ -641,10 +641,10 @@ impl GRepo {
         }
         Ok(ReleaseConnection::from_all(all, &ConnArgs::new(first, after, last, before)))
     }
-    async fn release(&self, ctx: &Context<'_>, tag_name: String) -> GResult<Option<GRelease>> {
+    async fn release(&self, ctx: &Context<'_>, tag_name: String) -> async_graphql::Result<Option<GRelease>> {
         Ok(load_releases(ctx, &self.ctx).await?.into_iter().find(|r| r.row.tag_name == tag_name))
     }
-    async fn latest_release(&self, ctx: &Context<'_>) -> GResult<Option<GRelease>> {
+    async fn latest_release(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<GRelease>> {
         Ok(load_releases(ctx, &self.ctx).await?.into_iter().find(|r| r.is_latest))
     }
     async fn forks(
@@ -658,7 +658,7 @@ impl GRepo {
         owner_affiliations: Option<Vec<RepositoryAffiliation>>,
         privacy: Option<RepositoryPrivacy>,
         order_by: Option<RepositoryOrder>,
-    ) -> GResult<RepositoryConnection> {
+    ) -> async_graphql::Result<RepositoryConnection> {
         let _ = (affiliations, owner_affiliations, order_by);
         let ids: Vec<i64> = sqlx::query_scalar("SELECT id FROM repositories WHERE fork_parent_id = $1 ORDER BY created_at, id")
             .bind(self.ctx.repo.id)
@@ -745,7 +745,7 @@ impl GRepo {
 }
 
 /// Users who can be assigned: owner (or org members), collaborators.
-async fn assignable(ctx: &Context<'_>, repo: &RepoCtx, query: Option<String>) -> GResult<Vec<GUser>> {
+async fn assignable(ctx: &Context<'_>, repo: &RepoCtx, query: Option<String>) -> async_graphql::Result<Vec<GUser>> {
     let q = query.filter(|q| !q.is_empty()).map(|q| format!("%{}%", like_escape(&q)));
     let users: Vec<User> = sqlx::query_as(
         "SELECT * FROM users u WHERE u.kind = 'User' AND (u.id = $2
@@ -796,7 +796,7 @@ pub struct GRef {
 
 #[Object(name = "Ref")]
 impl GRef {
-    async fn id(&self) -> ID {
+    pub async fn id(&self) -> ID {
         ID(ids::encode_str("Ref", &format!("{}:{}", self.repo.repo.id, self.name)))
     }
     async fn name(&self) -> String {
@@ -939,22 +939,22 @@ fn ts_dt(t: i64) -> DateTime {
 
 #[Object(name = "Commit")]
 impl GCommit {
-    async fn id(&self) -> ID {
+    pub async fn id(&self) -> ID {
         ID(ids::encode_str("Commit", &format!("{}:{}", self.repo.repo.id, self.oid)))
     }
-    async fn oid(&self) -> GitObjectId {
+    pub async fn oid(&self) -> GitObjectId {
         GitObjectId(self.oid.clone())
     }
-    async fn abbreviated_oid(&self) -> String {
+    pub async fn abbreviated_oid(&self) -> String {
         self.oid.chars().take(7).collect()
     }
-    async fn commit_url(&self, ctx: &Context<'_>) -> Uri {
+    pub async fn commit_url(&self, ctx: &Context<'_>) -> Uri {
         Uri(format!("{}/{}/commit/{}", st(ctx).base_url(), self.repo.full_name(), self.oid))
     }
-    async fn url(&self, ctx: &Context<'_>) -> Uri {
+    pub async fn url(&self, ctx: &Context<'_>) -> Uri {
         Uri(format!("{}/{}/commit/{}", st(ctx).base_url(), self.repo.full_name(), self.oid))
     }
-    async fn resource_path(&self) -> Uri {
+    pub async fn resource_path(&self) -> Uri {
         Uri(format!("/{}/commit/{}", self.repo.full_name(), self.oid))
     }
     async fn message(&self, ctx: &Context<'_>) -> String {
@@ -989,7 +989,7 @@ impl GCommit {
             .collect();
         GitActorConnection::from_all(all, &ConnArgs::new(first, after, None, None))
     }
-    async fn status_check_rollup(&self, ctx: &Context<'_>) -> GResult<Option<StatusCheckRollup>> {
+    async fn status_check_rollup(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<StatusCheckRollup>> {
         let rows: Vec<StatusRow> = sqlx::query_as(
             "SELECT DISTINCT ON (context) id, state, context, description, target_url, created_at FROM commit_statuses
               WHERE repo_id = $1 AND sha = $2 ORDER BY context, id DESC",
@@ -1026,11 +1026,11 @@ impl GitActor {
     async fn date(&self) -> Option<DateTime> {
         Some(ts_dt(self.time))
     }
-    async fn avatar_url(&self, ctx: &Context<'_>, size: Option<i32>) -> Uri {
+    pub async fn avatar_url(&self, ctx: &Context<'_>, size: Option<i32>) -> Uri {
         let _ = size;
         Uri(format!("{}/avatars/{}", st(ctx).base_url(), self.name))
     }
-    async fn user(&self, ctx: &Context<'_>) -> GResult<Option<GUser>> {
+    async fn user(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<GUser>> {
         let s = st(ctx);
         let mut u: Option<User> = sqlx::query_as("SELECT * FROM users WHERE lower(email) = lower($1) AND kind = 'User' LIMIT 1")
             .bind(&self.email)
@@ -1066,7 +1066,7 @@ pub struct StatusCheckRollup {
 
 #[Object]
 impl StatusCheckRollup {
-    async fn id(&self) -> ID {
+    pub async fn id(&self) -> ID {
         ID(ids::encode("StatusCheckRollup", self.rows.first().map(|r| r.id).unwrap_or(0)))
     }
     async fn state(&self) -> StatusState {
@@ -1106,7 +1106,7 @@ pub struct StatusContext {
 
 #[Object]
 impl StatusContext {
-    async fn id(&self) -> ID {
+    pub async fn id(&self) -> ID {
         ID(ids::encode("StatusContext", self.row.id))
     }
     async fn context(&self) -> String {
@@ -1121,7 +1121,7 @@ impl StatusContext {
     async fn target_url(&self) -> Option<Uri> {
         self.row.target_url.clone().filter(|u| !u.is_empty()).map(Uri)
     }
-    async fn avatar_url(&self, ctx: &Context<'_>) -> Option<Uri> {
+    pub async fn avatar_url(&self, ctx: &Context<'_>) -> Option<Uri> {
         Some(Uri(format!("{}/avatars/{}", st(ctx).base_url(), self.repo.owner.login)))
     }
     async fn created_at(&self) -> DateTime {
@@ -1142,7 +1142,7 @@ pub struct CheckRun {
 
 #[Object]
 impl CheckRun {
-    async fn id(&self) -> ID {
+    pub async fn id(&self) -> ID {
         ID(ids::encode("CheckRun", self.id))
     }
     async fn name(&self) -> String {
@@ -1217,7 +1217,7 @@ impl GLabel {
 
 #[Object(name = "Label")]
 impl GLabel {
-    async fn id(&self) -> ID {
+    pub async fn id(&self) -> ID {
         ID(ids::encode("Label", self.row.id))
     }
     async fn name(&self) -> String {
@@ -1238,10 +1238,10 @@ impl GLabel {
     async fn updated_at(&self) -> Option<DateTime> {
         Some(dt(self.row.created_at))
     }
-    async fn url(&self, ctx: &Context<'_>) -> Uri {
+    pub async fn url(&self, ctx: &Context<'_>) -> Uri {
         Uri(format!("{}/{}/labels/{}", st(ctx).base_url(), self.full_name, crate::json::issue::urlencode(&self.row.name)))
     }
-    async fn resource_path(&self) -> Uri {
+    pub async fn resource_path(&self) -> Uri {
         Uri(format!("/{}/labels/{}", self.full_name, crate::json::issue::urlencode(&self.row.name)))
     }
 }
@@ -1254,7 +1254,7 @@ pub struct GMilestone {
 
 #[Object(name = "Milestone")]
 impl GMilestone {
-    async fn id(&self) -> ID {
+    pub async fn id(&self) -> ID {
         ID(ids::encode("Milestone", self.row.id))
     }
     async fn number(&self) -> i32 {
@@ -1284,13 +1284,13 @@ impl GMilestone {
     async fn updated_at(&self) -> DateTime {
         dt(self.row.updated_at)
     }
-    async fn url(&self, ctx: &Context<'_>) -> Uri {
+    pub async fn url(&self, ctx: &Context<'_>) -> Uri {
         Uri(format!("{}/{}/milestone/{}", st(ctx).base_url(), self.repo.full_name(), self.row.number))
     }
-    async fn resource_path(&self) -> Uri {
+    pub async fn resource_path(&self) -> Uri {
         Uri(format!("/{}/milestone/{}", self.repo.full_name(), self.row.number))
     }
-    async fn progress_percentage(&self, ctx: &Context<'_>) -> GResult<f64> {
+    async fn progress_percentage(&self, ctx: &Context<'_>) -> async_graphql::Result<f64> {
         let (open, closed): (i64, i64) = sqlx::query_as(
             "SELECT count(*) FILTER (WHERE state = 'open'), count(*) FILTER (WHERE state = 'closed') FROM issues WHERE milestone_id = $1",
         )
@@ -1331,7 +1331,7 @@ pub struct GRelease {
 }
 
 /// All releases of a repo visible to the viewer (drafts only for writers), with `isLatest`.
-pub async fn load_releases(ctx: &Context<'_>, repo: &Arc<RepoCtx>) -> GResult<Vec<GRelease>> {
+pub async fn load_releases(ctx: &Context<'_>, repo: &Arc<RepoCtx>) -> async_graphql::Result<Vec<GRelease>> {
     let rows: Vec<ReleaseRow> = sqlx::query_as(
         "SELECT id, repo_id, tag_name, target_commitish, name, body, draft, prerelease, make_latest, author_id, created_at, published_at
            FROM releases WHERE repo_id = $1 ORDER BY created_at, id",
@@ -1355,7 +1355,7 @@ pub async fn load_releases(ctx: &Context<'_>, repo: &Arc<RepoCtx>) -> GResult<Ve
 /// Deliberately without `immutable` (§5.2).
 #[Object(name = "Release")]
 impl GRelease {
-    async fn id(&self) -> ID {
+    pub async fn id(&self) -> ID {
         ID(ids::encode("Release", self.row.id))
     }
     async fn database_id(&self) -> Option<i64> {
@@ -1388,19 +1388,19 @@ impl GRelease {
     async fn updated_at(&self) -> DateTime {
         dt(self.row.published_at.unwrap_or(self.row.created_at))
     }
-    async fn url(&self, ctx: &Context<'_>) -> Uri {
+    pub async fn url(&self, ctx: &Context<'_>) -> Uri {
         Uri(format!("{}/{}/releases/tag/{}", st(ctx).base_url(), self.repo.full_name(), self.row.tag_name))
     }
-    async fn resource_path(&self) -> Uri {
+    pub async fn resource_path(&self) -> Uri {
         Uri(format!("/{}/releases/tag/{}", self.repo.full_name(), self.row.tag_name))
     }
-    async fn author(&self, ctx: &Context<'_>) -> GResult<Option<GUser>> {
+    async fn author(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<GUser>> {
         Ok(loaders::user(ctx, self.row.author_id).await?.map(GUser))
     }
     async fn repository(&self) -> GRepo {
         GRepo::new(self.repo.clone())
     }
-    async fn release_assets(&self, ctx: &Context<'_>, first: Option<i32>, after: Option<String>, last: Option<i32>, before: Option<String>, name: Option<String>) -> GResult<ReleaseAssetConnection> {
+    async fn release_assets(&self, ctx: &Context<'_>, first: Option<i32>, after: Option<String>, last: Option<i32>, before: Option<String>, name: Option<String>) -> async_graphql::Result<ReleaseAssetConnection> {
         let rows: Vec<(i64, String, String, i64, i64, chrono::DateTime<Utc>)> = sqlx::query_as(
             "SELECT id, name, content_type, size, download_count, created_at FROM release_assets
               WHERE release_id = $1 AND ($2::text IS NULL OR name = $2) ORDER BY id",
@@ -1439,7 +1439,7 @@ pub struct ReleaseAsset {
 
 #[Object]
 impl ReleaseAsset {
-    async fn id(&self) -> ID {
+    pub async fn id(&self) -> ID {
         ID(ids::encode("ReleaseAsset", self.id))
     }
     async fn name(&self) -> String {
@@ -1472,7 +1472,7 @@ pub struct Language {
 
 #[Object]
 impl Language {
-    async fn id(&self) -> ID {
+    pub async fn id(&self) -> ID {
         ID(ids::encode_str("Language", &self.name))
     }
     async fn name(&self) -> String {
@@ -1536,7 +1536,7 @@ impl RepositoryTopic {
     async fn topic(&self) -> Topic {
         Topic { name: self.name.clone() }
     }
-    async fn url(&self, ctx: &Context<'_>) -> Uri {
+    pub async fn url(&self, ctx: &Context<'_>) -> Uri {
         Uri(format!("{}/topics/{}", st(ctx).base_url(), self.name))
     }
 }
@@ -1547,7 +1547,7 @@ pub struct Topic {
 
 #[Object]
 impl Topic {
-    async fn id(&self) -> ID {
+    pub async fn id(&self) -> ID {
         ID(ids::encode_str("Topic", &self.name))
     }
     async fn name(&self) -> String {
@@ -1571,7 +1571,7 @@ impl License {
     async fn spdx_id(&self) -> Option<String> {
         None
     }
-    async fn url(&self) -> Option<Uri> {
+    pub async fn url(&self) -> Option<Uri> {
         None
     }
 }
@@ -1586,7 +1586,7 @@ impl CodeOfConduct {
     async fn name(&self) -> String {
         String::new()
     }
-    async fn url(&self) -> Option<Uri> {
+    pub async fn url(&self) -> Option<Uri> {
         None
     }
 }
@@ -1601,7 +1601,7 @@ impl RepositoryContactLink {
     async fn name(&self) -> String {
         String::new()
     }
-    async fn url(&self) -> Uri {
+    pub async fn url(&self) -> Uri {
         Uri(String::new())
     }
 }
@@ -1613,7 +1613,7 @@ impl FundingLink {
     async fn platform(&self) -> FundingPlatform {
         FundingPlatform::Custom
     }
-    async fn url(&self) -> Uri {
+    pub async fn url(&self) -> Uri {
         Uri(String::new())
     }
 }
@@ -1646,7 +1646,7 @@ pub struct Project;
 
 #[Object]
 impl Project {
-    async fn id(&self) -> ID {
+    pub async fn id(&self) -> ID {
         ID(String::new())
     }
     async fn name(&self) -> String {
@@ -1658,7 +1658,7 @@ impl Project {
     async fn body(&self) -> Option<String> {
         None
     }
-    async fn resource_path(&self) -> Uri {
+    pub async fn resource_path(&self) -> Uri {
         Uri(String::new())
     }
 }
@@ -1668,7 +1668,7 @@ pub struct ProjectV2;
 
 #[Object]
 impl ProjectV2 {
-    async fn id(&self) -> ID {
+    pub async fn id(&self) -> ID {
         ID(String::new())
     }
     async fn number(&self) -> i32 {
@@ -1680,10 +1680,10 @@ impl ProjectV2 {
     async fn closed(&self) -> bool {
         false
     }
-    async fn resource_path(&self) -> Uri {
+    pub async fn resource_path(&self) -> Uri {
         Uri(String::new())
     }
-    async fn url(&self) -> Uri {
+    pub async fn url(&self) -> Uri {
         Uri(String::new())
     }
     async fn items(&self, first: Option<i32>, after: Option<String>, last: Option<i32>, before: Option<String>, query: Option<String>) -> ProjectV2ItemConnection {
@@ -1697,7 +1697,7 @@ pub struct ProjectCard;
 
 #[Object]
 impl ProjectCard {
-    async fn id(&self) -> ID {
+    pub async fn id(&self) -> ID {
         ID(String::new())
     }
     async fn project(&self) -> Project {
@@ -1712,7 +1712,7 @@ pub struct ProjectColumn;
 
 #[Object]
 impl ProjectColumn {
-    async fn id(&self) -> ID {
+    pub async fn id(&self) -> ID {
         ID(String::new())
     }
     async fn name(&self) -> String {
@@ -1725,7 +1725,7 @@ pub struct ProjectV2Item;
 
 #[Object]
 impl ProjectV2Item {
-    async fn id(&self) -> ID {
+    pub async fn id(&self) -> ID {
         ID(String::new())
     }
     async fn project(&self) -> ProjectV2 {
@@ -1750,7 +1750,7 @@ pub struct ProjectV2ItemFieldSingleSelectValue;
 
 #[Object]
 impl ProjectV2ItemFieldSingleSelectValue {
-    async fn id(&self) -> ID {
+    pub async fn id(&self) -> ID {
         ID(String::new())
     }
     async fn name(&self) -> Option<String> {

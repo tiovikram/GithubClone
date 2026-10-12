@@ -10,7 +10,6 @@ use super::pull::GPull;
 use super::repo::{repos_by_ids, st, viewer, GRepo};
 use super::user::{GOrg, GUser};
 use super::issue::GIssue;
-use super::GResult;
 use crate::db::User;
 
 #[derive(Union, Clone)]
@@ -112,7 +111,7 @@ pub fn tokenize(q: &str) -> Vec<String> {
         .collect()
 }
 
-pub async fn search(ctx: &Context<'_>, query: String, kind: SearchType, args: ConnArgs) -> GResult<SearchResultItemConnection> {
+pub async fn search(ctx: &Context<'_>, query: String, kind: SearchType, args: ConnArgs) -> async_graphql::Result<SearchResultItemConnection> {
     let args = args.search_normalized();
     let me = viewer(ctx).map(|v| v.login.clone()).unwrap_or_default();
     let terms: Vec<(Option<String>, String, bool)> = tokenize(&query)
@@ -139,7 +138,7 @@ pub async fn search(ctx: &Context<'_>, query: String, kind: SearchType, args: Co
     }
 }
 
-async fn search_issues(ctx: &Context<'_>, terms: Vec<(Option<String>, String, bool)>, args: ConnArgs) -> GResult<SearchResultItemConnection> {
+async fn search_issues(ctx: &Context<'_>, terms: Vec<(Option<String>, String, bool)>, args: ConnArgs) -> async_graphql::Result<SearchResultItemConnection> {
     let s = st(ctx);
     let mut q = IssueQuery { visible_to: Some(viewer(ctx).map(|v| v.id).unwrap_or(-1)), ..Default::default() };
     let mut repo_ids: Option<Vec<i64>> = None;
@@ -213,7 +212,7 @@ async fn search_issues(ctx: &Context<'_>, terms: Vec<(Option<String>, String, bo
     Ok(SearchResultItemConnection { kind: SearchType::Issue, items, window: w })
 }
 
-async fn search_repos(ctx: &Context<'_>, terms: Vec<(Option<String>, String, bool)>, args: ConnArgs) -> GResult<SearchResultItemConnection> {
+async fn search_repos(ctx: &Context<'_>, terms: Vec<(Option<String>, String, bool)>, args: ConnArgs) -> async_graphql::Result<SearchResultItemConnection> {
     let s = st(ctx);
     let mut conds: Vec<String> = Vec::new();
     let mut binds: Vec<String> = Vec::new();
@@ -309,7 +308,7 @@ async fn search_repos(ctx: &Context<'_>, terms: Vec<(Option<String>, String, boo
     Ok(SearchResultItemConnection { kind: SearchType::Repository, items, window: w })
 }
 
-async fn search_users(ctx: &Context<'_>, terms: Vec<(Option<String>, String, bool)>, args: ConnArgs) -> GResult<SearchResultItemConnection> {
+async fn search_users(ctx: &Context<'_>, terms: Vec<(Option<String>, String, bool)>, args: ConnArgs) -> async_graphql::Result<SearchResultItemConnection> {
     let s = st(ctx);
     let words: Vec<String> = terms.into_iter().filter(|(k, _, _)| k.is_none()).map(|(_, v, _)| v).collect();
     let pat = format!("%{}%", super::repo::like_escape(&words.join(" ")));

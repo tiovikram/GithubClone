@@ -6,7 +6,7 @@ use async_graphql::{Context, Interface, Object, Union, ID};
 use super::connection::ConnArgs;
 use super::enums::{dt, DateTime, ProjectV2Order, RepositoryAffiliation, RepositoryOrder, RepositoryPrivacy, TeamOrder, Uri};
 use super::repo::{self, ProjectV2Connection, RepositoryConnection};
-use super::{GResult, Viewer};
+use super::Viewer;
 use crate::db::User;
 use crate::ids;
 use crate::state::AppState;
@@ -132,13 +132,13 @@ crate::gql_connection!(ActorConnection, ActorEdge, "ActorConnection", "ActorEdge
 #[allow(clippy::too_many_arguments)]
 #[Object(name = "User")]
 impl GUser {
-    async fn id(&self) -> ID {
+    pub async fn id(&self) -> ID {
         ID(ids::encode("User", self.0.id))
     }
     async fn database_id(&self) -> Option<i64> {
         Some(self.0.id)
     }
-    async fn login(&self) -> String {
+    pub async fn login(&self) -> String {
         self.0.login.clone()
     }
     async fn name(&self) -> Option<String> {
@@ -162,14 +162,14 @@ impl GUser {
     async fn twitter_username(&self) -> Option<String> {
         self.0.twitter_username.clone()
     }
-    async fn avatar_url(&self, ctx: &Context<'_>, size: Option<i32>) -> Uri {
+    pub async fn avatar_url(&self, ctx: &Context<'_>, size: Option<i32>) -> Uri {
         let _ = size;
         avatar(ctx, &self.0.login)
     }
-    async fn resource_path(&self) -> Uri {
+    pub async fn resource_path(&self) -> Uri {
         Uri(format!("/{}", self.0.login))
     }
-    async fn url(&self, ctx: &Context<'_>) -> Uri {
+    pub async fn url(&self, ctx: &Context<'_>) -> Uri {
         Uri(format!("{}/{}", base(ctx), self.0.login))
     }
     async fn created_at(&self) -> DateTime {
@@ -197,7 +197,7 @@ impl GUser {
         after: Option<String>,
         last: Option<i32>,
         before: Option<String>,
-    ) -> GResult<OrganizationConnection> {
+    ) -> async_graphql::Result<OrganizationConnection> {
         let st = ctx.data_unchecked::<AppState>();
         let orgs: Vec<User> = sqlx::query_as(
             "SELECT u.* FROM org_members m JOIN users u ON u.id = m.org_id WHERE m.user_id = $1 ORDER BY lower(u.login)",
@@ -208,7 +208,7 @@ impl GUser {
         let all = orgs.into_iter().map(|o| GOrg(Arc::new(o))).collect();
         Ok(OrganizationConnection::from_all(all, &ConnArgs::new(first, after, last, before)))
     }
-    async fn repositories(
+    pub async fn repositories(
         &self,
         ctx: &Context<'_>,
         first: Option<i32>,
@@ -220,7 +220,7 @@ impl GUser {
         owner_affiliations: Option<Vec<RepositoryAffiliation>>,
         affiliations: Option<Vec<RepositoryAffiliation>>,
         order_by: Option<RepositoryOrder>,
-    ) -> GResult<RepositoryConnection> {
+    ) -> async_graphql::Result<RepositoryConnection> {
         repo::list_repositories(
             ctx,
             &self.0,
@@ -250,13 +250,13 @@ impl GUser {
 #[allow(clippy::too_many_arguments)]
 #[Object(name = "Organization")]
 impl GOrg {
-    async fn id(&self) -> ID {
+    pub async fn id(&self) -> ID {
         ID(ids::encode("Organization", self.0.id))
     }
     async fn database_id(&self) -> Option<i64> {
         Some(self.0.id)
     }
-    async fn login(&self) -> String {
+    pub async fn login(&self) -> String {
         self.0.login.clone()
     }
     async fn name(&self) -> Option<String> {
@@ -274,14 +274,14 @@ impl GOrg {
     async fn website_url(&self) -> Option<Uri> {
         Some(self.0.blog.clone()).filter(|b| !b.is_empty()).map(Uri)
     }
-    async fn avatar_url(&self, ctx: &Context<'_>, size: Option<i32>) -> Uri {
+    pub async fn avatar_url(&self, ctx: &Context<'_>, size: Option<i32>) -> Uri {
         let _ = size;
         avatar(ctx, &self.0.login)
     }
-    async fn resource_path(&self) -> Uri {
+    pub async fn resource_path(&self) -> Uri {
         Uri(format!("/{}", self.0.login))
     }
-    async fn url(&self, ctx: &Context<'_>) -> Uri {
+    pub async fn url(&self, ctx: &Context<'_>) -> Uri {
         Uri(format!("{}/{}", base(ctx), self.0.login))
     }
     async fn created_at(&self) -> DateTime {
@@ -290,7 +290,7 @@ impl GOrg {
     async fn updated_at(&self) -> DateTime {
         dt(self.0.updated_at)
     }
-    async fn viewer_is_a_member(&self, ctx: &Context<'_>) -> GResult<bool> {
+    async fn viewer_is_a_member(&self, ctx: &Context<'_>) -> async_graphql::Result<bool> {
         let st = ctx.data_unchecked::<AppState>();
         let Some(v) = ctx.data_opt::<Viewer>() else { return Ok(false) };
         Ok(sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM org_members WHERE org_id = $1 AND user_id = $2)")
@@ -299,7 +299,7 @@ impl GOrg {
             .fetch_one(&st.db)
             .await?)
     }
-    async fn repositories(
+    pub async fn repositories(
         &self,
         ctx: &Context<'_>,
         first: Option<i32>,
@@ -311,7 +311,7 @@ impl GOrg {
         owner_affiliations: Option<Vec<RepositoryAffiliation>>,
         affiliations: Option<Vec<RepositoryAffiliation>>,
         order_by: Option<RepositoryOrder>,
-    ) -> GResult<RepositoryConnection> {
+    ) -> async_graphql::Result<RepositoryConnection> {
         repo::list_repositories(
             ctx,
             &self.0,
@@ -370,7 +370,7 @@ impl GOrg {
         after: Option<String>,
         last: Option<i32>,
         before: Option<String>,
-    ) -> GResult<UserConnection> {
+    ) -> async_graphql::Result<UserConnection> {
         let st = ctx.data_unchecked::<AppState>();
         let users: Vec<User> = sqlx::query_as(
             "SELECT u.* FROM org_members m JOIN users u ON u.id = m.user_id WHERE m.org_id = $1 ORDER BY lower(u.login)",
@@ -385,23 +385,23 @@ impl GOrg {
 
 #[Object(name = "Bot")]
 impl GBot {
-    async fn id(&self) -> ID {
+    pub async fn id(&self) -> ID {
         ID(ids::encode("Bot", self.0.id))
     }
     async fn database_id(&self) -> Option<i64> {
         Some(self.0.id)
     }
-    async fn login(&self) -> String {
+    pub async fn login(&self) -> String {
         self.0.login.clone()
     }
-    async fn avatar_url(&self, ctx: &Context<'_>, size: Option<i32>) -> Uri {
+    pub async fn avatar_url(&self, ctx: &Context<'_>, size: Option<i32>) -> Uri {
         let _ = size;
         avatar(ctx, &self.0.login)
     }
-    async fn resource_path(&self) -> Uri {
+    pub async fn resource_path(&self) -> Uri {
         Uri(format!("/apps/{}", self.0.login))
     }
-    async fn url(&self, ctx: &Context<'_>) -> Uri {
+    pub async fn url(&self, ctx: &Context<'_>) -> Uri {
         Uri(format!("{}/apps/{}", base(ctx), self.0.login))
     }
     async fn created_at(&self) -> DateTime {
@@ -411,27 +411,27 @@ impl GBot {
 
 #[Object(name = "Mannequin")]
 impl GMannequin {
-    async fn id(&self) -> ID {
+    pub async fn id(&self) -> ID {
         ID(ids::encode("Mannequin", self.0.id))
     }
-    async fn login(&self) -> String {
+    pub async fn login(&self) -> String {
         self.0.login.clone()
     }
-    async fn avatar_url(&self, ctx: &Context<'_>, size: Option<i32>) -> Uri {
+    pub async fn avatar_url(&self, ctx: &Context<'_>, size: Option<i32>) -> Uri {
         let _ = size;
         avatar(ctx, &self.0.login)
     }
-    async fn resource_path(&self) -> Uri {
+    pub async fn resource_path(&self) -> Uri {
         Uri(format!("/{}", self.0.login))
     }
-    async fn url(&self, ctx: &Context<'_>) -> Uri {
+    pub async fn url(&self, ctx: &Context<'_>) -> Uri {
         Uri(format!("{}/{}", base(ctx), self.0.login))
     }
 }
 
 #[Object(name = "Team")]
 impl GTeam {
-    async fn id(&self) -> ID {
+    pub async fn id(&self) -> ID {
         ID(ids::encode("Team", self.id))
     }
     async fn name(&self) -> String {

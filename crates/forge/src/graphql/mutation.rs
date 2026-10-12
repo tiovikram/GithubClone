@@ -10,7 +10,7 @@ use super::loaders;
 use super::pull::{GPull, GReview};
 use super::query::{resolve_node, Node};
 use super::repo::{st, GLabel, GRepo};
-use super::services::{self, IssuePatch, MergeMethod, MergeOpts, NewIssue, NewPull, NewRepo, PullPatch, RepoPatch};
+use super::services::{self, IssuePatch, MergeInput, MergeMethod, NewIssue, NewPull, NewRepo, PullPatch, RepoPatch};
 use super::{api_err, gql_err, not_found, GResult, Viewer};
 use crate::db::{RepoCtx, User};
 use crate::ids;
@@ -26,14 +26,14 @@ fn unresolvable(id: &str) -> async_graphql::Error {
     not_found(format!("Could not resolve to a node with the global id of '{id}'."))
 }
 
-fn dec(id: &ID, kinds: &[&str]) -> GResult<i64> {
+fn dec(id: &ID, kinds: &[&str]) -> async_graphql::Result<i64> {
     match ids::decode(id) {
         Some((k, v)) if kinds.contains(&k.as_str()) => v.parse().map_err(|_| unresolvable(id)),
         _ => Err(unresolvable(id)),
     }
 }
 
-fn dec_all(ids: &Option<Vec<ID>>, kinds: &[&str]) -> GResult<Option<Vec<i64>>> {
+fn dec_all(ids: &Option<Vec<ID>>, kinds: &[&str]) -> async_graphql::Result<Option<Vec<i64>>> {
     match ids {
         Some(v) => Ok(Some(v.iter().map(|i| dec(i, kinds)).collect::<GResult<Vec<_>>>()?)),
         None => Ok(None),
@@ -42,12 +42,12 @@ fn dec_all(ids: &Option<Vec<ID>>, kinds: &[&str]) -> GResult<Option<Vec<i64>>> {
 
 const USER_KINDS: &[&str] = &["User", "Bot", "Organization"];
 
-async fn repo_ctx(ctx: &Context<'_>, repo_id: i64, id_for_error: &str) -> GResult<Arc<RepoCtx>> {
+async fn repo_ctx(ctx: &Context<'_>, repo_id: i64, id_for_error: &str) -> async_graphql::Result<Arc<RepoCtx>> {
     loaders::repo(ctx, repo_id).await?.ok_or_else(|| unresolvable(id_for_error))
 }
 
 /// Loads an Issue/PullRequest subject by node id with its repository context.
-async fn subject(ctx: &Context<'_>, id: &ID) -> GResult<(Arc<RepoCtx>, IssueRow)> {
+async fn subject(ctx: &Context<'_>, id: &ID) -> async_graphql::Result<(Arc<RepoCtx>, IssueRow)> {
     let iid = dec(id, &["Issue", "PullRequest"])?;
     let row: Option<IssueRow> = sqlx::query_as("SELECT * FROM issues WHERE id = $1").bind(iid).fetch_optional(&st(ctx).db).await?;
     let row = row.ok_or_else(|| unresolvable(id))?;
@@ -55,7 +55,7 @@ async fn subject(ctx: &Context<'_>, id: &ID) -> GResult<(Arc<RepoCtx>, IssueRow)
     Ok((repo, row))
 }
 
-async fn subject_pull(ctx: &Context<'_>, id: &ID) -> GResult<(Arc<RepoCtx>, IssueRow)> {
+async fn subject_pull(ctx: &Context<'_>, id: &ID) -> async_graphql::Result<(Arc<RepoCtx>, IssueRow)> {
     let (repo, row) = subject(ctx, id).await?;
     if !row.is_pull {
         return Err(gql_err("NOT_FOUND", format!("Could not resolve to PullRequest node with the global id of '{}'.", id.as_str())));
@@ -63,18 +63,18 @@ async fn subject_pull(ctx: &Context<'_>, id: &ID) -> GResult<(Arc<RepoCtx>, Issu
     Ok((repo, row))
 }
 
-async fn reload(ctx: &Context<'_>, issue_id: i64) -> GResult<Option<IssueOrPullRequest>> {
+async fn reload(ctx: &Context<'_>, issue_id: i64) -> async_graphql::Result<Option<IssueOrPullRequest>> {
     issue::by_id(ctx, issue_id).await
 }
 
-async fn reload_issue(ctx: &Context<'_>, issue_id: i64) -> GResult<Option<GIssue>> {
+async fn reload_issue(ctx: &Context<'_>, issue_id: i64) -> async_graphql::Result<Option<GIssue>> {
     Ok(match reload(ctx, issue_id).await? {
         Some(IssueOrPullRequest::Issue(i)) => Some(i),
         _ => None,
     })
 }
 
-async fn reload_pull(ctx: &Context<'_>, issue_id: i64) -> GResult<Option<GPull>> {
+async fn reload_pull(ctx: &Context<'_>, issue_id: i64) -> async_graphql::Result<Option<GPull>> {
     Ok(match reload(ctx, issue_id).await? {
         Some(IssueOrPullRequest::PullRequest(p)) => Some(p),
         _ => None,
@@ -592,7 +592,7 @@ fn visibility_str(v: RepositoryVisibility) -> &'static str {
 
 #[Object]
 impl Mutation {
-    async fn create_repository(&self, ctx: &Context<'_>, input: CreateRepositoryInput) -> GResult<Option<CreateRepositoryPayload>> {
+    async fn create_repository(&self, ctx: &Context<'_>, input: CreateRepositoryInput) -> async_graphql::Result<Option<CreateRepositoryPayload>> {
         let s = st(ctx);
         let me = actor(ctx);
         let owner = match &input.owner_id {
@@ -624,7 +624,7 @@ impl Mutation {
         Ok(Some(CreateRepositoryPayload { client_mutation_id: input.client_mutation_id, repository: Some(GRepo::new(Arc::new(rc))) }))
     }
 
-    async fn clone_template_repository(&self, ctx: &Context<'_>, input: CloneTemplateRepositoryInput) -> GResult<Option<CloneTemplateRepositoryPayload>> {
+    async fn clone_template_repository(&self, ctx: &Context<'_>, input: CloneTemplateRepositoryInput) -> async_graphql::Result<Option<CloneTemplateRepositoryPayload>> {
         let s = st(ctx);
         let me = actor(ctx);
         let tid = dec(&input.repository_id, &["Repository"])?;
@@ -666,7 +666,7 @@ impl Mutation {
         Ok(Some(CloneTemplateRepositoryPayload { client_mutation_id: input.client_mutation_id, repository: rc.map(GRepo::new) }))
     }
 
-    async fn update_repository(&self, ctx: &Context<'_>, input: UpdateRepositoryInput) -> GResult<Option<UpdateRepositoryPayload>> {
+    async fn update_repository(&self, ctx: &Context<'_>, input: UpdateRepositoryInput) -> async_graphql::Result<Option<UpdateRepositoryPayload>> {
         let rid = dec(&input.repository_id, &["Repository"])?;
         let rc = repo_ctx(ctx, rid, &input.repository_id).await?;
         let updated = services::update_repository(
@@ -689,7 +689,7 @@ impl Mutation {
         Ok(Some(UpdateRepositoryPayload { client_mutation_id: input.client_mutation_id, repository: Some(GRepo::new(Arc::new(updated))) }))
     }
 
-    async fn create_issue(&self, ctx: &Context<'_>, input: CreateIssueInput) -> GResult<Option<CreateIssuePayload>> {
+    async fn create_issue(&self, ctx: &Context<'_>, input: CreateIssueInput) -> async_graphql::Result<Option<CreateIssuePayload>> {
         let rid = dec(&input.repository_id, &["Repository"])?;
         let rc = repo_ctx(ctx, rid, &input.repository_id).await?;
         let row = services::create_issue(
@@ -709,7 +709,7 @@ impl Mutation {
         Ok(Some(CreateIssuePayload { client_mutation_id: input.client_mutation_id, issue: reload_issue(ctx, row.id).await? }))
     }
 
-    async fn update_issue(&self, ctx: &Context<'_>, input: UpdateIssueInput) -> GResult<Option<UpdateIssuePayload>> {
+    async fn update_issue(&self, ctx: &Context<'_>, input: UpdateIssueInput) -> async_graphql::Result<Option<UpdateIssuePayload>> {
         let (rc, row) = subject(ctx, &input.id).await?;
         if row.is_pull {
             return Err(unresolvable(&input.id));
@@ -739,7 +739,7 @@ impl Mutation {
         Ok(Some(UpdateIssuePayload { client_mutation_id: input.client_mutation_id, issue: reload_issue(ctx, row.id).await? }))
     }
 
-    async fn close_issue(&self, ctx: &Context<'_>, input: CloseIssueInput) -> GResult<Option<CloseIssuePayload>> {
+    async fn close_issue(&self, ctx: &Context<'_>, input: CloseIssueInput) -> async_graphql::Result<Option<CloseIssuePayload>> {
         let (rc, row) = subject(ctx, &input.issue_id).await?;
         if row.is_pull {
             return Err(unresolvable(&input.issue_id));
@@ -762,7 +762,7 @@ impl Mutation {
         Ok(Some(CloseIssuePayload { client_mutation_id: input.client_mutation_id, issue: reload_issue(ctx, row.id).await? }))
     }
 
-    async fn reopen_issue(&self, ctx: &Context<'_>, input: ReopenIssueInput) -> GResult<Option<ReopenIssuePayload>> {
+    async fn reopen_issue(&self, ctx: &Context<'_>, input: ReopenIssueInput) -> async_graphql::Result<Option<ReopenIssuePayload>> {
         let (rc, row) = subject(ctx, &input.issue_id).await?;
         if row.is_pull {
             return Err(unresolvable(&input.issue_id));
@@ -773,13 +773,13 @@ impl Mutation {
         Ok(Some(ReopenIssuePayload { client_mutation_id: input.client_mutation_id, issue: reload_issue(ctx, row.id).await? }))
     }
 
-    async fn delete_issue(&self, ctx: &Context<'_>, input: DeleteIssueInput) -> GResult<Option<DeleteIssuePayload>> {
+    async fn delete_issue(&self, ctx: &Context<'_>, input: DeleteIssueInput) -> async_graphql::Result<Option<DeleteIssuePayload>> {
         let (rc, row) = subject(ctx, &input.issue_id).await?;
         services::delete_issue(st(ctx), &rc, actor(ctx), &row).await.map_err(api_err)?;
         Ok(Some(DeleteIssuePayload { client_mutation_id: input.client_mutation_id, repository: Some(GRepo::new(rc)) }))
     }
 
-    async fn add_comment(&self, ctx: &Context<'_>, input: AddCommentInput) -> GResult<Option<AddCommentPayload>> {
+    async fn add_comment(&self, ctx: &Context<'_>, input: AddCommentInput) -> async_graphql::Result<Option<AddCommentPayload>> {
         let (rc, row) = subject(ctx, &input.subject_id).await?;
         let c = services::create_comment(st(ctx), &rc, actor(ctx), &row, &input.body).await.map_err(api_err)?;
         let total: i64 = sqlx::query_scalar("SELECT count(*) FROM issue_comments WHERE issue_id = $1").bind(row.id).fetch_one(&st(ctx).db).await?;
@@ -792,7 +792,7 @@ impl Mutation {
         }))
     }
 
-    async fn update_issue_comment(&self, ctx: &Context<'_>, input: UpdateIssueCommentInput) -> GResult<Option<UpdateIssueCommentPayload>> {
+    async fn update_issue_comment(&self, ctx: &Context<'_>, input: UpdateIssueCommentInput) -> async_graphql::Result<Option<UpdateIssueCommentPayload>> {
         let cid = dec(&input.id, &["IssueComment"])?;
         let s = st(ctx);
         let c = services::comment_by_id(s, cid).await.map_err(|_| unresolvable(&input.id))?;
@@ -805,7 +805,7 @@ impl Mutation {
         }))
     }
 
-    async fn delete_issue_comment(&self, ctx: &Context<'_>, input: DeleteIssueCommentInput) -> GResult<Option<DeleteIssueCommentPayload>> {
+    async fn delete_issue_comment(&self, ctx: &Context<'_>, input: DeleteIssueCommentInput) -> async_graphql::Result<Option<DeleteIssueCommentPayload>> {
         let cid = dec(&input.id, &["IssueComment"])?;
         let s = st(ctx);
         let c = services::comment_by_id(s, cid).await.map_err(|_| unresolvable(&input.id))?;
@@ -814,21 +814,21 @@ impl Mutation {
         Ok(Some(DeleteIssueCommentPayload { client_mutation_id: input.client_mutation_id }))
     }
 
-    async fn add_labels_to_labelable(&self, ctx: &Context<'_>, input: AddLabelsToLabelableInput) -> GResult<Option<AddLabelsToLabelablePayload>> {
+    async fn add_labels_to_labelable(&self, ctx: &Context<'_>, input: AddLabelsToLabelableInput) -> async_graphql::Result<Option<AddLabelsToLabelablePayload>> {
         let (rc, row) = subject(ctx, &input.labelable_id).await?;
         let labels = dec_all(&Some(input.label_ids), &["Label"])?.unwrap_or_default();
         services::add_labels(st(ctx), &rc, actor(ctx), &row, &labels).await.map_err(api_err)?;
         Ok(Some(AddLabelsToLabelablePayload { client_mutation_id: input.client_mutation_id, labelable: as_labelable(reload(ctx, row.id).await?) }))
     }
 
-    async fn remove_labels_from_labelable(&self, ctx: &Context<'_>, input: RemoveLabelsFromLabelableInput) -> GResult<Option<RemoveLabelsFromLabelablePayload>> {
+    async fn remove_labels_from_labelable(&self, ctx: &Context<'_>, input: RemoveLabelsFromLabelableInput) -> async_graphql::Result<Option<RemoveLabelsFromLabelablePayload>> {
         let (rc, row) = subject(ctx, &input.labelable_id).await?;
         let labels = dec_all(&Some(input.label_ids), &["Label"])?.unwrap_or_default();
         services::remove_labels(st(ctx), &rc, actor(ctx), &row, &labels).await.map_err(api_err)?;
         Ok(Some(RemoveLabelsFromLabelablePayload { client_mutation_id: input.client_mutation_id, labelable: as_labelable(reload(ctx, row.id).await?) }))
     }
 
-    async fn clear_labels_from_labelable(&self, ctx: &Context<'_>, input: ClearLabelsFromLabelableInput) -> GResult<Option<ClearLabelsFromLabelablePayload>> {
+    async fn clear_labels_from_labelable(&self, ctx: &Context<'_>, input: ClearLabelsFromLabelableInput) -> async_graphql::Result<Option<ClearLabelsFromLabelablePayload>> {
         let (rc, row) = subject(ctx, &input.labelable_id).await?;
         services::update_issue(st(ctx), &rc, actor(ctx), &row, IssuePatch { labels: Some(Vec::new()), ..Default::default() })
             .await
@@ -836,7 +836,7 @@ impl Mutation {
         Ok(Some(ClearLabelsFromLabelablePayload { client_mutation_id: input.client_mutation_id, labelable: as_labelable(reload(ctx, row.id).await?) }))
     }
 
-    async fn add_assignees_to_assignable(&self, ctx: &Context<'_>, input: AddAssigneesToAssignableInput) -> GResult<Option<AddAssigneesToAssignablePayload>> {
+    async fn add_assignees_to_assignable(&self, ctx: &Context<'_>, input: AddAssigneesToAssignableInput) -> async_graphql::Result<Option<AddAssigneesToAssignablePayload>> {
         let (rc, row) = subject(ctx, &input.assignable_id).await?;
         let users = dec_all(&Some(input.assignee_ids), USER_KINDS)?.unwrap_or_default();
         services::add_assignees(st(ctx), &rc, actor(ctx), &row, &users).await.map_err(api_err)?;
@@ -847,14 +847,14 @@ impl Mutation {
         &self,
         ctx: &Context<'_>,
         input: RemoveAssigneesFromAssignableInput,
-    ) -> GResult<Option<RemoveAssigneesFromAssignablePayload>> {
+    ) -> async_graphql::Result<Option<RemoveAssigneesFromAssignablePayload>> {
         let (rc, row) = subject(ctx, &input.assignable_id).await?;
         let users = dec_all(&Some(input.assignee_ids), USER_KINDS)?.unwrap_or_default();
         services::remove_assignees(st(ctx), &rc, actor(ctx), &row, &users).await.map_err(api_err)?;
         Ok(Some(RemoveAssigneesFromAssignablePayload { client_mutation_id: input.client_mutation_id, assignable: as_assignable(reload(ctx, row.id).await?) }))
     }
 
-    async fn create_label(&self, ctx: &Context<'_>, input: CreateLabelInput) -> GResult<Option<CreateLabelPayload>> {
+    async fn create_label(&self, ctx: &Context<'_>, input: CreateLabelInput) -> async_graphql::Result<Option<CreateLabelPayload>> {
         let rid = dec(&input.repository_id, &["Repository"])?;
         let rc = repo_ctx(ctx, rid, &input.repository_id).await?;
         let l = services::create_label(st(ctx), &rc, actor(ctx), &input.name, &input.color, input.description.as_deref())
@@ -863,7 +863,7 @@ impl Mutation {
         Ok(Some(CreateLabelPayload { client_mutation_id: input.client_mutation_id, label: Some(GLabel::new(l, &rc)) }))
     }
 
-    async fn update_label(&self, ctx: &Context<'_>, input: UpdateLabelInput) -> GResult<Option<UpdateLabelPayload>> {
+    async fn update_label(&self, ctx: &Context<'_>, input: UpdateLabelInput) -> async_graphql::Result<Option<UpdateLabelPayload>> {
         let lid = dec(&input.id, &["Label"])?;
         let repo_id: Option<i64> = sqlx::query_scalar("SELECT repo_id FROM labels WHERE id = $1").bind(lid).fetch_optional(&st(ctx).db).await?;
         let rc = repo_ctx(ctx, repo_id.ok_or_else(|| unresolvable(&input.id))?, &input.id).await?;
@@ -873,7 +873,7 @@ impl Mutation {
         Ok(Some(UpdateLabelPayload { client_mutation_id: input.client_mutation_id, label: Some(GLabel::new(l, &rc)) }))
     }
 
-    async fn delete_label(&self, ctx: &Context<'_>, input: DeleteLabelInput) -> GResult<Option<DeleteLabelPayload>> {
+    async fn delete_label(&self, ctx: &Context<'_>, input: DeleteLabelInput) -> async_graphql::Result<Option<DeleteLabelPayload>> {
         let lid = dec(&input.id, &["Label"])?;
         let repo_id: Option<i64> = sqlx::query_scalar("SELECT repo_id FROM labels WHERE id = $1").bind(lid).fetch_optional(&st(ctx).db).await?;
         let rc = repo_ctx(ctx, repo_id.ok_or_else(|| unresolvable(&input.id))?, &input.id).await?;
@@ -881,7 +881,7 @@ impl Mutation {
         Ok(Some(DeleteLabelPayload { client_mutation_id: input.client_mutation_id }))
     }
 
-    async fn create_pull_request(&self, ctx: &Context<'_>, input: CreatePullRequestInput) -> GResult<Option<CreatePullRequestPayload>> {
+    async fn create_pull_request(&self, ctx: &Context<'_>, input: CreatePullRequestInput) -> async_graphql::Result<Option<CreatePullRequestPayload>> {
         let rid = dec(&input.repository_id, &["Repository"])?;
         let rc = repo_ctx(ctx, rid, &input.repository_id).await?;
         let head_repo_id = input.head_repository_id.as_ref().map(|h| dec(h, &["Repository"])).transpose()?;
@@ -904,7 +904,7 @@ impl Mutation {
         Ok(Some(CreatePullRequestPayload { client_mutation_id: input.client_mutation_id, pull_request: reload_pull(ctx, row.id).await? }))
     }
 
-    async fn update_pull_request(&self, ctx: &Context<'_>, input: UpdatePullRequestInput) -> GResult<Option<UpdatePullRequestPayload>> {
+    async fn update_pull_request(&self, ctx: &Context<'_>, input: UpdatePullRequestInput) -> async_graphql::Result<Option<UpdatePullRequestPayload>> {
         let (rc, row) = subject_pull(ctx, &input.pull_request_id).await?;
         let s = st(ctx);
         let me = actor(ctx);
@@ -940,7 +940,7 @@ impl Mutation {
         Ok(Some(UpdatePullRequestPayload { client_mutation_id: input.client_mutation_id, pull_request: reload_pull(ctx, row.id).await? }))
     }
 
-    async fn close_pull_request(&self, ctx: &Context<'_>, input: ClosePullRequestInput) -> GResult<Option<ClosePullRequestPayload>> {
+    async fn close_pull_request(&self, ctx: &Context<'_>, input: ClosePullRequestInput) -> async_graphql::Result<Option<ClosePullRequestPayload>> {
         let (rc, row) = subject_pull(ctx, &input.pull_request_id).await?;
         services::update_pull(st(ctx), &rc, actor(ctx), &row, PullPatch { state: Some("closed".into()), ..Default::default() })
             .await
@@ -948,7 +948,7 @@ impl Mutation {
         Ok(Some(ClosePullRequestPayload { client_mutation_id: input.client_mutation_id, pull_request: reload_pull(ctx, row.id).await? }))
     }
 
-    async fn reopen_pull_request(&self, ctx: &Context<'_>, input: ReopenPullRequestInput) -> GResult<Option<ReopenPullRequestPayload>> {
+    async fn reopen_pull_request(&self, ctx: &Context<'_>, input: ReopenPullRequestInput) -> async_graphql::Result<Option<ReopenPullRequestPayload>> {
         let (rc, row) = subject_pull(ctx, &input.pull_request_id).await?;
         services::update_pull(st(ctx), &rc, actor(ctx), &row, PullPatch { state: Some("open".into()), ..Default::default() })
             .await
@@ -956,7 +956,7 @@ impl Mutation {
         Ok(Some(ReopenPullRequestPayload { client_mutation_id: input.client_mutation_id, pull_request: reload_pull(ctx, row.id).await? }))
     }
 
-    async fn merge_pull_request(&self, ctx: &Context<'_>, input: MergePullRequestInput) -> GResult<Option<MergePullRequestPayload>> {
+    async fn merge_pull_request(&self, ctx: &Context<'_>, input: MergePullRequestInput) -> async_graphql::Result<Option<MergePullRequestPayload>> {
         let (rc, row) = subject_pull(ctx, &input.pull_request_id).await?;
         let method = match input.merge_method.unwrap_or(PullRequestMergeMethod::Merge) {
             PullRequestMergeMethod::Merge => MergeMethod::Merge,
@@ -968,12 +968,11 @@ impl Mutation {
             &rc,
             actor(ctx),
             &row,
-            MergeOpts {
+            MergeInput {
                 method,
-                commit_title: input.commit_headline,
-                commit_message: input.commit_body,
-                expected_head_sha: input.expected_head_oid.map(|o| o.0),
-                author_email: input.author_email,
+                title: input.commit_headline,
+                message: input.commit_body,
+                sha: input.expected_head_oid.map(|o| o.0).filter(|s| !s.is_empty()),
             },
         )
         .await
@@ -981,12 +980,12 @@ impl Mutation {
         Ok(Some(MergePullRequestPayload { client_mutation_id: input.client_mutation_id, pull_request: reload_pull(ctx, row.id).await? }))
     }
 
-    async fn enable_pull_request_auto_merge(&self, ctx: &Context<'_>, input: EnablePullRequestAutoMergeInput) -> GResult<Option<EnablePullRequestAutoMergePayload>> {
+    async fn enable_pull_request_auto_merge(&self, ctx: &Context<'_>, input: EnablePullRequestAutoMergeInput) -> async_graphql::Result<Option<EnablePullRequestAutoMergePayload>> {
         let _ = subject_pull(ctx, &input.pull_request_id).await?;
         Err(gql_err("UNPROCESSABLE", "Auto merge is not allowed for this repository"))
     }
 
-    async fn disable_pull_request_auto_merge(&self, ctx: &Context<'_>, input: DisablePullRequestAutoMergeInput) -> GResult<Option<DisablePullRequestAutoMergePayload>> {
+    async fn disable_pull_request_auto_merge(&self, ctx: &Context<'_>, input: DisablePullRequestAutoMergeInput) -> async_graphql::Result<Option<DisablePullRequestAutoMergePayload>> {
         let (_, row) = subject_pull(ctx, &input.pull_request_id).await?;
         Ok(Some(DisablePullRequestAutoMergePayload { client_mutation_id: input.client_mutation_id, pull_request: reload_pull(ctx, row.id).await? }))
     }
@@ -995,7 +994,7 @@ impl Mutation {
         &self,
         ctx: &Context<'_>,
         input: MarkPullRequestReadyForReviewInput,
-    ) -> GResult<Option<MarkPullRequestReadyForReviewPayload>> {
+    ) -> async_graphql::Result<Option<MarkPullRequestReadyForReviewPayload>> {
         let (rc, row) = subject_pull(ctx, &input.pull_request_id).await?;
         services::update_pull(st(ctx), &rc, actor(ctx), &row, PullPatch { draft: Some(false), ..Default::default() })
             .await
@@ -1003,7 +1002,7 @@ impl Mutation {
         Ok(Some(MarkPullRequestReadyForReviewPayload { client_mutation_id: input.client_mutation_id, pull_request: reload_pull(ctx, row.id).await? }))
     }
 
-    async fn convert_pull_request_to_draft(&self, ctx: &Context<'_>, input: ConvertPullRequestToDraftInput) -> GResult<Option<ConvertPullRequestToDraftPayload>> {
+    async fn convert_pull_request_to_draft(&self, ctx: &Context<'_>, input: ConvertPullRequestToDraftInput) -> async_graphql::Result<Option<ConvertPullRequestToDraftPayload>> {
         let (rc, row) = subject_pull(ctx, &input.pull_request_id).await?;
         services::update_pull(st(ctx), &rc, actor(ctx), &row, PullPatch { draft: Some(true), ..Default::default() })
             .await
@@ -1011,7 +1010,7 @@ impl Mutation {
         Ok(Some(ConvertPullRequestToDraftPayload { client_mutation_id: input.client_mutation_id, pull_request: reload_pull(ctx, row.id).await? }))
     }
 
-    async fn add_pull_request_review(&self, ctx: &Context<'_>, input: AddPullRequestReviewInput) -> GResult<Option<AddPullRequestReviewPayload>> {
+    async fn add_pull_request_review(&self, ctx: &Context<'_>, input: AddPullRequestReviewInput) -> async_graphql::Result<Option<AddPullRequestReviewPayload>> {
         let (rc, row) = subject_pull(ctx, &input.pull_request_id).await?;
         let event = input.event.map(|e| match e {
             PullRequestReviewEvent::Approve => "APPROVE",
@@ -1019,7 +1018,7 @@ impl Mutation {
             PullRequestReviewEvent::Comment => "COMMENT",
             PullRequestReviewEvent::Dismiss => "DISMISS",
         });
-        let r = services::create_review(st(ctx), &rc, actor(ctx), &row, event, input.body.as_deref().unwrap_or(""))
+        let r = services::create_review(st(ctx), &rc, actor(ctx), &row, event, input.body.as_deref().unwrap_or(""), input.commit_oid.map(|c| c.0))
             .await
             .map_err(api_err)?;
         Ok(Some(AddPullRequestReviewPayload {
@@ -1028,7 +1027,7 @@ impl Mutation {
         }))
     }
 
-    async fn request_reviews(&self, ctx: &Context<'_>, input: RequestReviewsInput) -> GResult<Option<RequestReviewsPayload>> {
+    async fn request_reviews(&self, ctx: &Context<'_>, input: RequestReviewsInput) -> async_graphql::Result<Option<RequestReviewsPayload>> {
         let (rc, row) = subject_pull(ctx, &input.pull_request_id).await?;
         if input.team_ids.as_ref().is_some_and(|t| !t.is_empty()) {
             return Err(gql_err("NOT_FOUND", "Could not resolve to a Team: teams are not supported."));

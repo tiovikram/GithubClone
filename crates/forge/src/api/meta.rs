@@ -63,7 +63,7 @@ async fn root(State(s): State<AppState>) -> Json<Value> {
 async fn meta() -> Json<Value> {
     Json(json!({
         "verifiable_password_authentication": true,
-        "installed_version": "3.14.0",
+        "installed_version": "3.20.0",
         "ssh_key_fingerprints": {},
         "hooks": [], "web": [], "api": [], "git": [], "packages": [], "pages": [], "importer": [], "actions": [], "dependabot": [],
         "domains": {}
