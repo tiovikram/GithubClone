@@ -334,10 +334,10 @@ impl GPull {
     async fn base_repository(&self) -> GRepo {
         GRepo::new(self.repo.clone())
     }
-    async fn locked(&self) -> bool {
+    pub async fn locked(&self) -> bool {
         self.row.locked
     }
-    async fn active_lock_reason(&self) -> Option<LockReason> {
+    pub async fn active_lock_reason(&self) -> Option<LockReason> {
         self.row.active_lock_reason.as_deref().and_then(LockReason::parse)
     }
     async fn project_cards(

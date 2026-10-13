@@ -70,6 +70,8 @@ pub fn parse_query(q: &str) -> Vec<Term> {
     }
     let mut out = Vec::new();
     for t in tokens {
+        // Terms are ANDed; grouping parentheses (gh sends `( words ) qualifiers`) are dropped.
+        let t = t.trim_start_matches('(').trim_end_matches(')').to_string();
         if t.is_empty() || t == "AND" {
             continue;
         }
@@ -903,6 +905,15 @@ mod tests {
         assert!(t[3].negated && t[3].key.as_deref() == Some("label"));
         assert_eq!(t[4], Term { negated: false, key: None, value: "fix".into() });
         assert_eq!(t[6].value, "two words");
+    }
+
+    #[test]
+    fn grouping_parentheses_are_ignored() {
+        // gh search issues/prs sends `( keywords ) qualifiers`.
+        let t = parse_query("( feature2 ) repo:a/b type:pr");
+        assert_eq!(t.len(), 3);
+        assert_eq!(t[0], Term { negated: false, key: None, value: "feature2".into() });
+        assert_eq!(t[1].key.as_deref(), Some("repo"));
     }
 
     #[test]

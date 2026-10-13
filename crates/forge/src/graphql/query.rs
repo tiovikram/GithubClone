@@ -34,6 +34,8 @@ pub enum Node {
     Release(GRelease),
     Ref(GRef),
     Commit(GCommit),
+    Discussion(super::discussions::GDiscussion),
+    DiscussionComment(super::discussions::GDiscussionComment),
 }
 
 fn user_node(u: User) -> Node {
@@ -132,6 +134,8 @@ pub async fn resolve_node(ctx: &Context<'_>, id: &str) -> async_graphql::Result<
                 refs.get(rest).map(|oid| Node::Ref(GRef { repo: r, name: rest.to_string(), oid: oid.clone() }))
             }
         }
+        ("Discussion", Some(i)) => super::discussions::discussion_node(ctx, i).await?.map(Node::Discussion),
+        ("DiscussionComment", Some(i)) => super::discussions::comment_node(ctx, i).await?.map(Node::DiscussionComment),
         _ => None,
     })
 }

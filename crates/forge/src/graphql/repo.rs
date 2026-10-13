@@ -280,6 +280,37 @@ impl GRepo {
     async fn has_discussions_enabled(&self) -> bool {
         self.ctx.repo.has_discussions
     }
+    #[allow(clippy::too_many_arguments)]
+    async fn discussions(
+        &self,
+        ctx: &Context<'_>,
+        first: Option<i32>,
+        after: Option<String>,
+        last: Option<i32>,
+        before: Option<String>,
+        order_by: Option<super::discussions::DiscussionOrder>,
+        category_id: Option<ID>,
+        states: Option<Vec<super::discussions::DiscussionState>>,
+        answered: Option<bool>,
+    ) -> async_graphql::Result<super::discussions::DiscussionConnection> {
+        let args = ConnArgs::new(first, after, last, before);
+        super::discussions::repo_discussions(ctx, &self.ctx, args, order_by, category_id, states, answered).await
+    }
+    async fn discussion(&self, ctx: &Context<'_>, number: i32) -> async_graphql::Result<Option<super::discussions::GDiscussion>> {
+        super::discussions::repo_discussion(ctx, &self.ctx, number).await
+    }
+    async fn discussion_categories(
+        &self,
+        ctx: &Context<'_>,
+        first: Option<i32>,
+        after: Option<String>,
+        last: Option<i32>,
+        before: Option<String>,
+        filter_by_assignable: Option<bool>,
+    ) -> async_graphql::Result<super::discussions::DiscussionCategoryConnection> {
+        let _ = filter_by_assignable;
+        super::discussions::repo_categories(ctx, &self.ctx, ConnArgs::new(first, after, last, before)).await
+    }
     async fn forking_allowed(&self) -> bool {
         true
     }
@@ -365,6 +396,21 @@ impl GRepo {
         let refs = repo_refs(ctx, self.ctx.repo.id).await?;
         let name = format!("refs/heads/{}", self.ctx.repo.default_branch);
         Ok(refs.get(&name).map(|oid| GRef { repo: self.ctx.clone(), name, oid: oid.clone() }))
+    }
+    /// A git object by revision expression (`REF:path`) or oid; see `tree.rs`.
+    async fn object(&self, ctx: &Context<'_>, expression: Option<String>, oid: Option<GitObjectId>) -> async_graphql::Result<Option<GitObject>> {
+        super::tree::resolve(ctx, self.ctx.clone(), expression, oid.map(|o| o.0)).await
+    }
+    async fn rulesets(
+        &self,
+        ctx: &Context<'_>,
+        first: Option<i32>,
+        after: Option<String>,
+        last: Option<i32>,
+        before: Option<String>,
+        #[graphql(default = true)] include_parents: bool,
+    ) -> async_graphql::Result<super::rulesets::RepositoryRulesetConnection> {
+        super::rulesets::for_repo(ctx, self.ctx.clone(), include_parents, ConnArgs::new(first, after, last, before)).await
     }
     #[graphql(name = "ref")]
     async fn ref_(&self, ctx: &Context<'_>, qualified_name: String) -> async_graphql::Result<Option<GRef>> {
@@ -811,6 +857,9 @@ impl GRef {
     async fn repository(&self) -> GRepo {
         GRepo::new(self.repo.clone())
     }
+    async fn compare(&self, ctx: &Context<'_>, head_ref: String) -> async_graphql::Result<Option<super::ghcompat::Comparison>> {
+        super::ghcompat::compare(ctx, self, &head_ref).await
+    }
     async fn branch_protection_rule(&self, ctx: &Context<'_>) -> Option<BranchProtectionRule> {
         let branch = self.name.strip_prefix("refs/heads/")?;
         let st = ctx.data_unchecked::<AppState>();
@@ -881,6 +930,8 @@ impl BranchProtectionRule {
 )]
 pub enum GitObject {
     Commit(GCommit),
+    Tree(super::tree::GTree),
+    Blob(super::tree::GBlob),
 }
 
 #[derive(Clone, Debug, Default)]
