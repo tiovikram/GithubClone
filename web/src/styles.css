@@ -1,4 +1,4 @@
-/* forge — hand-written styles inspired by GitHub Primer. Light/dark via prefers-color-scheme. */
+/* forge — hand-written styles inspired by GitHub Primer. Light/dark via prefers-color-scheme, overridable with <html data-theme="light|dark">. */
 
 :root {
   --fg: #1f2328;
@@ -51,7 +51,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --fg: #f0f6fc;
     --fg-muted: #9198a1;
     --fg-subtle: #656c76;
@@ -96,6 +96,51 @@
     --hl-tag: #7ee787;
     color-scheme: dark;
   }
+}
+:root[data-theme="dark"] {
+    --fg: #f0f6fc;
+    --fg-muted: #9198a1;
+    --fg-subtle: #656c76;
+    --bg: #0d1117;
+    --bg-subtle: #151b23;
+    --bg-inset: #010409;
+    --bg-header: #010409;
+    --fg-header: #f0f6fc;
+    --border: #3d444d;
+    --border-muted: #3d444db3;
+    --accent: #4493f8;
+    --accent-subtle: #388bfd1a;
+    --success: #3fb950;
+    --success-emph: #238636;
+    --success-emph-hover: #29903b;
+    --success-subtle: #2ea04326;
+    --danger: #f85149;
+    --danger-subtle: #f851491a;
+    --done: #ab7df8;
+    --done-subtle: #ab7df826;
+    --attention-subtle: #bb800926;
+    --attention-border: #bb800966;
+    --neutral-muted: #656c7633;
+    --btn-bg: #212830;
+    --btn-hover: #262c36;
+    --btn-border: #3d444d;
+    --diff-add-bg: #2ea04326;
+    --diff-add-num: #3fb9504d;
+    --diff-del-bg: #f851491a;
+    --diff-del-num: #f851494d;
+    --diff-hunk-bg: #388bfd1a;
+    --line-hl: #bb800926;
+    --shadow: 0 0 transparent;
+    --shadow-lg: 0 8px 24px #010409;
+    --hl-keyword: #ff7b72;
+    --hl-string: #a5d6ff;
+    --hl-comment: #9198a1;
+    --hl-number: #79c0ff;
+    --hl-title: #d2a8ff;
+    --hl-attr: #79c0ff;
+    --hl-built: #ffa657;
+    --hl-tag: #7ee787;
+    color-scheme: dark;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -544,3 +589,57 @@ td.ln a:hover { color: var(--fg); text-decoration: none; }
   .repo-counters { display: none; }
   .landing h1 { font-size: 30px; }
 }
+
+/* ---------- added: repo actions, releases, refs, search, settings, theme ---------- */
+.c-star { color: #e3b341; fill: #e3b341; }
+.repo-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+.btn-group { display: inline-flex; }
+.btn-group > .btn:first-child { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.btn-group > .btn-counter { border-top-left-radius: 0; border-bottom-left-radius: 0; margin-left: -1px; cursor: default; font-weight: 600; }
+.fork-note { flex-basis: 100%; margin-top: -4px; }
+.btn-danger-outline { color: var(--danger); }
+.btn-danger-outline:hover { background: var(--danger-subtle); }
+.badge-warn { background: var(--attention-subtle); border-color: var(--attention-border); }
+.releases { display: flex; flex-direction: column; gap: 16px; }
+.release { margin-bottom: 16px; }
+.release-header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.release-header h2 { margin: 0; }
+.release-meta { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.assets-title { margin-top: 16px; }
+.asset-row, .branch-row { display: flex; align-items: center; gap: 8px; }
+.asset-row a { overflow-wrap: anywhere; }
+.asset-upload { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.asset-upload input[type=file] { max-width: 100%; }
+.breadcrumbs.small { margin-bottom: 12px; }
+.header-search { display: flex; align-items: center; gap: 6px; border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 0 8px; background: var(--bg); color: var(--fg-muted); min-width: 0; flex: 0 1 280px; }
+.header-search-input { border: 0; background: transparent; color: var(--fg); padding: 5px 0; width: 100%; min-width: 0; font: inherit; }
+.header-search-input:focus { outline: none; }
+@media (max-width: 543px) { .header-search { display: none; } }
+.search-page { padding-top: 24px; padding-bottom: 40px; }
+.search-form { display: flex; gap: 8px; margin-bottom: 16px; }
+.search-form .input { flex: 1; min-width: 0; }
+.search-layout { display: grid; gap: 16px; }
+@media (min-width: 768px) { .search-layout { grid-template-columns: 240px minmax(0, 1fr); } }
+.search-kinds, .settings-nav { display: flex; flex-direction: column; gap: 2px; }
+.search-kinds .menu-item, .settings-nav .menu-item { display: flex; align-items: center; gap: 8px; border-radius: var(--radius);
+  background: none; border: 0; text-align: left; font: inherit; color: var(--fg); padding: 6px 8px; cursor: pointer; width: 100%; }
+.search-kinds .menu-item.selected, .settings-nav .menu-item.selected { background: var(--neutral-muted); font-weight: 600; }
+.search-kinds .counter { margin-left: auto; }
+.code-fragment { background: var(--bg-subtle); border: 1px solid var(--border-muted); border-radius: var(--radius);
+  padding: 6px 8px; margin: 6px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.settings-layout { display: grid; gap: 24px; padding-top: 24px; padding-bottom: 40px; }
+@media (min-width: 768px) { .settings-layout { grid-template-columns: 220px minmax(0, 1fr); } }
+.settings-main > .box { margin-bottom: 24px; }
+.key-summary { overflow-wrap: anywhere; }
+.clone-tabs { display: flex; gap: 4px; margin-bottom: 8px; }
+.clone-tabs button { background: none; border: 0; border-bottom: 2px solid transparent; padding: 4px 6px; font: inherit; color: var(--fg-muted); cursor: pointer; }
+.clone-tabs button[aria-selected=true] { color: var(--fg); border-bottom-color: #fd8c73; font-weight: 600; }
+.repo-links { list-style: none; padding: 0; margin: 12px 0; display: flex; flex-direction: column; gap: 6px; }
+.repo-links a { color: var(--fg-muted); }
+.repo-links a:hover { color: var(--accent); }
+.review-state { font-weight: 600; }
+.review-approved { color: var(--success); }
+.review-changes { color: var(--danger); }
+.review-form { margin-top: 8px; }
+.review-form .radio-row { display: flex; gap: 8px; align-items: flex-start; margin: 4px 0; }

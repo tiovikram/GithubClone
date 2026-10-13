@@ -13,6 +13,7 @@ pub mod actions;
 pub mod actions_secrets;
 pub mod commit_comments;
 pub mod deployments;
+pub mod discussions;
 pub mod gists;
 pub mod gist_git;
 pub mod misc;

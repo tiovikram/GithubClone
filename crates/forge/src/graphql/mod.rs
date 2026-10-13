@@ -9,6 +9,7 @@
 //!   `ValidationMode::Fast` and fill absent nullable variables with `null`.
 //! * Feature-gated fields from §5.2 are deliberately absent so gh takes the simplest GHES path.
 pub mod connection;
+pub mod discussions;
 pub mod enums;
 pub mod ghcompat;
 pub mod gists;
@@ -48,7 +49,7 @@ pub use loaders::Ld;
 /// The mutation root: the original subset plus the gh-compatibility additions.
 #[derive(async_graphql::MergedObject)]
 #[graphql(name = "Mutation")]
-pub struct MutationRoot(mutation::Mutation, ghcompat::GhMutation, projects::ProjectsMutation);
+pub struct MutationRoot(mutation::Mutation, ghcompat::GhMutation, discussions::DiscussionMutation, projects::ProjectsMutation);
 
 pub type ForgeSchema = Schema<query::Query, MutationRoot, EmptySubscription>;
 
@@ -56,7 +57,11 @@ pub type ForgeSchema = Schema<query::Query, MutationRoot, EmptySubscription>;
 pub fn schema() -> &'static ForgeSchema {
     static SCHEMA: OnceLock<ForgeSchema> = OnceLock::new();
     SCHEMA.get_or_init(|| {
-        Schema::build(query::Query, MutationRoot(mutation::Mutation, ghcompat::GhMutation, projects::ProjectsMutation), EmptySubscription)
+        Schema::build(
+            query::Query,
+            MutationRoot(mutation::Mutation, ghcompat::GhMutation, discussions::DiscussionMutation, projects::ProjectsMutation),
+            EmptySubscription,
+        )
             .validation_mode(ValidationMode::Fast)
             .limit_recursive_depth(64)
             // Bound query shape (aliases multiply work): gh's deepest queries (and

@@ -37,6 +37,8 @@ pub enum Node {
     ProjectV2(super::projects::ProjectV2),
     ProjectV2Item(super::projects::ProjectV2Item),
     DraftIssue(super::projects::GDraftIssue),
+    Discussion(super::discussions::GDiscussion),
+    DiscussionComment(super::discussions::GDiscussionComment),
 }
 
 fn user_node(u: User) -> Node {
@@ -138,6 +140,8 @@ pub async fn resolve_node(ctx: &Context<'_>, id: &str) -> async_graphql::Result<
         ("ProjectV2", Some(i)) => super::projects::node_project(ctx, i).await?.map(Node::ProjectV2),
         ("ProjectV2Item", Some(i)) => super::projects::node_item(ctx, i).await?.map(Node::ProjectV2Item),
         ("DraftIssue", Some(i)) => super::projects::node_draft(ctx, i).await?.map(Node::DraftIssue),
+        ("Discussion", Some(i)) => super::discussions::discussion_node(ctx, i).await?.map(Node::Discussion),
+        ("DiscussionComment", Some(i)) => super::discussions::comment_node(ctx, i).await?.map(Node::DiscussionComment),
         _ => None,
     })
 }

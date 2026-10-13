@@ -236,3 +236,72 @@ async fn search_ignores_grouping_parentheses() {
     assert_eq!(st, 200);
     assert_eq!(v["total_count"], 1, "{v}");
 }
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn discussions_lifecycle() {
+    let s = TestServer::start().await;
+    let u = s.user().await;
+    let repo = s.create_repo(&u, true).await;
+    let q_repo = "query($o:String!,$n:String!){repository(owner:$o,name:$n){id hasDiscussionsEnabled}}";
+    let d = data(&s, &u, q_repo, json!({"o": u.login, "n": repo})).await;
+    assert_eq!(d["repository"]["hasDiscussionsEnabled"], false);
+    let rid = d["repository"]["id"].as_str().unwrap().to_string();
+    let (st, _) = s.call(Some(&u), "PATCH", &format!("/repos/{}/{repo}", u.login), Some(json!({"has_discussions": true}))).await;
+    assert_eq!(st, 200);
+    let d = data(
+        &s,
+        &u,
+        "query($o:String!,$n:String!){repository(owner:$o,name:$n){discussionCategories(first:100){nodes{id slug isAnswerable}}}}",
+        json!({"o": u.login, "n": repo}),
+    )
+    .await;
+    let cats = d["repository"]["discussionCategories"]["nodes"].as_array().unwrap().clone();
+    let general = cats.iter().find(|c| c["slug"] == "general").unwrap()["id"].as_str().unwrap().to_string();
+    let qa = cats.iter().find(|c| c["slug"] == "q-a").unwrap();
+    assert_eq!(qa["isAnswerable"], true);
+    let qa = qa["id"].as_str().unwrap().to_string();
+
+    let d = data(
+        &s,
+        &u,
+        "mutation($r:ID!,$c:ID!){createDiscussion(input:{repositoryId:$r,categoryId:$c,title:\"Q\",body:\"B\"}){discussion{id number category{name}}}}",
+        json!({"r": rid, "c": qa}),
+    )
+    .await;
+    let disc = &d["createDiscussion"]["discussion"];
+    assert_eq!(disc["category"]["name"], "Q&A");
+    let did = disc["id"].as_str().unwrap().to_string();
+    let n = disc["number"].as_i64().unwrap();
+    let d = data(&s, &u, "mutation($d:ID!){addDiscussionComment(input:{discussionId:$d,body:\"answer\"}){comment{id url}}}", json!({"d": did})).await;
+    let cid = d["addDiscussionComment"]["comment"]["id"].as_str().unwrap().to_string();
+    assert!(d["addDiscussionComment"]["comment"]["url"].as_str().unwrap().contains(&format!("/discussions/{n}#discussioncomment-")));
+    data(&s, &u, "mutation($d:ID!,$c:ID!){addDiscussionComment(input:{discussionId:$d,body:\"reply\",replyToId:$c}){comment{id}}}", json!({"d": did, "c": cid})).await;
+    let d = data(&s, &u, "mutation($c:ID!){markDiscussionCommentAsAnswer(input:{id:$c}){discussion{isAnswered}}}", json!({"c": cid})).await;
+    assert_eq!(d["markDiscussionCommentAsAnswer"]["discussion"]["isAnswered"], true);
+    let d = data(
+        &s,
+        &u,
+        "mutation($d:ID!,$c:ID!){updateDiscussion(input:{discussionId:$d,title:\"Q2\",categoryId:$c}){discussion{title category{slug}}}}",
+        json!({"d": did, "c": general}),
+    )
+    .await;
+    assert_eq!(d["updateDiscussion"]["discussion"], json!({"title": "Q2", "category": {"slug": "general"}}));
+    let d = data(
+        &s,
+        &u,
+        "query($o:String!,$n:String!,$i:Int!){repository(owner:$o,name:$n){discussion(number:$i){comments(first:10){totalCount nodes{isAnswer replies(last:4){nodes{body}}}}} discussions(first:10,states:[OPEN]){totalCount}}}",
+        json!({"o": u.login, "n": repo, "i": n}),
+    )
+    .await;
+    let r = &d["repository"];
+    assert_eq!(r["discussions"]["totalCount"], 1);
+    assert_eq!(r["discussion"]["comments"]["totalCount"], 1);
+    assert_eq!(r["discussion"]["comments"]["nodes"][0]["isAnswer"], true);
+    assert_eq!(r["discussion"]["comments"]["nodes"][0]["replies"]["nodes"][0]["body"], "reply");
+    let d = data(&s, &u, "query($c:ID!){node(id:$c){... on DiscussionComment{discussion{id}}}}", json!({"c": cid})).await;
+    assert_eq!(d["node"]["discussion"]["id"], did);
+    // Others may read but not edit.
+    let other = s.user().await;
+    let v = gql(&s, &other, "mutation($d:ID!){updateDiscussion(input:{discussionId:$d,title:\"x\"}){discussion{id}}}", json!({"d": did})).await;
+    assert!(v["errors"].is_array(), "{v}");
+}
