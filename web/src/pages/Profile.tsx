@@ -10,8 +10,9 @@ export function ProfilePage() {
   const { user: me } = useAuth();
   const [sp, setSp] = useSearchParams();
   const page = Number(sp.get("page") || 1);
+  const tab = sp.get("tab") === "stars" ? "stars" : "repositories";
   const user = useAsync(() => api.user(owner), [owner]);
-  const repos = useAsync(() => api.userRepos(owner, page), [owner, page]);
+  const repos = useAsync(() => (tab === "stars" ? api.starred(owner, page) : api.userRepos(owner, page)), [owner, page, tab]);
   useTitle(user.data ? `${user.data.login}${user.data.name ? ` (${user.data.name})` : ""}` : owner);
   return (
     <Async state={user}>
@@ -33,24 +34,32 @@ export function ProfilePage() {
             {me?.login === u.login && <Link to="/settings/tokens" className="btn btn-block">Access tokens</Link>}
           </aside>
           <section className="profile-main">
+            <nav className="tabnav" aria-label="Profile">
+              <Link to={`/${u.login}`} className={"tabnav-tab" + (tab === "repositories" ? " selected" : "")}>
+                <RepoIcon /> Repositories {u.public_repos !== undefined && <span className="counter">{u.public_repos}</span>}
+              </Link>
+              <Link to={`/${u.login}?tab=stars`} className={"tabnav-tab" + (tab === "stars" ? " selected" : "")} data-testid="stars-tab">
+                <StarIcon /> Stars
+              </Link>
+            </nav>
             <div className="toolbar">
-              <h2 className="h4"><RepoIcon /> Repositories {u.public_repos !== undefined && <span className="counter">{u.public_repos}</span>}</h2>
               <span className="spacer" />
               {me?.login === u.login && <Link to="/new" className="btn btn-primary btn-sm">New</Link>}
             </div>
             <Async state={repos}>
               {(p) =>
                 p.items.length === 0 ? (
-                  <Blankslate title={`${u.login} doesn't have any public repositories yet.`} />
+                  <Blankslate title={tab === "stars" ? `${u.login} hasn't starred any repositories yet.` : `${u.login} doesn't have any public repositories yet.`} />
                 ) : (
                   <ul className="list repo-list">
                     {p.items.map((r) => (
                       <li key={r.id} className="list-row repo-row">
                         <div>
                           <h3 className="h4 repo-row-title">
-                            <Link to={`/${r.full_name}`}>{r.name}</Link>{" "}
+                            <Link to={`/${r.full_name}`}>{tab === "stars" || r.owner.login !== u.login ? r.full_name : r.name}</Link>{" "}
                             <span className="badge">{r.private ? <><LockIcon size={12} /> Private</> : "Public"}</span>
                           </h3>
+                          {r.fork && <p className="muted small" data-testid="fork-note">{r.parent ? `Forked from ${r.parent.full_name}` : "Forked repository"}</p>}
                           {r.description && <p className="muted">{r.description}</p>}
                           <div className="muted small repo-row-meta">
                             {r.language && <span><span className="lang-dot" /> {r.language}</span>}
@@ -65,7 +74,7 @@ export function ProfilePage() {
               }
             </Async>
             {repos.data && <Pagination page={page} next={repos.data.next} prev={repos.data.prev} last={repos.data.last}
-              onPage={(n) => setSp({ page: String(n) })} />}
+              onPage={(n) => setSp(tab === "stars" ? { tab, page: String(n) } : { page: String(n) })} />}
           </section>
         </div>
       )}
