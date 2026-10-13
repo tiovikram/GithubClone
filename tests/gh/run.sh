@@ -700,15 +700,20 @@ printf -- '---\nname: hello-skill\ndescription: Says hello from forge\n---\n\n# 
 t "skill list"                               0 "hello-skill"                 "$GH" skill list --dir "$WORK/installed-skills"
 
 # ------------------------------------------------------------------------------------------------
-# discussions
+# discussions (numbers come from the repository's issue/PR sequence, like GitHub)
 
-t "discussion create"                        0 "/discussions/1"              "$GH" discussion create -R "$R" --title "Hello forge" --body "Let us discuss" --category General
+t "repo edit --enable-discussions"           0 ""                            "$GH" repo edit "$R" --enable-discussions
+t "discussion create"                        0 "/discussions/[0-9]+"         "$GH" discussion create -R "$R" --title "Hello forge" --body "Let us discuss" --category General
+DNUM="$(grep -Eo '/discussions/[0-9]+' "$(last_log)" | grep -Eo '[0-9]+$')"
+t "discussion create (Q&A)"                  0 "/discussions/[0-9]+"         "$GH" discussion create -R "$R" --title "How do I?" --body "Question" --category "Q&A"
 t "discussion list"                          0 "Hello forge"                 "$GH" discussion list -R "$R"
 t "discussion list --json"                   0 "\"title\": *\"Hello forge\"" "$GH" discussion list -R "$R" --json number,title,category,author
-t "discussion view"                          0 "Let us discuss"              "$GH" discussion view 1 -R "$R"
-t "discussion comment"                       0 ""                            "$GH" discussion comment 1 -R "$R" --body "A reply"
-t "discussion edit"                          0 ""                            "$GH" discussion edit 1 -R "$R" --title "Hello forge (edited)"
-K="discussion edit" t "discussion edit result" 0 "edited"                    "$GH" discussion view 1 -R "$R" --json title
+t "discussion list --category"               0 "How do I"                    "$GH" discussion list -R "$R" --category "Q&A"
+t "discussion view"                          0 "Let us discuss"              "$GH" discussion view "$DNUM" -R "$R"
+t "discussion comment"                       0 "discussioncomment-"          "$GH" discussion comment "$DNUM" -R "$R" --body "A reply"
+t "discussion view --comments"               0 "A reply"                     "$GH" discussion view "$DNUM" -R "$R" --comments
+t "discussion edit"                          0 ""                            "$GH" discussion edit "$DNUM" -R "$R" --title "Hello forge (edited)" --category Ideas
+K="discussion edit" t "discussion edit result" 0 "\"name\": *\"Ideas\""     "$GH" discussion view "$DNUM" -R "$R" --json title,category
 
 # ------------------------------------------------------------------------------------------------
 # projects (v2)
