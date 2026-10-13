@@ -69,6 +69,16 @@ if have brew && brew list --formula postgresql@16 >/dev/null 2>&1; then
   fi
 fi
 
+# 3b. build outputs inside this repo (cargo target, node_modules, web/dist, local data)
+ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+LOCAL_DIRS=()
+for d in target web/node_modules tools/conformance/node_modules web/dist data; do
+  [ -e "$ROOT_DIR/$d" ] && LOCAL_DIRS+=("$ROOT_DIR/$d")
+done
+if [ ${#LOCAL_DIRS[@]} -gt 0 ] && confirm "Delete repo-local build outputs (${LOCAL_DIRS[*]})?"; then
+  rm -rf "${LOCAL_DIRS[@]}"
+fi
+
 # 4. rust toolchain
 if [ -x "$HOME/.cargo/bin/rustup" ] || have rustup; then
   RUSTUP=$( [ -x "$HOME/.cargo/bin/rustup" ] && echo "$HOME/.cargo/bin/rustup" || command -v rustup )

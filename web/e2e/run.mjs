@@ -79,6 +79,13 @@ async function shot(name, p = page) {
   await p.screenshot({ path: join(SHOTS, `${name}.png`), fullPage: true });
 }
 
+/** In-flight requests, reported when a step fails (diagnoses navigation timeouts). */
+const pending = new Map();
+function trackPending(p) {
+  p.on("request", (r) => pending.set(r, Date.now()));
+  for (const ev of ["requestfinished", "requestfailed"]) p.on(ev, (r) => pending.delete(r));
+}
+
 async function step(name, fn) {
   const t = Date.now();
   try {
@@ -88,6 +95,7 @@ async function step(name, fn) {
   } catch (e) {
     results.push({ name, ok: false, err: e });
     log(`  FAIL ${name}: ${e.message}`);
+    for (const [r, at] of pending) log(`       still pending after ${Date.now() - at} ms: ${r.method()} ${r.url()}`);
     try {
       await shot(`FAIL-${name.replace(/[^a-z0-9]+/gi, "-")}`);
     } catch {
@@ -195,6 +203,7 @@ async function main() {
   });
   const ctx1 = await browser.createBrowserContext();
   page = await ctx1.newPage();
+  trackPending(page);
   // Generous timeouts: the forge dev build on a busy machine can take seconds per request.
   page.setDefaultTimeout(45000);
   page.setDefaultNavigationTimeout(60000);
