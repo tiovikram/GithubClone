@@ -1,13 +1,13 @@
 # gh compatibility report
 
-gh: `gh version 2.102.0 (2026-09-30)`, host `forge.localhost` (GHES path, http_unix_socket). Generated 2026-10-13T01:26:20Z.
+gh: `gh version 2.102.0 (2026-09-30)`, host `forge.localhost` (GHES path, http_unix_socket). Generated 2026-10-13T01:36:36Z.
 Denominator: see docs/gh-coverage.md (catalogue: tests/gh/commands.tsv).
 
-**PASS 147/166 forge-relevant gh commands (88%)**
+**PASS 166/166 forge-relevant gh commands (100%)**
 
-**147/197 of all gh commands (74%)**
+**166/197 of all gh commands (84%)**
 
-**Cases: PASS 317/336 (94%)**
+**Cases: PASS 349/349 (100%)**
 
 ## Commands
 
@@ -119,25 +119,25 @@ Denominator: see docs/gh-coverage.md (catalogue: tests/gh/commands.tsv).
 | `gh pr update-branch` | a | PASS | 4/4 |  |
 | `gh pr view` | a | PASS | 8/8 |  |
 | `gh preview prompter` | b | n/a | 0/0 | developer preview of gh's own TTY prompts; no host interaction, needs a terminal |
-| `gh project close` | a | FAIL | 0/1 | Projects (v2) |
-| `gh project copy` | a | FAIL | 0/1 | Projects (v2) |
-| `gh project create` | a | FAIL | 0/1 | Projects (v2) |
-| `gh project delete` | a | FAIL | 0/1 | Projects (v2) |
-| `gh project edit` | a | FAIL | 0/1 | Projects (v2) |
-| `gh project field-create` | a | FAIL | 0/1 | Projects (v2) |
-| `gh project field-delete` | a | FAIL | 0/1 | Projects (v2) |
-| `gh project field-list` | a | FAIL | 0/1 | Projects (v2) |
-| `gh project item-add` | a | FAIL | 0/1 | Projects (v2) |
-| `gh project item-archive` | a | FAIL | 0/1 | Projects (v2) |
-| `gh project item-create` | a | FAIL | 0/1 | Projects (v2) |
-| `gh project item-delete` | a | FAIL | 0/1 | Projects (v2) |
-| `gh project item-edit` | a | FAIL | 0/1 | Projects (v2) |
-| `gh project item-list` | a | FAIL | 0/1 | Projects (v2) |
-| `gh project link` | a | FAIL | 0/1 | Projects (v2) |
-| `gh project list` | a | FAIL | 0/1 | Projects (v2) |
-| `gh project mark-template` | a | FAIL | 0/1 | Projects (v2) |
-| `gh project unlink` | a | FAIL | 0/1 | Projects (v2) |
-| `gh project view` | a | FAIL | 0/1 | Projects (v2) |
+| `gh project close` | a | PASS | 2/2 | Projects (v2) |
+| `gh project copy` | a | PASS | 1/1 | Projects (v2) |
+| `gh project create` | a | PASS | 1/1 | Projects (v2) |
+| `gh project delete` | a | PASS | 2/2 | Projects (v2) |
+| `gh project edit` | a | PASS | 1/1 | Projects (v2) |
+| `gh project field-create` | a | PASS | 2/2 | Projects (v2) |
+| `gh project field-delete` | a | PASS | 2/2 | Projects (v2) |
+| `gh project field-list` | a | PASS | 1/1 | Projects (v2) |
+| `gh project item-add` | a | PASS | 1/1 | Projects (v2) |
+| `gh project item-archive` | a | PASS | 2/2 | Projects (v2) |
+| `gh project item-create` | a | PASS | 1/1 | Projects (v2) |
+| `gh project item-delete` | a | PASS | 2/2 | Projects (v2) |
+| `gh project item-edit` | a | PASS | 3/3 | Projects (v2) |
+| `gh project item-list` | a | PASS | 2/2 | Projects (v2) |
+| `gh project link` | a | PASS | 2/2 | Projects (v2) |
+| `gh project list` | a | PASS | 2/2 | Projects (v2) |
+| `gh project mark-template` | a | PASS | 2/2 | Projects (v2) |
+| `gh project unlink` | a | PASS | 2/2 | Projects (v2) |
+| `gh project view` | a | PASS | 1/1 | Projects (v2) |
 | `gh release create` | a | PASS | 3/3 |  |
 | `gh release delete` | a | PASS | 2/2 |  |
 | `gh release delete-asset` | a | PASS | 2/2 |  |
@@ -532,22 +532,35 @@ Denominator: see docs/gh-coverage.md (catalogue: tests/gh/commands.tsv).
 | 315 | discussion view --comments | discussion view | PASS | 0 |  |
 | 316 | discussion edit | discussion edit | PASS | 0 |  |
 | 317 | discussion edit result | discussion edit | PASS | 0 |  |
-| 318 | project create | project create | FAIL | 1 | exit 1 (want 0): GraphQL: Field 'createProjectV2' doesn't exist on type 'Mutation' (mutation.createProjectV2)  |
-| 319 | project list | project list | FAIL | 0 | output did not match /Roadmap/:  |
-| 320 | project view | project view | FAIL | 0 | output did not match /Roadmap/:   # Title                                                                        ## Description                                                                  |
-| 321 | project edit | project edit | FAIL | 1 | exit 1 (want 0): GraphQL: Field 'updateProjectV2' doesn't exist on type 'Mutation' (mutation.updateProjectV2)  |
-| 322 | project field-create | project field-create | FAIL | 1 | exit 1 (want 0): GraphQL: Field 'createProjectV2Field' doesn't exist on type 'Mutation' (mutation.createProjectV2Field)  |
-| 323 | project field-list | project field-list | FAIL | 0 | output did not match /Priority/:  |
-| 324 | project item-create | project item-create | FAIL | 1 | exit 1 (want 0): GraphQL: Field 'addProjectV2DraftIssue' doesn't exist on type 'Mutation' (mutation.addProjectV2DraftIssue)  |
-| 325 | project item-add | project item-add | FAIL | 1 | exit 1 (want 0): resource not found, please check the URL  |
-| 326 | project item-list | project item-list | FAIL | 0 | output did not match /Draft item/:  |
-| 327 | project item-edit | project item-edit | FAIL | 1 | exit 1 (want 0): specify the item to edit with `--id` or `--url` Edit a draft issue or a project item. The usual way to select the item and field is by name: pass the project  |
-| 328 | project item-archive | project item-archive | FAIL | 1 | exit 1 (want 0): GraphQL: Field 'archiveProjectV2Item' doesn't exist on type 'Mutation' (mutation.archiveProjectV2Item)  |
-| 329 | project item-delete | project item-delete | FAIL | 1 | exit 1 (want 0): GraphQL: Field 'deleteProjectV2Item' doesn't exist on type 'Mutation' (mutation.deleteProjectV2Item)  |
-| 330 | project field-delete | project field-delete | FAIL | 1 | exit 1 (want 0): GraphQL: Field 'deleteProjectV2Field' doesn't exist on type 'Mutation' (mutation.deleteProjectV2Field)  |
-| 331 | project link | project link | FAIL | 1 | exit 1 (want 0): GraphQL: Field 'linkProjectV2ToRepository' doesn't exist on type 'Mutation' (mutation.linkProjectV2ToRepository)  |
-| 332 | project unlink | project unlink | FAIL | 1 | exit 1 (want 0): GraphQL: Field 'unlinkProjectV2FromRepository' doesn't exist on type 'Mutation' (mutation.unlinkProjectV2FromRepository)  |
-| 333 | project copy | project copy | FAIL | 1 | exit 1 (want 0): GraphQL: Field 'copyProjectV2' doesn't exist on type 'Mutation' (mutation.copyProjectV2)  |
-| 334 | project mark-template | project mark-template | FAIL | 1 | exit 1 (want 0): GraphQL: Field 'markProjectV2AsTemplate' doesn't exist on type 'Mutation' (mutation.markProjectV2AsTemplate)  |
-| 335 | project close | project close | FAIL | 1 | exit 1 (want 0): GraphQL: Field 'updateProjectV2' doesn't exist on type 'Mutation' (mutation.updateProjectV2)  |
-| 336 | project delete | project delete | FAIL | 1 | exit 1 (want 0): GraphQL: Field 'deleteProjectV2' doesn't exist on type 'Mutation' (mutation.deleteProjectV2)  |
+| 318 | project create | project create | PASS | 0 |  |
+| 319 | project list | project list | PASS | 0 |  |
+| 320 | project list --format json | project list | PASS | 0 |  |
+| 321 | project view | project view | PASS | 0 |  |
+| 322 | project edit | project edit | PASS | 0 |  |
+| 323 | project field-create | project field-create | PASS | 0 |  |
+| 324 | project field-create (text) | project field-create | PASS | 0 |  |
+| 325 | project field-list | project field-list | PASS | 0 |  |
+| 326 | project item-create | project item-create | PASS | 0 |  |
+| 327 | project item-add | project item-add | PASS | 0 |  |
+| 328 | project item-list | project item-list | PASS | 0 |  |
+| 329 | project item-edit (draft) | project item-edit | PASS | 0 |  |
+| 330 | project item-edit (field by name) | project item-edit | PASS | 0 |  |
+| 331 | project item-edit result | project item-edit | PASS | 0 |  |
+| 332 | project item-list --query | project item-list | PASS | 0 |  |
+| 333 | project item-archive | project item-archive | PASS | 0 |  |
+| 334 | project item-archive result | project item-archive | PASS | 0 |  |
+| 335 | project item-delete | project item-delete | PASS | 0 |  |
+| 336 | project item-delete result | project item-delete | PASS | 0 |  |
+| 337 | project field-delete | project field-delete | PASS | 0 |  |
+| 338 | project field-delete result | project field-delete | PASS | 1 |  |
+| 339 | project link | project link | PASS | 0 |  |
+| 340 | project link result | project link | PASS | 0 |  |
+| 341 | project unlink | project unlink | PASS | 0 |  |
+| 342 | project unlink result | project unlink | PASS | 0 |  |
+| 343 | project copy | project copy | PASS | 0 |  |
+| 344 | project mark-template | project mark-template | PASS | 0 |  |
+| 345 | project mark-template result | project mark-template | PASS | 0 |  |
+| 346 | project close | project close | PASS | 0 |  |
+| 347 | project close --undo | project close | PASS | 0 |  |
+| 348 | project delete | project delete | PASS | 0 |  |
+| 349 | project delete result | project delete | PASS | 1 |  |

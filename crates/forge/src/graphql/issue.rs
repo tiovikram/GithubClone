@@ -569,16 +569,18 @@ impl GIssue {
         let _ = (first, after, last, before, archived_states);
         ProjectCardConnection::empty()
     }
+    #[allow(clippy::too_many_arguments)]
     async fn project_items(
         &self,
+        ctx: &Context<'_>,
         first: Option<i32>,
         after: Option<String>,
         last: Option<i32>,
         before: Option<String>,
         #[graphql(default = true)] include_archived: bool,
-    ) -> ProjectV2ItemConnection {
-        let _ = (first, after, last, before, include_archived);
-        ProjectV2ItemConnection::empty()
+    ) -> async_graphql::Result<ProjectV2ItemConnection> {
+        let args = super::connection::ConnArgs::new(first, after, last, before);
+        super::projects::items_for_issue(ctx, self.row.id, include_archived, args).await
     }
     async fn closed_by_pull_requests_references(
         &self,

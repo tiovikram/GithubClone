@@ -48,6 +48,15 @@ case to one command and writes per-command results to `tests/gh/report.md`.
 - **Projects (v2) and Discussions.** Both ship with GitHub Enterprise Server and gh drives them
   through standard GraphQL, so they count. They are not marked N/A just because forge lacked
   them.
+- **Projects (v2)** are GraphQL-only, like GitHub (`graphql::projects`, `api::projects_v2`).
+  A user's projects are managed by that user; an organization's by its admins, and members
+  can read and create them. Public projects are readable by everyone. New projects get
+  GitHub's default fields (Title, Assignees, Status, Labels, Linked pull requests, Milestone,
+  Repository, Reviewers). Custom fields can be text, number, date, single-select or iteration.
+  Title, Assignees, Labels, Milestone and Repository values come from the issue or pull
+  request. Linked-pull-request and reviewer values are not populated yet. `items(query:)`
+  supports free text, `is:` qualifiers and `<field>:<value>`. Team links return an error,
+  because forge has no team–project links.
 - **Actions.** forge has no runner. Workflows come from `.github/workflows` and can be enabled,
   disabled and dispatched. A dispatch records a queued run, which can be listed, viewed,
   cancelled, re-run, watched and deleted. Jobs, logs and artifacts are validly empty, so

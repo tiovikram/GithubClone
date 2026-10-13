@@ -246,17 +246,24 @@ impl GUser {
         )
         .await
     }
+    #[allow(clippy::too_many_arguments)]
     async fn projects_v2(
         &self,
+        ctx: &Context<'_>,
         first: Option<i32>,
         after: Option<String>,
         last: Option<i32>,
         before: Option<String>,
         query: Option<String>,
         order_by: Option<ProjectV2Order>,
-    ) -> ProjectV2Connection {
-        let _ = (first, after, last, before, query, order_by);
-        ProjectV2Connection::empty()
+    ) -> async_graphql::Result<ProjectV2Connection> {
+        super::projects::projects_for_owner(ctx, &self.0, query, order_by, ConnArgs::new(first, after, last, before)).await
+    }
+    async fn project_v2(&self, ctx: &Context<'_>, number: i32) -> async_graphql::Result<Option<super::projects::ProjectV2>> {
+        super::projects::project_for_owner(ctx, &self.0, number).await
+    }
+    async fn viewer_can_create_projects(&self, ctx: &Context<'_>) -> async_graphql::Result<bool> {
+        super::projects::viewer_can_create(ctx, &self.0).await
     }
 }
 
@@ -349,17 +356,24 @@ impl GOrg {
         )
         .await
     }
+    #[allow(clippy::too_many_arguments)]
     async fn projects_v2(
         &self,
+        ctx: &Context<'_>,
         first: Option<i32>,
         after: Option<String>,
         last: Option<i32>,
         before: Option<String>,
         query: Option<String>,
         order_by: Option<ProjectV2Order>,
-    ) -> ProjectV2Connection {
-        let _ = (first, after, last, before, query, order_by);
-        ProjectV2Connection::empty()
+    ) -> async_graphql::Result<ProjectV2Connection> {
+        super::projects::projects_for_owner(ctx, &self.0, query, order_by, ConnArgs::new(first, after, last, before)).await
+    }
+    async fn project_v2(&self, ctx: &Context<'_>, number: i32) -> async_graphql::Result<Option<super::projects::ProjectV2>> {
+        super::projects::project_for_owner(ctx, &self.0, number).await
+    }
+    async fn viewer_can_create_projects(&self, ctx: &Context<'_>) -> async_graphql::Result<bool> {
+        super::projects::viewer_can_create(ctx, &self.0).await
     }
     async fn projects(
         &self,
