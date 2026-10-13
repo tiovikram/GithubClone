@@ -50,9 +50,9 @@ crate::gql_connection!(RefConnection, RefEdge, "RefConnection", "RefEdge", GRef)
 crate::gql_connection!(ReleaseConnection, ReleaseEdge, "ReleaseConnection", "ReleaseEdge", GRelease);
 crate::gql_connection!(RepositoryTopicConnection, RepositoryTopicEdge, "RepositoryTopicConnection", "RepositoryTopicEdge", RepositoryTopic);
 crate::gql_connection!(ProjectConnection, ProjectEdge, "ProjectConnection", "ProjectEdge", Project);
-crate::gql_connection!(ProjectV2Connection, ProjectV2Edge, "ProjectV2Connection", "ProjectV2Edge", ProjectV2);
 crate::gql_connection!(ProjectCardConnection, ProjectCardEdge, "ProjectCardConnection", "ProjectCardEdge", ProjectCard);
-crate::gql_connection!(ProjectV2ItemConnection, ProjectV2ItemEdge, "ProjectV2ItemConnection", "ProjectV2ItemEdge", ProjectV2Item);
+// Projects (v2) live in `graphql::projects`; re-exported for the types that link to them.
+pub use super::projects::{ProjectV2Connection, ProjectV2ItemConnection};
 crate::gql_connection!(GitActorConnection, GitActorEdge, "GitActorConnection", "GitActorEdge", GitActor);
 crate::gql_connection!(
     StatusCheckRollupContextConnection,
@@ -745,17 +745,18 @@ impl GRepo {
         let _ = (first, after, last, before, states, order_by, search);
         ProjectConnection::empty()
     }
+    #[allow(clippy::too_many_arguments)]
     async fn projects_v2(
         &self,
+        ctx: &Context<'_>,
         first: Option<i32>,
         after: Option<String>,
         last: Option<i32>,
         before: Option<String>,
         query: Option<String>,
         order_by: Option<ProjectV2Order>,
-    ) -> ProjectV2Connection {
-        let _ = (first, after, last, before, query, order_by);
-        ProjectV2Connection::empty()
+    ) -> async_graphql::Result<ProjectV2Connection> {
+        super::projects::projects_for_repo(ctx, self.ctx.repo.id, query, order_by, ConnArgs::new(first, after, last, before)).await
     }
 }
 
@@ -1726,35 +1727,6 @@ impl Project {
 }
 
 #[derive(Clone)]
-pub struct ProjectV2;
-
-#[Object]
-impl ProjectV2 {
-    pub async fn id(&self) -> ID {
-        ID(String::new())
-    }
-    async fn number(&self) -> i32 {
-        0
-    }
-    async fn title(&self) -> String {
-        String::new()
-    }
-    async fn closed(&self) -> bool {
-        false
-    }
-    pub async fn resource_path(&self) -> Uri {
-        Uri(String::new())
-    }
-    pub async fn url(&self) -> Uri {
-        Uri(String::new())
-    }
-    async fn items(&self, first: Option<i32>, after: Option<String>, last: Option<i32>, before: Option<String>, query: Option<String>) -> ProjectV2ItemConnection {
-        let _ = (first, after, last, before, query);
-        ProjectV2ItemConnection::empty()
-    }
-}
-
-#[derive(Clone)]
 pub struct ProjectCard;
 
 #[Object]
@@ -1779,46 +1751,5 @@ impl ProjectColumn {
     }
     async fn name(&self) -> String {
         String::new()
-    }
-}
-
-#[derive(Clone)]
-pub struct ProjectV2Item;
-
-#[Object]
-impl ProjectV2Item {
-    pub async fn id(&self) -> ID {
-        ID(String::new())
-    }
-    async fn project(&self) -> ProjectV2 {
-        ProjectV2
-    }
-    async fn content(&self) -> Option<IssueOrPullRequest> {
-        None
-    }
-    async fn field_value_by_name(&self, name: String) -> Option<ProjectV2ItemFieldValue> {
-        let _ = name;
-        None
-    }
-}
-
-#[derive(Union, Clone)]
-pub enum ProjectV2ItemFieldValue {
-    ProjectV2ItemFieldSingleSelectValue(ProjectV2ItemFieldSingleSelectValue),
-}
-
-#[derive(Clone)]
-pub struct ProjectV2ItemFieldSingleSelectValue;
-
-#[Object]
-impl ProjectV2ItemFieldSingleSelectValue {
-    pub async fn id(&self) -> ID {
-        ID(String::new())
-    }
-    async fn name(&self) -> Option<String> {
-        None
-    }
-    async fn option_id(&self) -> Option<String> {
-        None
     }
 }

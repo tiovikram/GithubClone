@@ -18,6 +18,7 @@ pub mod gist_git;
 pub mod misc;
 pub mod orgs_extra;
 pub mod plat;
+pub mod projects_v2;
 pub mod releases;
 pub mod repo_extras;
 pub mod social;

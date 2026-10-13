@@ -20,6 +20,12 @@ fn prefix(kind: &str) -> &'static str {
         "ReleaseAsset" => "RA_",
         "Commit" => "C_",
         "Ref" => "REF_",
+        "ProjectV2" => "PVT_",
+        "ProjectV2Item" => "PVTI_",
+        "ProjectV2Field" => "PVTF_",
+        "ProjectV2SingleSelectField" => "PVTSSF_",
+        "ProjectV2IterationField" => "PVTIF_",
+        "DraftIssue" => "DI_",
         _ => "N_",
     }
 }

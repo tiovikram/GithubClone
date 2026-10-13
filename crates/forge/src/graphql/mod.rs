@@ -15,6 +15,7 @@ pub mod gists;
 pub mod issue;
 pub mod loaders;
 pub mod mutation;
+pub mod projects;
 pub mod pull;
 pub mod query;
 pub mod repo;
@@ -47,7 +48,7 @@ pub use loaders::Ld;
 /// The mutation root: the original subset plus the gh-compatibility additions.
 #[derive(async_graphql::MergedObject)]
 #[graphql(name = "Mutation")]
-pub struct MutationRoot(mutation::Mutation, ghcompat::GhMutation);
+pub struct MutationRoot(mutation::Mutation, ghcompat::GhMutation, projects::ProjectsMutation);
 
 pub type ForgeSchema = Schema<query::Query, MutationRoot, EmptySubscription>;
 
@@ -55,7 +56,7 @@ pub type ForgeSchema = Schema<query::Query, MutationRoot, EmptySubscription>;
 pub fn schema() -> &'static ForgeSchema {
     static SCHEMA: OnceLock<ForgeSchema> = OnceLock::new();
     SCHEMA.get_or_init(|| {
-        Schema::build(query::Query, MutationRoot(mutation::Mutation, ghcompat::GhMutation), EmptySubscription)
+        Schema::build(query::Query, MutationRoot(mutation::Mutation, ghcompat::GhMutation, projects::ProjectsMutation), EmptySubscription)
             .validation_mode(ValidationMode::Fast)
             .limit_recursive_depth(64)
             // Bound query shape (aliases multiply work): gh's deepest queries (and

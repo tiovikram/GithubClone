@@ -34,6 +34,9 @@ pub enum Node {
     Release(GRelease),
     Ref(GRef),
     Commit(GCommit),
+    ProjectV2(super::projects::ProjectV2),
+    ProjectV2Item(super::projects::ProjectV2Item),
+    DraftIssue(super::projects::GDraftIssue),
 }
 
 fn user_node(u: User) -> Node {
@@ -132,12 +135,19 @@ pub async fn resolve_node(ctx: &Context<'_>, id: &str) -> async_graphql::Result<
                 refs.get(rest).map(|oid| Node::Ref(GRef { repo: r, name: rest.to_string(), oid: oid.clone() }))
             }
         }
+        ("ProjectV2", Some(i)) => super::projects::node_project(ctx, i).await?.map(Node::ProjectV2),
+        ("ProjectV2Item", Some(i)) => super::projects::node_item(ctx, i).await?.map(Node::ProjectV2Item),
+        ("DraftIssue", Some(i)) => super::projects::node_draft(ctx, i).await?.map(Node::DraftIssue),
         _ => None,
     })
 }
 
 #[Object]
 impl Query {
+    /// The issue, pull request or repository at a URL.
+    async fn resource(&self, ctx: &Context<'_>, url: super::enums::Uri) -> async_graphql::Result<Option<super::projects::UniformResourceLocatable>> {
+        super::projects::resource(ctx, &url.0).await
+    }
     /// The currently authenticated user.
     async fn viewer(&self, ctx: &Context<'_>) -> GUser {
         GUser(Arc::new(ctx.data_unchecked::<Viewer>().0.clone()))

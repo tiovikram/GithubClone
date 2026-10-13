@@ -711,30 +711,47 @@ t "discussion edit"                          0 ""                            "$G
 K="discussion edit" t "discussion edit result" 0 "edited"                    "$GH" discussion view 1 -R "$R" --json title
 
 # ------------------------------------------------------------------------------------------------
-# projects (v2)
+# projects (v2) — without a terminal gh prints nothing on success, so cases use --format json or
+# check the result with a follow-up query.
 
-t "project create"                           0 "Roadmap"                     "$GH" project create --owner "$ALICE" --title "Roadmap"
+pj() { "$GH" api graphql -f query="$1" "${@:2}"; }
+t "project create"                           0 "\"title\":\"Roadmap\""       "$GH" project create --owner "$ALICE" --title "Roadmap" --format json
 t "project list"                             0 "Roadmap"                     "$GH" project list --owner "$ALICE"
+t "project list --format json"               0 "\"number\":1,"               "$GH" project list --owner "$ALICE" --format json
 t "project view"                             0 "Roadmap"                     "$GH" project view 1 --owner "$ALICE"
-t "project edit"                             0 ""                            "$GH" project edit 1 --owner "$ALICE" --description "Plans"
-t "project field-create"                     0 ""                            "$GH" project field-create 1 --owner "$ALICE" --name Priority --data-type SINGLE_SELECT --single-select-options "High,Low"
-t "project field-list"                       0 "Priority"                    "$GH" project field-list 1 --owner "$ALICE"
+t "project edit"                             0 "\"shortDescription\":\"Plans\"" "$GH" project edit 1 --owner "$ALICE" --description "Plans" --format json
+t "project field-create"                     0 "\"name\":\"Priority\""       "$GH" project field-create 1 --owner "$ALICE" --name Priority --data-type SINGLE_SELECT --single-select-options "High,Low" --format json
+t "project field-create (text)"              0 "\"name\":\"Notes\""          "$GH" project field-create 1 --owner "$ALICE" --name Notes --data-type TEXT --format json
+t "project field-list"                       0 "Priority.*ProjectV2SingleSelectField" "$GH" project field-list 1 --owner "$ALICE"
 FIELD_ID="$("$GH" project field-list 1 --owner "$ALICE" --format json --jq '.fields[] | select(.name=="Priority") | .id' 2>/dev/null)"
-t "project item-create"                      0 ""                            "$GH" project item-create 1 --owner "$ALICE" --title "Draft item" --body "todo"
-t "project item-add"                         0 ""                            "$GH" project item-add 1 --owner "$ALICE" --url "https://$HOST/$ALICE/demo/issues/1"
+t "project item-create"                      0 "\"type\":\"DraftIssue\""     "$GH" project item-create 1 --owner "$ALICE" --title "Draft item" --body "todo" --format json
+t "project item-add"                         0 "\"type\":\"Issue\""          "$GH" project item-add 1 --owner "$ALICE" --url "https://$HOST/$ALICE/demo/issues/1" --format json
 t "project item-list"                        0 "Draft item"                  "$GH" project item-list 1 --owner "$ALICE"
-ITEM_ID="$("$GH" project item-list 1 --owner "$ALICE" --format json --jq '.items[] | select(.title=="Draft item") | .id' 2>/dev/null)"
-PROJ_ID="$("$GH" project view 1 --owner "$ALICE" --format json --jq .id 2>/dev/null)"
-t "project item-edit"                        0 ""                            "$GH" project item-edit --id "$ITEM_ID" --title "Draft item (edited)"
+ITEM_ID="$("$GH" project item-list 1 --owner "$ALICE" --format json --jq '.items[] | select(.content.title=="Draft item") | .id' 2>/dev/null)"
+DRAFT_ID="$("$GH" project item-list 1 --owner "$ALICE" --format json --jq '.items[] | select(.content.title=="Draft item") | .content.id' 2>/dev/null)"
+t "project item-edit (draft)"                0 "Draft item \\(edited\\)"     "$GH" project item-edit --id "$DRAFT_ID" --title "Draft item (edited)" --format json
+t "project item-edit (field by name)"        0 ""                            "$GH" project item-edit 1 --owner "$ALICE" --url "https://$HOST/$ALICE/demo/issues/1" --field Priority --value High
+K="project item-edit" t "project item-edit result" 0 "^High\$"               "$GH" project item-list 1 --owner "$ALICE" --format json --jq '.items[] | select(.content.number==1) | .priority'
+t "project item-list --query"                0 "^1\$"                        "$GH" project item-list 1 --owner "$ALICE" --query 'priority:"High"' --format json --jq '.items | length'
 t "project item-archive"                     0 ""                            "$GH" project item-archive 1 --owner "$ALICE" --id "$ITEM_ID"
+K="project item-archive" t "project item-archive result" 0 "\"isArchived\": *true" pj 'query($id:ID!){node(id:$id){... on ProjectV2Item{isArchived}}}' -f id="$ITEM_ID"
 t "project item-delete"                      0 ""                            "$GH" project item-delete 1 --owner "$ALICE" --id "$ITEM_ID"
+K="project item-delete" t "project item-delete result" 0 "^1\$"              "$GH" project item-list 1 --owner "$ALICE" --format json --jq '.items | length'
 t "project field-delete"                     0 ""                            "$GH" project field-delete --id "$FIELD_ID"
+K="project field-delete" t "project field-delete result" 1 ""                sh -c "'$GH' project field-list 1 --owner '$ALICE' | grep -q Priority"
 t "project link"                             0 ""                            "$GH" project link 1 --owner "$ALICE" --repo "$ALICE/demo"
+K="project link" t "project link result"     0 "Roadmap"                     pj 'query($o:String!){repository(owner:$o,name:"demo"){projectsV2(first:5){nodes{title}}}}' -f o="$ALICE"
 t "project unlink"                           0 ""                            "$GH" project unlink 1 --owner "$ALICE" --repo "$ALICE/demo"
-t "project copy"                             0 ""                            "$GH" project copy 1 --source-owner "$ALICE" --target-owner "$ALICE" --title "Roadmap copy"
+K="project unlink" t "project unlink result" 0 "\"nodes\": *\\[\\]"          pj 'query($o:String!){repository(owner:$o,name:"demo"){projectsV2(first:5){nodes{title}}}}' -f o="$ALICE"
+t "project copy"                             0 "\"title\":\"Roadmap copy\""  "$GH" project copy 1 --source-owner "$ALICE" --target-owner "$ALICE" --title "Roadmap copy" --format json
+"$GH" project create --owner "$ORG" --title "Org board" >/dev/null 2>&1
 t "project mark-template"                    0 ""                            "$GH" project mark-template 1 --owner "$ORG"
-t "project close"                            0 ""                            "$GH" project close 1 --owner "$ALICE"
-t "project delete"                           0 ""                            "$GH" project delete 1 --owner "$ALICE"
+K="project mark-template" t "project mark-template result" 0 "\"template\": *true" pj 'query($o:String!){organization(login:$o){projectV2(number:1){template}}}' -f o="$ORG"
+t "project close"                            0 "\"closed\":true"             "$GH" project close 1 --owner "$ALICE" --format json
+t "project close --undo"                     0 "\"closed\":false"            "$GH" project close 1 --owner "$ALICE" --undo --format json
+t "project delete"                           0 "\"title\":\"Roadmap copy\""  "$GH" project delete 2 --owner "$ALICE" --format json
+K="project delete" t "project delete result" 1 "Could not resolve to a ProjectV2" "$GH" project view 2 --owner "$ALICE"
+
 
 # ------------------------------------------------------------------------------------------------
 # Report: per case, then per gh command against the catalogue (tests/gh/commands.tsv).
