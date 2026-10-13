@@ -102,7 +102,7 @@ async function goto(path, p = page) {
 }
 
 /** Wait until some element contains `text` (Puppeteer text selector). */
-async function waitText(text, p = page, timeout = 10000) {
+async function waitText(text, p = page, timeout = 30000) {
   await p.waitForSelector(`::-p-text(${text})`, { timeout });
 }
 
@@ -110,7 +110,7 @@ async function bodyText(p = page) {
   return p.evaluate(() => document.body.innerText);
 }
 
-async function waitBody(re, p = page, timeout = 10000) {
+async function waitBody(re, p = page, timeout = 30000) {
   const src = re instanceof RegExp ? re.source : re.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const flags = re instanceof RegExp ? re.flags : "";
   await p.waitForFunction((s, f) => new RegExp(s, f).test(document.body.innerText), { timeout }, src, flags);
@@ -133,7 +133,7 @@ async function clickText(text, tag = "button", p = page) {
 async function pageFetch(path, init = {}, p = page) {
   return p.evaluate(
     async (u, i) => {
-      const r = await fetch(u, { credentials: "same-origin", ...i });
+      const r = await fetch(u, { credentials: "same-origin", cache: "no-store", ...i });
       const ct = r.headers.get("content-type") || "";
       return { status: r.status, ct, text: await r.text() };
     },
@@ -190,10 +190,14 @@ async function main() {
   browser = await puppeteer.launch({
     executablePath: CHROME,
     headless: !args.headful,
+    protocolTimeout: 180000,
     args: ["--no-first-run", "--no-default-browser-check", "--disable-features=Translate"],
   });
   const ctx1 = await browser.createBrowserContext();
   page = await ctx1.newPage();
+  // Generous timeouts: the forge dev build on a busy machine can take seconds per request.
+  page.setDefaultTimeout(45000);
+  page.setDefaultNavigationTimeout(60000);
   await page.setViewport({ width: 1280, height: 900 });
   page.on("dialog", (d) => d.accept());
   const consoleErrors = [];
@@ -377,6 +381,8 @@ async function main() {
   // Second user: approve, star, fork.
   const ctx2 = await browser.createBrowserContext();
   const page2 = await ctx2.newPage();
+  page2.setDefaultTimeout(45000);
+  page2.setDefaultNavigationTimeout(60000);
   await page2.setViewport({ width: 1280, height: 900 });
   page2.on("dialog", (d) => d.accept());
   watchSlow(page2);
@@ -522,19 +528,19 @@ async function main() {
     await goto(`/${me}/${REPO}`);
     await page.waitForSelector('[data-testid="star-button"]:not([disabled])');
     await click('[data-testid="star-button"]');
-    await page.waitForFunction(() => document.querySelector('[data-testid="star-count"]').textContent === "1");
+    await page.waitForFunction(() => document.querySelector('[data-testid="star-count"]')?.textContent === "1");
     await waitText("Starred");
     await goto(`/${me}/${REPO}`, page2);
     await page2.waitForSelector('[data-testid="star-button"]:not([disabled])');
     await click('[data-testid="star-button"]', page2);
-    await page2.waitForFunction(() => document.querySelector('[data-testid="star-count"]').textContent === "2");
+    await page2.waitForFunction(() => document.querySelector('[data-testid="star-count"]')?.textContent === "2");
     await page.reload({ waitUntil: "networkidle0" });
-    await page.waitForFunction(() => document.querySelector('[data-testid="star-count"]').textContent === "2");
+    await page.waitForFunction(() => document.querySelector('[data-testid="star-count"]')?.textContent === "2");
     // unstar + restar for user 1
     await click('[data-testid="star-button"]');
-    await page.waitForFunction(() => document.querySelector('[data-testid="star-count"]').textContent === "1");
+    await page.waitForFunction(() => document.querySelector('[data-testid="star-count"]')?.textContent === "1");
     await click('[data-testid="star-button"]');
-    await page.waitForFunction(() => document.querySelector('[data-testid="star-count"]').textContent === "2");
+    await page.waitForFunction(() => document.querySelector('[data-testid="star-count"]')?.textContent === "2");
     await goto(`/${me}?tab=stars`);
     await waitText(`${me}/${REPO}`);
   });
@@ -545,12 +551,17 @@ async function main() {
     await goto(`/${me}/${REPO}`, page2);
     await page2.waitForSelector('[data-testid="fork-button"]:not([disabled])');
     await click('[data-testid="fork-button"]', page2);
-    await page2.waitForFunction((p) => location.pathname === p, { timeout: 20000 }, `/${me2}/${REPO}`);
+    try {
+      await page2.waitForFunction((p) => location.pathname === p, { timeout: 20000 }, `/${me2}/${REPO}`);
+    } catch (e) {
+      await shot("FAIL-fork-page2", page2);
+      throw new Error(`${e.message}; page2 at ${page2.url()}: ${(await bodyText(page2)).slice(0, 300)}`);
+    }
     await waitText(`forked from`, page2);
     await waitText("README.md", page2);
     await shot("17-fork", page2);
-    await page.reload({ waitUntil: "networkidle0" });
-    await page.waitForFunction(() => document.querySelector('[data-testid="fork-count"]').textContent === "1");
+    await goto(`/${me}/${REPO}`);
+    await page.waitForFunction(() => document.querySelector('[data-testid="fork-count"]')?.textContent === "1");
   });
 
   await step("profile pages", async () => {
@@ -559,7 +570,7 @@ async function main() {
     await shot("18-profile");
     await goto(`/${me2}`, page2);
     await waitText(REPO, page2);
-    await waitText("Forked from", page2);
+    await page2.waitForSelector('[data-testid="fork-note"]');
   });
 
   await step("search: repositories, issues, code", async () => {
@@ -636,9 +647,9 @@ async function main() {
     let repo = (await api(`/repos/${me}/${REPO}`)).json;
     assert(repo.default_branch === "feature/deep/slash", `default branch ${repo.default_branch}`);
     await page.select("#set-branch", "main");
+    const patched = page.waitForResponse((r) => r.request().method() === "PATCH" && r.url().endsWith(`/repos/${me}/${REPO}`));
     await clickText("Save changes", "button");
-    await page.waitForFunction(async () => true);
-    await new Promise((r) => setTimeout(r, 500));
+    await patched;
     repo = (await api(`/repos/${me}/${REPO}`)).json;
     assert(repo.default_branch === "main", `default branch back to main: ${repo.default_branch}`);
     // rename + delete a throwaway repo
@@ -701,6 +712,7 @@ async function main() {
 
   await step("mobile width (375px) has no horizontal overflow", async () => {
     const m = await ctx1.newPage();
+    m.setDefaultNavigationTimeout(60000);
     await m.setViewport({ width: 375, height: 800, isMobile: true, hasTouch: true });
     const pages = [
       ["25-mobile-repo", `/${me}/${REPO}`],

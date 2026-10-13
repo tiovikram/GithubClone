@@ -15,6 +15,10 @@ export default defineConfig({
       "/api": proxyOpts,
       // git smart HTTP: /{owner}/{repo}(.git)?/info/refs | git-upload-pack | git-receive-pack
       "^/[^/]+/[^/]+?(\\.git)?/(info/refs|git-upload-pack|git-receive-pack)": proxyOpts,
+      // other server-owned paths: archives, raw files, release downloads, avatars, `/{login}.keys`
+      "^/[^/]+/[^/]+/(archive|raw|releases/download|releases/latest/download)/": proxyOpts,
+      "^/avatars/": proxyOpts,
+      "^/[^/]+\\.keys$": proxyOpts,
     },
   },
 });

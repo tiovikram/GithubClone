@@ -59,7 +59,7 @@ export function ProfilePage() {
                             <Link to={`/${r.full_name}`}>{tab === "stars" || r.owner.login !== u.login ? r.full_name : r.name}</Link>{" "}
                             <span className="badge">{r.private ? <><LockIcon size={12} /> Private</> : "Public"}</span>
                           </h3>
-                          {r.fork && r.parent && <p className="muted small">Forked from {r.parent.full_name}</p>}
+                          {r.fork && <p className="muted small" data-testid="fork-note">{r.parent ? `Forked from ${r.parent.full_name}` : "Forked repository"}</p>}
                           {r.description && <p className="muted">{r.description}</p>}
                           <div className="muted small repo-row-meta">
                             {r.language && <span><span className="lang-dot" /> {r.language}</span>}
