@@ -1,0 +1,145 @@
+# Stateless forge pods. Repository content lives in object storage + Postgres; each pod has
+# only a disposable git cache on an emptyDir, so any pod can be killed at any time.
+apiVersion: v1
+kind: Service
+metadata:
+  name: forge
+  labels: {app.kubernetes.io/name: forge}
+spec:
+  # NodePort instead of an Ingress: k3d ships traefik, kind ships no controller, clouds ship
+  # their own. A NodePort behaves identically everywhere and the cluster-creation script maps
+  # host port 8080 to it. Put any ingress/LB in front of this Service in production.
+  type: NodePort
+  selector: {app.kubernetes.io/name: forge}
+  ports:
+    - {name: http, port: 80, targetPort: http, nodePort: 30080}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: forge
+  labels: {app.kubernetes.io/name: forge}
+spec:
+  replicas: 3
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: {maxUnavailable: 0, maxSurge: 1}
+  selector:
+    matchLabels: {app.kubernetes.io/name: forge}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: forge}
+    spec:
+      # preStop (5s) + in-flight request drain. Pushes are bounded by git, not by this value;
+      # a push cut off by a kill is safe (packs are uploaded before the manifest commit).
+      terminationGracePeriodSeconds: 60
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile: {type: RuntimeDefault}
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels: {app.kubernetes.io/name: forge}
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels: {app.kubernetes.io/name: forge}
+      initContainers:
+        # Wait for Postgres and for the bucket (MinIO answers 404 until the Job creates it).
+        # Uses bash /dev/tcp from the forge image itself: no extra image to pull.
+        - name: wait-deps
+          image: forge:dev
+          imagePullPolicy: IfNotPresent
+          command:
+            - bash
+            - -c
+            - |
+              until (exec 3<>/dev/tcp/postgres/5432) 2>/dev/null; do echo waiting for postgres; sleep 2; done
+              until code=$( (exec 3<>/dev/tcp/minio/9000 && printf 'HEAD /forge HTTP/1.0\r\nHost: minio\r\n\r\n' >&3 && head -c 12 <&3 | cut -c10-12) 2>/dev/null ) \
+                    && [ -n "$code" ] && [ "$code" != 404 ] && [ "$code" != 503 ]; do
+                echo "waiting for bucket (status ${code:-none})"; sleep 2
+              done
+              echo deps ready
+          resources:
+            requests: {cpu: 10m, memory: 16Mi}
+            limits: {cpu: 100m, memory: 64Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+      containers:
+        - name: forge
+          image: forge:dev
+          imagePullPolicy: IfNotPresent
+          args: ["serve"]
+          envFrom:
+            - configMapRef: {name: forge-config}
+          env:
+            - name: FORGE_LISTEN
+              value: 0.0.0.0:3000
+            - name: FORGE_CACHE_DIR
+              value: /var/cache/forge
+            # Schema migrations run on startup under a Postgres advisory lock, so concurrently
+            # starting pods are safe and no separate migration Job is needed.
+            - name: DATABASE_URL
+              valueFrom: {secretKeyRef: {name: forge-secrets, key: DATABASE_URL}}
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom: {secretKeyRef: {name: forge-secrets, key: AWS_ACCESS_KEY_ID}}
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom: {secretKeyRef: {name: forge-secrets, key: AWS_SECRET_ACCESS_KEY}}
+            - name: TMPDIR
+              value: /tmp
+          ports:
+            - {name: http, containerPort: 3000}
+          startupProbe:
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 2
+            failureThreshold: 60
+          readinessProbe:
+            httpGet: {path: /readyz, port: http}
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 2
+          livenessProbe:
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          lifecycle:
+            preStop:
+              # Keep serving while endpoints/kube-proxy stop routing to this pod; SIGTERM then
+              # triggers forge's graceful shutdown (drains in-flight requests).
+              exec:
+                command: ["sleep", "5"]
+          resources:
+            requests: {cpu: 250m, memory: 256Mi}
+            limits: {cpu: "2", memory: 1Gi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          volumeMounts:
+            - {name: cache, mountPath: /var/cache/forge}
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - name: cache
+          emptyDir: {sizeLimit: 4Gi}
+        - name: tmp
+          emptyDir: {sizeLimit: 1Gi}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: forge
+  labels: {app.kubernetes.io/name: forge}
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels: {app.kubernetes.io/name: forge}

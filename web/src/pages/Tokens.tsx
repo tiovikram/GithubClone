@@ -1,11 +1,21 @@
 import { useState, type FormEvent } from "react";
-import { Navigate } from "react-router-dom";
+import { NavLink, Navigate } from "react-router-dom";
 import { api, errorMessage, type Token } from "../api";
 import { useAuth } from "../auth";
 import { Async, Blankslate, CodeLine, ErrorBox, Flash, RelTime, Spinner } from "../components/common";
 import { KeyIcon } from "../components/icons";
 import { useAsync, useTitle } from "../hooks";
 import { host, origin } from "../util";
+
+export function SettingsNav() {
+  const cls = ({ isActive }: { isActive: boolean }) => "menu-item" + (isActive ? " selected" : "");
+  return (
+    <nav className="settings-nav" aria-label="Settings">
+      <NavLink to="/settings/tokens" className={cls}>Access tokens</NavLink>
+      <NavLink to="/settings/keys" className={cls}>SSH keys</NavLink>
+    </nav>
+  );
+}
 
 export function TokensPage() {
   const { user, loading } = useAuth();
@@ -49,7 +59,9 @@ export function TokensPage() {
   };
 
   return (
-    <div className="container narrow">
+    <div className="container settings-layout">
+      <SettingsNav />
+      <div className="settings-main">
       <h1 className="h2">Personal access tokens</h1>
       <p className="muted">
         Tokens work like passwords for <code>git</code> over HTTP and for the API (<code>Authorization: token …</code>), and are what the
@@ -126,6 +138,7 @@ export function TokensPage() {
             <code> gh auth setup-git --hostname {h}</code> configure git for you.</p>
         </div>
       </section>
+      </div>
     </div>
   );
 }

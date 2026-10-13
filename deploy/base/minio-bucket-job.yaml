@@ -1,0 +1,34 @@
+# Creates the `forge` bucket. Idempotent (--ignore-existing) and retried by the Job controller
+# until MinIO answers. forge pods wait for the bucket in their init container.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: minio-create-bucket
+  labels: {app.kubernetes.io/name: minio-create-bucket}
+spec:
+  backoffLimit: 30
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: minio-create-bucket}
+    spec:
+      restartPolicy: OnFailure
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+      containers:
+        - name: mc
+          image: cgr.dev/chainguard/minio-client:latest
+          imagePullPolicy: IfNotPresent
+          # MC_HOST_minio (from the Secret) defines the `minio` alias, so no shell is needed.
+          args: ["--config-dir", "/tmp/mc", "mb", "--ignore-existing", "minio/forge"]
+          env:
+            - name: MC_HOST_minio
+              valueFrom: {secretKeyRef: {name: forge-secrets, key: MC_HOST_minio}}
+          resources:
+            requests: {cpu: 50m, memory: 64Mi}
+            limits: {cpu: 500m, memory: 256Mi}
+          volumeMounts:
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - name: tmp
+          emptyDir: {}

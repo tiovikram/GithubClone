@@ -1,8 +1,78 @@
-import { Link, NavLink, Navigate, Outlet, useLocation, useOutletContext, useParams } from "react-router-dom";
-import { api, type Repo } from "../api";
+import { useState } from "react";
+import { Link, NavLink, Navigate, Outlet, useLocation, useNavigate, useOutletContext, useParams } from "react-router-dom";
+import { api, errorMessage, type Repo } from "../api";
+import { useAuth } from "../auth";
 import { useAsync } from "../hooks";
 import { Async } from "./common";
-import { CodeIcon, ForkIcon, GearIcon, IssueOpenIcon, LockIcon, PullIcon, RepoIcon, StarIcon } from "./icons";
+import { CodeIcon, ForkIcon, GearIcon, IssueOpenIcon, LockIcon, PullIcon, RepoIcon, StarIcon, TagIcon } from "./icons";
+
+function StarButton({ repo, onChange }: { repo: Repo; onChange: (count: number) => void }) {
+  const { user } = useAuth();
+  const nav = useNavigate();
+  const loc = useLocation();
+  const owner = repo.owner.login;
+  const st = useAsync(() => (user ? api.isStarred(owner, repo.name) : Promise.resolve(false)), [user?.login, owner, repo.name]);
+  const [busy, setBusy] = useState(false);
+  const starred = !!st.data;
+  const toggle = async () => {
+    if (!user) {
+      nav(`/login?return_to=${encodeURIComponent(loc.pathname)}`);
+      return;
+    }
+    setBusy(true);
+    try {
+      if (starred) await api.unstar(owner, repo.name);
+      else await api.star(owner, repo.name);
+      st.setData(!starred);
+      onChange(Math.max(0, repo.stargazers_count + (starred ? -1 : 1)));
+    } catch (e) {
+      alert(errorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="btn-group">
+      <button type="button" className="btn btn-sm" onClick={toggle} disabled={busy || st.loading}
+        aria-pressed={starred} data-testid="star-button">
+        <StarIcon className={starred ? "icon c-star" : "icon"} /> {starred ? "Starred" : "Star"}
+      </button>
+      <span className="btn btn-sm btn-counter" title="Stars" data-testid="star-count">{repo.stargazers_count}</span>
+    </div>
+  );
+}
+
+function ForkButton({ repo }: { repo: Repo }) {
+  const { user } = useAuth();
+  const nav = useNavigate();
+  const loc = useLocation();
+  const [busy, setBusy] = useState(false);
+  const own = user?.login === repo.owner.login;
+  const fork = async () => {
+    if (!user) {
+      nav(`/login?return_to=${encodeURIComponent(loc.pathname)}`);
+      return;
+    }
+    setBusy(true);
+    try {
+      const f = await api.forkRepo(repo.owner.login, repo.name);
+      nav(`/${f.full_name}`);
+    } catch (e) {
+      alert(errorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="btn-group">
+      <button type="button" className="btn btn-sm" onClick={fork} disabled={busy || own}
+        title={own ? "You cannot fork your own repository" : "Fork this repository"} data-testid="fork-button">
+        <ForkIcon /> {busy ? "Forking…" : "Fork"}
+      </button>
+      <span className="btn btn-sm btn-counter" title="Forks" data-testid="fork-count">{repo.forks_count}</span>
+    </div>
+  );
+}
 
 export interface RepoCtx {
   repo: Repo;
@@ -49,9 +119,14 @@ export function RepoLayout() {
                   <Link to={base}><strong>{repo.name}</strong></Link>
                   <span className="badge">{repo.private ? "Private" : "Public"}</span>
                 </h1>
-                <div className="repo-counters muted">
-                  <span title="Stars"><StarIcon /> {repo.stargazers_count}</span>
-                  <span title="Forks"><ForkIcon /> {repo.forks_count}</span>
+                {repo.fork && repo.parent && (
+                  <div className="muted small fork-note">
+                    forked from <Link to={`/${repo.parent.full_name}`}>{repo.parent.full_name}</Link>
+                  </div>
+                )}
+                <div className="repo-actions">
+                  <ForkButton repo={repo} />
+                  <StarButton repo={repo} onChange={(n) => state.setData({ ...repo, stargazers_count: n })} />
                 </div>
               </div>
               <nav className="container tabs" aria-label="Repository">
@@ -67,6 +142,9 @@ export function RepoLayout() {
                 <NavLink to={`${base}/pulls`} className={({ isActive }) =>
                   "tab" + (isActive || /^\/(pull|compare)/.test(loc.pathname.slice(base.length)) ? " selected" : "")}>
                   <PullIcon /> Pull requests
+                </NavLink>
+                <NavLink to={`${base}/releases`} className={tab}>
+                  <TagIcon /> Releases
                 </NavLink>
                 {ctx.isAdmin && (
                   <NavLink to={`${base}/settings`} className={tab}>

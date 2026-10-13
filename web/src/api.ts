@@ -33,6 +33,8 @@ export interface Repo {
   private: boolean;
   description: string | null;
   fork: boolean;
+  parent?: Repo;
+  source?: Repo;
   html_url: string;
   clone_url: string;
   ssh_url?: string;
@@ -195,6 +197,73 @@ export interface SearchResult<T> {
   items: T[];
 }
 
+export interface Tag {
+  name: string;
+  commit: { sha: string; url: string };
+  zipball_url: string;
+  tarball_url: string;
+}
+
+export interface ReleaseAsset {
+  id: number;
+  name: string;
+  label: string | null;
+  state: string;
+  content_type: string;
+  size: number;
+  download_count: number;
+  browser_download_url: string;
+  created_at: string;
+  updated_at: string;
+  uploader: User | null;
+}
+
+export interface Release {
+  id: number;
+  tag_name: string;
+  target_commitish: string;
+  name: string | null;
+  body: string | null;
+  draft: boolean;
+  prerelease: boolean;
+  created_at: string;
+  published_at: string | null;
+  author: User;
+  assets: ReleaseAsset[];
+  html_url: string;
+  upload_url: string;
+  tarball_url: string | null;
+  zipball_url: string | null;
+}
+
+export interface Review {
+  id: number;
+  user: User | null;
+  body: string | null;
+  state: "APPROVED" | "CHANGES_REQUESTED" | "COMMENTED" | "DISMISSED" | "PENDING" | string;
+  submitted_at?: string | null;
+  html_url: string;
+  author_association?: string;
+}
+
+export interface SshKey {
+  id: number;
+  key: string;
+  title?: string;
+  created_at?: string;
+  read_only?: boolean;
+  verified?: boolean;
+}
+
+export interface CodeSearchItem {
+  name: string;
+  path: string;
+  sha: string;
+  html_url: string;
+  repository: Repo;
+  text_matches?: { fragment: string }[];
+}
+
 export interface Token {
   id: number;
   name: string;
@@ -325,6 +394,9 @@ async function raw(path: string, opts: RequestOpts = {}): Promise<Response> {
       headers,
       body,
       credentials: "same-origin",
+      // The API sends GitHub's `Cache-Control: private, max-age=60`; without this the browser would
+      // serve stale lists (branches, comments, …) for a minute after every change.
+      cache: "no-store",
       signal: opts.signal,
     });
   } catch (e) {
@@ -407,6 +479,80 @@ export const api = {
 
   // repos
   repo: (o: string, r: string) => request<Repo>(rp(o, r)),
+  forkRepo: (o: string, r: string) => request<Repo>(`${rp(o, r)}/forks`, { method: "POST", body: {} }),
+  forks: (o: string, r: string) => request<Repo[]>(`${rp(o, r)}/forks`, { query: { per_page: 100 } }),
+  isStarred: async (o: string, r: string) => {
+    try {
+      await request<void>(`/user/starred/${enc(o)}/${enc(r)}`);
+      return true;
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 404) return false;
+      throw e;
+    }
+  },
+  star: (o: string, r: string) => request<void>(`/user/starred/${enc(o)}/${enc(r)}`, { method: "PUT" }),
+  unstar: (o: string, r: string) => request<void>(`/user/starred/${enc(o)}/${enc(r)}`, { method: "DELETE" }),
+  starred: (u: string, page = 1) => requestPage<Repo[]>(`/users/${enc(u)}/starred`, { query: { per_page: 30, page } }),
+  tags: (o: string, r: string, page = 1) => requestPage<Tag[]>(`${rp(o, r)}/tags`, { query: { per_page: 30, page } }),
+  branchesPage: (o: string, r: string, page = 1) => requestPage<Branch[]>(`${rp(o, r)}/branches`, { query: { per_page: 30, page } }),
+  deleteBranch: (o: string, r: string, b: string) =>
+    request<void>(`${rp(o, r)}/git/refs/heads/${encPath(b)}`, { method: "DELETE" }),
+
+  // releases
+  releases: (o: string, r: string, page = 1) => requestPage<Release[]>(`${rp(o, r)}/releases`, { query: { per_page: 10, page } }),
+  releaseByTag: (o: string, r: string, tag: string) => request<Release>(`${rp(o, r)}/releases/tags/${encPath(tag)}`),
+  latestRelease: (o: string, r: string) => request<Release>(`${rp(o, r)}/releases/latest`),
+  createRelease: (o: string, r: string, b: { tag_name: string; target_commitish?: string; name?: string; body?: string; draft?: boolean; prerelease?: boolean }) =>
+    request<Release>(`${rp(o, r)}/releases`, { method: "POST", body: b }),
+  updateRelease: (o: string, r: string, id: number, b: { tag_name?: string; name?: string; body?: string; draft?: boolean; prerelease?: boolean }) =>
+    request<Release>(`${rp(o, r)}/releases/${id}`, { method: "PATCH", body: b }),
+  deleteRelease: (o: string, r: string, id: number) => request<void>(`${rp(o, r)}/releases/${id}`, { method: "DELETE" }),
+  deleteAsset: (o: string, r: string, id: number) => request<void>(`${rp(o, r)}/releases/assets/${id}`, { method: "DELETE" }),
+  /** Upload a release asset through the uploads endpoint (`upload_url` template from the release JSON). */
+  uploadAsset: async (release: Release, file: File) => {
+    const tmpl = release.upload_url.replace(/\{\?[^}]*\}$/, "");
+    const u = new URL(tmpl, location.origin);
+    // Always upload to this origin (the server may advertise a different FORGE_BASE_URL host).
+    const path = u.pathname + "?name=" + encodeURIComponent(file.name);
+    const res = await fetch(path, {
+      method: "POST",
+      headers: {
+        Accept: "application/vnd.github+json",
+        "Content-Type": file.type || "application/octet-stream",
+        "X-Forge-CSRF": "1",
+      },
+      body: file,
+      credentials: "same-origin",
+    });
+    if (!res.ok) {
+      let b: GitHubErrorBody | null = null;
+      try {
+        b = await res.json();
+      } catch {
+        /* ignore */
+      }
+      throw new ApiError(res.status, b, `${res.status} upload failed`);
+    }
+    return (await res.json()) as ReleaseAsset;
+  },
+
+  // reviews
+  reviews: (o: string, r: string, n: number) => requestAll<Review>(`${rp(o, r)}/pulls/${n}/reviews`, {}, 5),
+  createReview: (o: string, r: string, n: number, b: { event: "APPROVE" | "REQUEST_CHANGES" | "COMMENT"; body?: string }) =>
+    request<Review>(`${rp(o, r)}/pulls/${n}/reviews`, { method: "POST", body: b }),
+
+  // ssh keys
+  sshKeys: () => requestAll<SshKey>("/user/keys", {}, 3),
+  addSshKey: (b: { title: string; key: string }) => request<SshKey>("/user/keys", { method: "POST", body: b }),
+  deleteSshKey: (id: number) => request<void>(`/user/keys/${id}`, { method: "DELETE" }),
+
+  // search
+  searchRepos: (q: string, page = 1) =>
+    requestPage<SearchResult<Repo>>("/search/repositories", { query: { q, per_page: 20, page } }),
+  searchIssuesPage: (q: string, page = 1) =>
+    requestPage<SearchResult<Issue>>("/search/issues", { query: { q, per_page: 20, page } }),
+  searchCode: (q: string, page = 1) =>
+    requestPage<SearchResult<CodeSearchItem>>("/search/code", { query: { q, per_page: 20, page }, accept: "application/vnd.github.text-match+json" }),
   createRepo: (b: { name: string; description?: string; private: boolean; auto_init: boolean }) =>
     request<Repo>("/user/repos", { method: "POST", body: b }),
   updateRepo: (o: string, r: string, b: Partial<Pick<Repo, "name" | "description" | "default_branch" | "private" | "homepage">>) =>

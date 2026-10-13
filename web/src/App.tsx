@@ -13,6 +13,10 @@ import { ProfilePage } from "./pages/Profile";
 import { ComparePage, PullPage, PullsPage } from "./pages/Pulls";
 import { RepoSettingsPage } from "./pages/RepoSettings";
 import { TokensPage } from "./pages/Tokens";
+import { KeysPage } from "./pages/Keys";
+import { BranchesPage, TagsPage } from "./pages/Refs";
+import { NewReleasePage, ReleasePage, ReleasesPage } from "./pages/Releases";
+import { SearchPage } from "./pages/Search";
 
 /** github.com-style `/o/r/pulls/123` → `/o/r/pull/123`. */
 function PullsRedirect() {
@@ -31,6 +35,8 @@ export function App() {
             <Route path="signup" element={<SignupPage />} />
             <Route path="new" element={<NewRepoPage />} />
             <Route path="settings/tokens" element={<TokensPage />} />
+            <Route path="settings/keys" element={<KeysPage />} />
+            <Route path="search" element={<SearchPage />} />
             <Route path="settings" element={<Navigate to="/settings/tokens" replace />} />
             <Route path=":owner" element={<ProfilePage />} />
             <Route path=":owner/:repo" element={<RepoLayout />}>
@@ -51,6 +57,12 @@ export function App() {
               <Route path="pull/:number" element={<PullPage tab="conversation" />} />
               <Route path="pull/:number/commits" element={<PullPage tab="commits" />} />
               <Route path="pull/:number/files" element={<PullPage tab="files" />} />
+              <Route path="branches" element={<BranchesPage />} />
+              <Route path="tags" element={<TagsPage />} />
+              <Route path="releases" element={<ReleasesPage />} />
+              <Route path="releases/new" element={<NewReleasePage />} />
+              <Route path="releases/latest" element={<ReleasePage latest />} />
+              <Route path="releases/tag/*" element={<ReleasePage />} />
               <Route path="settings" element={<RepoSettingsPage />} />
               <Route path="*" element={<NotFoundView />} />
             </Route>

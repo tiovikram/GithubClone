@@ -3,7 +3,7 @@ import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { api, decodeBase64, looksBinary, type Branch, type ContentItem, type Repo } from "../api";
 import { BranchSelect } from "../components/BranchSelect";
 import { Async, Avatar, Blankslate, CodeLine, ErrorBox, NotFoundView, RelTime, Spinner } from "../components/common";
-import { BookIcon, DirIcon, FileIcon, HistoryIcon } from "../components/icons";
+import { BookIcon, BranchIcon, DirIcon, DownloadIcon, FileIcon, ForkIcon, HistoryIcon, StarIcon, TagIcon } from "../components/icons";
 import { useRepo } from "../components/RepoLayout";
 import { highlightLines } from "../highlight";
 import { useAsync, useTitle } from "../hooks";
@@ -74,28 +74,50 @@ function LatestCommit({ path, refName }: { path: string; refName: string }) {
   );
 }
 
-function CloneBox({ repo }: { repo: Repo }) {
-  const url = repo.clone_url || `${location.origin}/${repo.full_name}.git`;
+function cloneUrls(repo: Repo) {
+  return {
+    https: repo.clone_url || `${location.origin}/${repo.full_name}.git`,
+    ssh: repo.ssh_url || "",
+  };
+}
+
+function CloneBox({ repo, refName }: { repo: Repo; refName: string }) {
+  const urls = cloneUrls(repo);
+  const [proto, setProto] = useState<"https" | "ssh">("https");
+  const url = proto === "ssh" && urls.ssh ? urls.ssh : urls.https;
   return (
     <div className="clone-box box">
-      <div className="clone-box-title">Clone with HTTPS</div>
-      <CodeLine text={url} label="Clone URL" />
-      <div className="muted small">
-        Use Git or <code>gh repo clone {repo.full_name}</code> with a{" "}
-        <Link to="/settings/tokens">personal access token</Link>.
+      <div className="clone-tabs" role="tablist" aria-label="Clone protocol">
+        <button type="button" role="tab" aria-selected={proto === "https"} onClick={() => setProto("https")}>HTTPS</button>
+        {urls.ssh && <button type="button" role="tab" aria-selected={proto === "ssh"} onClick={() => setProto("ssh")}>SSH</button>}
       </div>
+      <CodeLine text={url} label={proto === "ssh" ? "SSH clone URL" : "HTTPS clone URL"} />
+      <div className="muted small">
+        {proto === "ssh" ? <>Use a key added under <Link to="/settings/keys">SSH keys</Link>.</> :
+          <>Use Git or <code>gh repo clone {repo.full_name}</code> with a <Link to="/settings/tokens">personal access token</Link>.</>}
+      </div>
+      <a className="btn btn-sm btn-block" href={`/${repo.full_name}/archive/refs/heads/${encPath(refName)}.zip`} data-testid="download-zip">
+        <DownloadIcon /> Download ZIP
+      </a>
     </div>
   );
 }
 
 function EmptyRepo({ repo }: { repo: Repo }) {
-  const url = repo.clone_url || `${location.origin}/${repo.full_name}.git`;
+  const urls = cloneUrls(repo);
+  const [proto, setProto] = useState<"https" | "ssh">("https");
+  const url = proto === "ssh" && urls.ssh ? urls.ssh : urls.https;
   const branch = repo.default_branch || "main";
   return (
-    <div className="box quick-setup">
+    <div className="box quick-setup" data-testid="empty-repo">
       <div className="box-header"><h2 className="h4">Quick setup — this repository is empty</h2></div>
       <div className="box-body">
-        <CodeLine text={url} label="Clone URL" />
+        <div className="clone-tabs" role="tablist" aria-label="Clone protocol">
+          <button type="button" role="tab" aria-selected={proto === "https"} onClick={() => setProto("https")}>HTTPS</button>
+          {urls.ssh && <button type="button" role="tab" aria-selected={proto === "ssh"} onClick={() => setProto("ssh")}>SSH</button>}
+        </div>
+        <CodeLine text={urls.https} label="HTTPS clone URL" />
+        {urls.ssh && <CodeLine text={urls.ssh} label="SSH clone URL" />}
         <h3 className="h5">…or create a new repository on the command line</h3>
         <pre className="cmd">{`echo "# ${repo.name}" >> README.md
 git init
@@ -109,7 +131,8 @@ git push -u origin ${branch}`}</pre>
 git branch -M ${branch}
 git push -u origin ${branch}`}</pre>
         <p className="muted small">
-          Git will ask for credentials: use your username and a <Link to="/settings/tokens">personal access token</Link> as the password.
+          {proto === "ssh" ? <>SSH uses the keys under <Link to="/settings/keys">SSH keys</Link>.</> :
+            <>Git will ask for credentials: use your username and a <Link to="/settings/tokens">personal access token</Link> as the password.</>}
         </p>
       </div>
     </div>
@@ -230,7 +253,14 @@ function Tree({ branches }: { branches: Branch[] }) {
             <p>{repo.description || <span className="muted"><em>No description, website, or topics provided.</em></span>}</p>
             {repo.homepage && <p><a href={repo.homepage} rel="nofollow noopener">{repo.homepage}</a></p>}
           </section>
-          <CloneBox repo={repo} />
+          <ul className="repo-links">
+            <li><Link to={`${base}/branches`}><BranchIcon /> {branches.length} branch{branches.length === 1 ? "" : "es"}</Link></li>
+            <li><Link to={`${base}/tags`}><TagIcon /> Tags</Link></li>
+            <li><Link to={`${base}/releases`}><TagIcon /> Releases</Link></li>
+            <li><StarIcon /> {repo.stargazers_count} star{repo.stargazers_count === 1 ? "" : "s"}</li>
+            <li><ForkIcon /> {repo.forks_count} fork{repo.forks_count === 1 ? "" : "s"}</li>
+          </ul>
+          <CloneBox repo={repo} refName={ref} />
         </aside>
       )}
     </div>
@@ -292,14 +322,8 @@ function BlobView({ branches, repo }: { branches: Branch[]; repo: Repo }) {
                     {binary ? "Binary file" : `${lines.length} lines`} · {humanSize(d.item.size)}
                   </span>
                   <span className="spacer" />
-                  <button type="button" className="btn btn-sm" onClick={() => {
-                    const url = URL.createObjectURL(new Blob([d.text], { type: "text/plain" }));
-                    const a = document.createElement("a");
-                    a.href = url;
-                    a.download = fname;
-                    a.click();
-                    setTimeout(() => URL.revokeObjectURL(url), 1000);
-                  }}>Download</button>
+                  <a className="btn btn-sm" href={`/${repo.full_name}/raw/${encPath(ref)}/${encPath(path)}`} data-testid="raw-link">Raw</a>
+                  <a className="btn btn-sm" href={`/${repo.full_name}/raw/${encPath(ref)}/${encPath(path)}`} download={fname}>Download</a>
                 </div>
                 {binary ? (
                   <div className="box-body muted">Binary file not shown.</div>

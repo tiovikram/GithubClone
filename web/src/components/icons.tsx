@@ -89,3 +89,21 @@ export const LogoIcon = ({ size = 32 }: { size?: number }) => (
     <path d="M9 23V9h13v3.2h-9.2v2.6h7.8V18h-7.8v5z" fill="var(--bg-header)" />
   </svg>
 );
+export const TagIcon = (p: P) => (
+  <Svg {...p}><path d="M1.5 2.5v4.3c0 .4.2.8.4 1l6.3 6.3a1.3 1.3 0 0 0 1.8 0l4.1-4.1a1.3 1.3 0 0 0 0-1.8L7.8 1.9a1.4 1.4 0 0 0-1-.4H2.5a1 1 0 0 0-1 1z" /><circle cx="4.8" cy="4.8" r="1" fill="currentColor" /></Svg>
+);
+export const SearchIcon = (p: P) => (
+  <Svg {...p}><circle cx="7" cy="7" r="4.5" /><path d="m10.5 10.5 3.5 3.5" /></Svg>
+);
+export const SunIcon = (p: P) => (
+  <Svg {...p}><circle cx="8" cy="8" r="3" /><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3 3l1 1M12 12l1 1M3 13l1-1M12 4l1-1" /></Svg>
+);
+export const MoonIcon = (p: P) => (
+  <Svg {...p}><path d="M13.5 9.5A5.5 5.5 0 0 1 6.5 2.5a5.5 5.5 0 1 0 7 7z" /></Svg>
+);
+export const TrashIcon = (p: P) => (
+  <Svg {...p}><path d="M2.5 4h11M6 4V2.5h4V4M4 4l.7 9.5h6.6L12 4" /></Svg>
+);
+export const DownloadIcon = (p: P) => (
+  <Svg {...p}><path d="M8 2v8M4.5 6.5 8 10l3.5-3.5M2.5 13.5h11" /></Svg>
+);
