@@ -202,7 +202,39 @@ async fn code_hits(s: &AppState, repos: &[RepoCtx], terms: &[Term]) -> Vec<CodeH
     hits
 }
 
-async fn search_code_handler(State(s): State<AppState>, uri: OriginalUri, MaybeUser(u): MaybeUser, Query(q): Query<SearchQuery>) -> ApiResult<Response> {
+/// `text_matches` of a code hit (only sent for the `text-match` media type, like GitHub): the
+/// first line of the file containing a search word, with the byte ranges of the words in it.
+async fn code_text_matches(s: &AppState, repo_id: i64, sha: &str, words: &[String], object_url: &str) -> Value {
+    let Ok(path) = s.git.sync(repo_id).await else { return json!([]) };
+    let Ok((true, blob, _)) = s.git.git.try_run(&path, &["cat-file", "blob", sha]).await else { return json!([]) };
+    let text = String::from_utf8_lossy(&blob);
+    let lowered: Vec<String> = words.iter().map(|w| w.to_lowercase()).filter(|w| !w.is_empty()).collect();
+    let Some(line) = text.lines().find(|l| lowered.iter().any(|w| l.to_lowercase().contains(w.as_str()))) else { return json!([]) };
+    let fragment: String = line.chars().take(400).collect();
+    let lower_frag = fragment.to_lowercase();
+    let mut matches = Vec::new();
+    // Byte offsets are only meaningful when lower-casing kept the length (ASCII and most text).
+    if lower_frag.len() == fragment.len() {
+        for w in &lowered {
+            let mut from = 0;
+            while let Some(i) = lower_frag[from..].find(w.as_str()) {
+                let start = from + i;
+                let end = start + w.len();
+                matches.push(json!({ "text": &fragment[start..end], "indices": [start, end] }));
+                from = end;
+            }
+        }
+    }
+    json!([{ "object_url": object_url, "object_type": "FileContent", "property": "content", "fragment": fragment, "matches": matches }])
+}
+
+async fn search_code_handler(
+    State(s): State<AppState>,
+    uri: OriginalUri,
+    headers: axum::http::HeaderMap,
+    MaybeUser(u): MaybeUser,
+    Query(q): Query<SearchQuery>,
+) -> ApiResult<Response> {
     let query = q.query()?;
     let p = q.pages();
     let terms = parse_query(query);
@@ -212,11 +244,26 @@ async fn search_code_handler(State(s): State<AppState>, uri: OriginalUri, MaybeU
     let api = s.api_url();
     let base = s.base_url();
     let repo_json: Vec<Value> = repos.iter().map(|c| json::repo::repo(&api, base, c)).collect();
-    let items = hits
-        .iter()
-        .skip(p.offset() as usize)
-        .take(p.per_page() as usize)
-        .map(|h| {
+    let want_matches = headers
+        .get(axum::http::header::ACCEPT)
+        .and_then(|v| v.to_str().ok())
+        .is_some_and(|a| a.contains("text-match"));
+    let words = text_terms(&terms);
+    let page: Vec<&CodeHit> = hits.iter().skip(p.offset() as usize).take(p.per_page() as usize).collect();
+    let mut text_matches = Vec::new();
+    for h in &page {
+        if want_matches {
+            let full = repos[h.repo].full_name();
+            let url = format!("{api}/repos/{full}/contents/{}?ref={}", encode_path(&h.path), h.commit);
+            text_matches.push(Some(code_text_matches(&s, repos[h.repo].repo.id, &h.sha, &words, &url).await));
+        } else {
+            text_matches.push(None);
+        }
+    }
+    let items = page
+        .into_iter()
+        .zip(text_matches)
+        .map(|(h, tm)| {
             let ctx = &repos[h.repo];
             let full = ctx.full_name();
             let ep = encode_path(&h.path);
@@ -232,6 +279,9 @@ async fn search_code_handler(State(s): State<AppState>, uri: OriginalUri, MaybeU
             });
             if let Some(sz) = h.size {
                 v["file_size"] = json!(sz);
+            }
+            if let Some(tm) = tm {
+                v["text_matches"] = tm;
             }
             with_score(v)
         })

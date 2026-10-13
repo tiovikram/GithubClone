@@ -6,6 +6,7 @@
 //! git computations (diffs, commits, merges) therefore run in the base repo.
 pub mod git;
 pub mod outdate;
+pub mod revert;
 pub mod reviews;
 
 use std::collections::{BTreeMap, HashMap};
@@ -1047,6 +1048,19 @@ pub async fn merge_pull(state: &AppState, ctx: &RepoCtx, actor: &User, number: i
 
 /// Merges the base branch into the PR's head branch (PUT /pulls/{n}/update-branch).
 pub async fn update_branch(state: &AppState, ctx: &RepoCtx, actor: &User, number: i64, expected_head_sha: Option<String>) -> ApiResult<()> {
+    update_branch_with(state, ctx, actor, number, expected_head_sha, false).await
+}
+
+/// Brings the PR's head branch up to date with its base: a merge commit, or (`rebase`; GraphQL
+/// `updatePullRequestBranch(updateMethod: REBASE)`) the PR's commits replayed onto the base.
+pub async fn update_branch_with(
+    state: &AppState,
+    ctx: &RepoCtx,
+    actor: &User,
+    number: i64,
+    expected_head_sha: Option<String>,
+    rebase: bool,
+) -> ApiResult<()> {
     let pull = pull_by_number(&state.db, ctx.repo.id, number).await?;
     if !pull.is_open() {
         return Err(custom_error("PullRequest", "Pull request is closed"));
@@ -1088,6 +1102,14 @@ pub async fn update_branch(state: &AppState, ctx: &RepoCtx, actor: &User, number
             }
             if git::is_ancestor(&git, &path, &base_sha, &head_sha).await? {
                 return Err(halt(custom_error("PullRequest", "There are no new commits on the base branch.")));
+            }
+            if rebase {
+                let mb = git::merge_base(&git, &path, &base_sha, &head_sha).await?.unwrap_or_else(|| base_sha.clone());
+                let sha = git::rebase(&git, &path, &base_sha, &mb, &head_sha, &who)
+                    .await?
+                    .ok_or_else(|| halt(custom_error("PullRequest", "merge conflict between base and head")))?;
+                plumbing::update_ref(&git, &path, &head_ref, &sha, Some(&head_sha)).await?;
+                return Ok(());
             }
             let tree = git::merge_tree(&git, &path, &head_sha, &base_sha, None)
                 .await?

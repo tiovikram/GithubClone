@@ -366,6 +366,21 @@ impl GRepo {
         let name = format!("refs/heads/{}", self.ctx.repo.default_branch);
         Ok(refs.get(&name).map(|oid| GRef { repo: self.ctx.clone(), name, oid: oid.clone() }))
     }
+    /// A git object by revision expression (`REF:path`) or oid; see `tree.rs`.
+    async fn object(&self, ctx: &Context<'_>, expression: Option<String>, oid: Option<GitObjectId>) -> async_graphql::Result<Option<GitObject>> {
+        super::tree::resolve(ctx, self.ctx.clone(), expression, oid.map(|o| o.0)).await
+    }
+    async fn rulesets(
+        &self,
+        ctx: &Context<'_>,
+        first: Option<i32>,
+        after: Option<String>,
+        last: Option<i32>,
+        before: Option<String>,
+        #[graphql(default = true)] include_parents: bool,
+    ) -> async_graphql::Result<super::rulesets::RepositoryRulesetConnection> {
+        super::rulesets::for_repo(ctx, self.ctx.clone(), include_parents, ConnArgs::new(first, after, last, before)).await
+    }
     #[graphql(name = "ref")]
     async fn ref_(&self, ctx: &Context<'_>, qualified_name: String) -> async_graphql::Result<Option<GRef>> {
         let refs = repo_refs(ctx, self.ctx.repo.id).await?;
@@ -811,6 +826,9 @@ impl GRef {
     async fn repository(&self) -> GRepo {
         GRepo::new(self.repo.clone())
     }
+    async fn compare(&self, ctx: &Context<'_>, head_ref: String) -> async_graphql::Result<Option<super::ghcompat::Comparison>> {
+        super::ghcompat::compare(ctx, self, &head_ref).await
+    }
     async fn branch_protection_rule(&self, ctx: &Context<'_>) -> Option<BranchProtectionRule> {
         let branch = self.name.strip_prefix("refs/heads/")?;
         let st = ctx.data_unchecked::<AppState>();
@@ -881,6 +899,8 @@ impl BranchProtectionRule {
 )]
 pub enum GitObject {
     Commit(GCommit),
+    Tree(super::tree::GTree),
+    Blob(super::tree::GBlob),
 }
 
 #[derive(Clone, Debug, Default)]

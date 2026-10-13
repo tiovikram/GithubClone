@@ -1,0 +1,203 @@
+# Catalogue of every runnable gh v2.102.0 command (from `gh help reference`; leaf commands plus
+# `codespace ports`, which runs on its own and also has subcommands). The built-in `co` alias,
+# hidden commands (`version`, `send-telemetry`) and help topics are not counted.
+# Columns: command <TAB> category <TAB> note
+#   a = forge-relevant: counted in the denominator, tests/gh/run.sh has at least one case for it
+#   b = not applicable to a self-hosted forge (see docs/gh-coverage.md for the justification)
+agent-task create	b	Copilot coding agent: github.com-only service (api.githubcopilot.com)
+agent-task list	b	Copilot coding agent: github.com-only service
+agent-task view	b	Copilot coding agent: github.com-only service
+alias delete	a	local-only
+alias import	a	local-only
+alias list	a	local-only
+alias set	a	local-only
+api	a
+attestation download	b	Sigstore/GitHub artifact attestations service
+attestation trusted-root	b	Sigstore TUF trusted root (github.com / public-good Sigstore)
+attestation verify	b	Sigstore/GitHub artifact attestations service
+auth login	a
+auth logout	a	local-only
+auth refresh	a	needs the OAuth device/web flow
+auth setup-git	a	local-only
+auth status	a
+auth switch	a	local-only
+auth token	a	local-only
+browse	a	tested with --no-browser (prints the URL)
+cache delete	a	Actions caches (forge has none)
+cache list	a	Actions caches (forge has none)
+codespace code	b	GitHub Codespaces service
+codespace cp	b	GitHub Codespaces service
+codespace create	b	GitHub Codespaces service
+codespace delete	b	GitHub Codespaces service
+codespace edit	b	GitHub Codespaces service
+codespace jupyter	b	GitHub Codespaces service
+codespace list	b	GitHub Codespaces service
+codespace logs	b	GitHub Codespaces service
+codespace ports	b	GitHub Codespaces service
+codespace ports forward	b	GitHub Codespaces service
+codespace ports visibility	b	GitHub Codespaces service
+codespace rebuild	b	GitHub Codespaces service
+codespace ssh	b	GitHub Codespaces service
+codespace stop	b	GitHub Codespaces service
+codespace view	b	GitHub Codespaces service
+completion	a	local-only
+config clear-cache	a	local-only
+config get	a	local-only
+config list	a	local-only
+config set	a	local-only
+copilot	b	downloads and runs the GitHub Copilot CLI
+discussion comment	a	Discussions
+discussion create	a	Discussions
+discussion edit	a	Discussions
+discussion list	a	Discussions
+discussion view	a	Discussions
+extension browse	b	full-screen TUI; needs a terminal, cannot run non-interactively
+extension create	a	local-only (git)
+extension exec	a	local-only
+extension install	a	clones from the forge
+extension list	a	local-only
+extension remove	a	local-only
+extension search	a	repository search (topic:gh-extension)
+extension upgrade	a	fetches from the forge
+gist clone	a
+gist create	a
+gist delete	a
+gist edit	a
+gist list	a
+gist rename	a
+gist view	a
+gpg-key add	a
+gpg-key delete	a
+gpg-key list	a
+issue close	a
+issue comment	a
+issue create	a
+issue delete	a
+issue develop	a	linked branches
+issue edit	a
+issue list	a
+issue lock	a
+issue pin	a
+issue reopen	a
+issue status	a
+issue transfer	a
+issue unlock	a
+issue unpin	a
+issue view	a
+label clone	a
+label create	a
+label delete	a
+label edit	a
+label list	a
+licenses	a	local-only
+org list	a
+pr checkout	a
+pr checks	a
+pr close	a
+pr comment	a
+pr create	a
+pr diff	a
+pr edit	a
+pr list	a
+pr lock	a
+pr merge	a
+pr ready	a
+pr reopen	a
+pr revert	a
+pr review	a
+pr status	a
+pr unlock	a
+pr update-branch	a
+pr view	a
+preview prompter	b	developer preview of gh's own TTY prompts; no host interaction, needs a terminal
+project close	a	Projects (v2)
+project copy	a	Projects (v2)
+project create	a	Projects (v2)
+project delete	a	Projects (v2)
+project edit	a	Projects (v2)
+project field-create	a	Projects (v2)
+project field-delete	a	Projects (v2)
+project field-list	a	Projects (v2)
+project item-add	a	Projects (v2)
+project item-archive	a	Projects (v2)
+project item-create	a	Projects (v2)
+project item-delete	a	Projects (v2)
+project item-edit	a	Projects (v2)
+project item-list	a	Projects (v2)
+project link	a	Projects (v2)
+project list	a	Projects (v2)
+project mark-template	a	Projects (v2)
+project unlink	a	Projects (v2)
+project view	a	Projects (v2)
+release create	a
+release delete	a
+release delete-asset	a
+release download	a
+release edit	a
+release list	a
+release upload	a
+release verify	b	verifies Sigstore release attestations
+release verify-asset	b	verifies Sigstore release attestations
+release view	a
+repo archive	a
+repo autolink create	a
+repo autolink delete	a
+repo autolink list	a
+repo autolink view	a
+repo clone	a
+repo create	a
+repo delete	a
+repo deploy-key add	a
+repo deploy-key delete	a
+repo deploy-key list	a
+repo edit	a
+repo fork	a
+repo gitignore list	a
+repo gitignore view	a
+repo license list	a
+repo license view	a
+repo list	a
+repo read-dir	a
+repo read-file	a
+repo rename	a
+repo set-default	a	local-only (git config)
+repo sync	a
+repo unarchive	a
+repo view	a
+ruleset check	a
+ruleset list	a
+ruleset view	a
+run cancel	a	Actions runs
+run delete	a	Actions runs
+run download	a	Actions runs
+run list	a	Actions runs
+run rerun	a	Actions runs
+run view	a	Actions runs
+run watch	a	Actions runs
+search code	a
+search commits	a
+search issues	a
+search prs	a
+search repos	a
+secret delete	a	Actions secrets
+secret list	a	Actions secrets
+secret set	a	Actions secrets
+skill install	b	gh refuses non-github.com hosts (source.ValidateSupportedHost: "GitHub Skills does not currently support GitHub Enterprise Server")
+skill list	a	local-only (lists installed skills)
+skill preview	b	gh refuses non-github.com hosts (source.ValidateSupportedHost: "GitHub Skills does not currently support GitHub Enterprise Server")
+skill publish	b	gh refuses non-github.com hosts (source.ValidateSupportedHost: "GitHub Skills does not currently support GitHub Enterprise Server")
+skill search	b	gh refuses non-github.com hosts (source.ValidateSupportedHost: "GitHub Skills does not currently support GitHub Enterprise Server")
+skill update	b	gh refuses non-github.com hosts (source.ValidateSupportedHost: "GitHub Skills does not currently support GitHub Enterprise Server")
+ssh-key add	a
+ssh-key delete	a
+ssh-key list	a
+status	a
+variable delete	a	Actions variables
+variable get	a	Actions variables
+variable list	a	Actions variables
+variable set	a	Actions variables
+workflow disable	a	Actions workflows
+workflow enable	a	Actions workflows
+workflow list	a	Actions workflows
+workflow run	a	Actions workflows
+workflow view	a	Actions workflows

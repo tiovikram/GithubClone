@@ -27,7 +27,7 @@ struct InfoRefsQuery {
     service: Option<String>,
 }
 
-fn plain(status: StatusCode, msg: &str) -> Response<Body> {
+pub(crate) fn plain(status: StatusCode, msg: &str) -> Response<Body> {
     Response::builder()
         .status(status)
         .header(header::CONTENT_TYPE, "text/plain")
@@ -101,10 +101,15 @@ async fn info_refs(
             return plain(StatusCode::INTERNAL_SERVER_ERROR, "storage unavailable");
         }
     };
+    advertise(&state, &path, &service, &parts.headers).await
+}
+
+/// The `info/refs?service=...` response for the bare repository at `path` (also used for gists).
+pub(crate) async fn advertise(state: &AppState, path: &std::path::Path, service: &str, headers: &HeaderMap) -> Response<Body> {
     let sub = service.trim_start_matches("git-");
-    let mut cmd = state.git.git.command(&path);
+    let mut cmd = state.git.git.command(path);
     cmd.args(crate::security::RECEIVE_PACK_CONFIG).args([sub, "--stateless-rpc", "--advertise-refs", "."]);
-    let proto = protocol_env(&parts.headers);
+    let proto = protocol_env(headers);
     if let Some(p) = &proto {
         cmd.env("GIT_PROTOCOL", p);
     }
@@ -168,12 +173,17 @@ async fn upload_pack(
             return plain(StatusCode::INTERNAL_SERVER_ERROR, "storage unavailable");
         }
     };
-    let mut cmd = state.git.git.command(&path);
+    serve_upload_pack(&state, &path, &parts.headers, body)
+}
+
+/// Streams `git upload-pack --stateless-rpc` for the bare repository at `path` (also used for gists).
+pub(crate) fn serve_upload_pack(state: &AppState, path: &std::path::Path, headers: &HeaderMap, body: Body) -> Response<Body> {
+    let mut cmd = state.git.git.command(path);
     cmd.args(["upload-pack", "--stateless-rpc", "."])
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::inherit());
-    if let Some(p) = protocol_env(&parts.headers) {
+    if let Some(p) = protocol_env(headers) {
         cmd.env("GIT_PROTOCOL", p);
     }
     let mut child = match cmd.spawn() {
@@ -182,7 +192,7 @@ async fn upload_pack(
     };
     let mut stdin = child.stdin.take().unwrap();
     let stdout = child.stdout.take().unwrap();
-    let mut reader = body_reader(&parts.headers, body, crate::security::MAX_UPLOAD_PACK_REQUEST);
+    let mut reader = body_reader(headers, body, crate::security::MAX_UPLOAD_PACK_REQUEST);
     tokio::spawn(async move {
         let _ = tokio::io::copy(&mut reader, &mut stdin).await;
         let _ = stdin.shutdown().await;

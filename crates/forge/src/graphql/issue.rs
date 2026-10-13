@@ -526,14 +526,24 @@ impl GIssue {
     async fn repository(&self) -> GRepo {
         GRepo::new(self.repo.clone())
     }
-    async fn locked(&self) -> bool {
+    pub async fn locked(&self) -> bool {
         self.row.locked
     }
-    async fn active_lock_reason(&self) -> Option<LockReason> {
+    pub async fn active_lock_reason(&self) -> Option<LockReason> {
         self.row.active_lock_reason.as_deref().and_then(LockReason::parse)
     }
-    async fn is_pinned(&self) -> Option<bool> {
-        Some(false)
+    async fn is_pinned(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<bool>> {
+        super::ghcompat::is_pinned(ctx, &self.row).await
+    }
+    async fn linked_branches(
+        &self,
+        ctx: &Context<'_>,
+        first: Option<i32>,
+        after: Option<String>,
+        last: Option<i32>,
+        before: Option<String>,
+    ) -> async_graphql::Result<super::ghcompat::LinkedBranchConnection> {
+        super::ghcompat::linked_branches(ctx, &self.row, ConnArgs::new(first, after, last, before)).await
     }
     async fn issue_type(&self) -> Option<IssueType> {
         None

@@ -15,6 +15,7 @@ pub mod hooks;
 pub mod ids;
 pub mod jobs;
 pub mod json;
+pub mod oauth_device;
 pub mod ssh;
 pub mod pulls;
 pub mod security;
@@ -76,7 +77,8 @@ pub fn app(state: AppState) -> Router {
         .route("/api/v3/", get(api::meta::root_handler))
         .nest("/api/v3", api)
         .nest("/api/graphql", graphql)
-        .nest("/api/forge", forge_api::routes())
+        .nest("/api/forge", forge_api::routes().merge(oauth_device::forge_routes()))
+        .merge(oauth_device::routes())
         .nest(
             "/api/uploads",
             api::releases::upload_routes()
@@ -85,6 +87,7 @@ pub fn app(state: AppState) -> Router {
         )
         .merge(api::releases::download_routes())
         .merge(api::gists::raw_routes())
+        .merge(api::gist_git::routes())
         .route("/avatars/{login}", get(web::avatar))
         .route("/healthz", get(|| async { "ok" }))
         .route("/readyz", get(readyz))
