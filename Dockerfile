@@ -32,7 +32,11 @@ RUN cargo build --release -p forge --locked \
  && install -m 0755 target/release/forge /usr/local/bin/forge
 
 ############################ 3. runtime ###################################################
-FROM debian:bookworm-slim AS runtime
+# trixie, not bookworm: forge needs git >= 2.40 (`git merge-tree --merge-base`, used by rebase
+# merges and the `rebaseable` check). bookworm ships git 2.39.5, where rebase merges failed with
+# "This branch can't be rebased". trixie ships 2.47. (The binary is built on bookworm's older
+# glibc, so it runs unchanged on trixie.)
+FROM debian:trixie-slim AS runtime
 RUN apt-get update \
  && apt-get install -y --no-install-recommends git ca-certificates tini \
  && rm -rf /var/lib/apt/lists/* \

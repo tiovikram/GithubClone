@@ -1,0 +1,45 @@
+# Forgejo + Postgres for the baseline benchmark (namespace forgejo).
+# postgres.yaml is deploy/base/postgres.yaml with only the database name and secret name changed
+# (same image, args, requests/limits: 4 CPU / 1536Mi limit).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: forgejo
+resources:
+  - namespace.yaml
+  - postgres.yaml
+  - forgejo.yaml
+configMapGenerator:
+  - name: forgejo-config
+    literals:
+      # Everything below is Forgejo's environment-to-ini (FORGEJO__section__KEY).
+      - FORGEJO__database__DB_TYPE=postgres
+      - FORGEJO__database__HOST=postgres:5432
+      - FORGEJO__database__NAME=forgejo
+      - FORGEJO__database__USER=forgejo
+      # Same pool size as forge (FORGE_DB_POOL=20); Forgejo's default keeps only 2 idle conns.
+      - FORGEJO__database__MAX_OPEN_CONNS=20
+      - FORGEJO__database__MAX_IDLE_CONNS=20
+      - FORGEJO__server__ROOT_URL=http://localhost:8088/
+      - FORGEJO__server__HTTP_PORT=3000
+      - FORGEJO__server__DISABLE_SSH=true
+      - FORGEJO__server__LFS_START_SERVER=false
+      - FORGEJO__security__INSTALL_LOCK=true
+      - FORGEJO__service__DISABLE_REGISTRATION=true
+      - FORGEJO__repository__DEFAULT_BRANCH=main
+      # Defaults kept (documented in docs/baseline.md): [cache] ADAPTER=memory,
+      # [queue] TYPE=level (LevelDB on the PVC), [indexer] ISSUE_INDEXER_TYPE=bleve,
+      # REPO_INDEXER_ENABLED=false, [session] PROVIDER=memory.
+      - FORGEJO__cache__ADAPTER=memory
+      - FORGEJO__queue__TYPE=level
+      - FORGEJO__indexer__ISSUE_INDEXER_TYPE=bleve
+      # No outbound network in the benchmark; info logging of every request would be unfair
+      # (forge logs at info but tower_http at warn = no per-request lines).
+      - FORGEJO__cron.update_checker__ENABLED=false
+      - FORGEJO__log__LEVEL=Warn
+secretGenerator:
+  - name: forgejo-secrets
+    literals:
+      - POSTGRES_USER=forgejo
+      - POSTGRES_PASSWORD=forgejo-dev-password
+      - SECRET_KEY=forgejo-baseline-secret-key-0123456789abcdef
+      - INTERNAL_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYmYiOjE3MDAwMDAwMDB9.baseline-internal-token-not-secret

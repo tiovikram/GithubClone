@@ -1,0 +1,26 @@
+checks: 100.00%
+  threshold rate>0.99: PASS
+data_received: 1103292227 (18342131.4/s)
+data_sent: 10357998 (172200.8/s)
+git_clone_duration: avg=242.2 p50=240.0 p95=303.0 p99=328.0 max=408.0
+  threshold p(95)<2000: PASS
+git_pack_bytes: 1054605225 (17532714.5/s)
+http_req_blocked: avg=0.0 p50=0.0 p95=0.0 p99=0.0 max=2.1
+http_req_connecting: avg=0.0 p50=0.0 p95=0.0 p99=0.0 max=0.6
+http_req_duration: avg=79.1 p50=78.8 p95=121.4 p99=144.6 max=198.0
+http_req_duration{expected_response:true}: avg=79.1 p50=78.8 p95=121.4 p99=144.6 max=198.0
+http_req_duration{step:fetch}: avg=93.8 p50=93.6 p95=135.8 p99=159.0 max=198.0
+  threshold p(95)<1500: PASS
+http_req_duration{step:info_refs}: avg=69.6 p50=70.2 p95=104.6 p99=118.8 max=146.6
+  threshold p(95)<300: PASS
+http_req_duration{step:ls_refs}: avg=73.8 p50=74.0 p95=109.0 p99=125.0 max=172.2
+  threshold p(95)<300: PASS
+http_req_failed: 0.00%
+  threshold rate<0.01: PASS
+http_req_receiving: avg=4.9 p50=0.0 p95=28.6 p99=52.5 max=85.2
+http_req_sending: avg=0.0 p50=0.0 p95=0.0 p99=0.0 max=0.8
+http_req_tls_handshaking: avg=0.0 p50=0.0 p95=0.0 p99=0.0 max=0.0
+http_req_waiting: avg=74.1 p50=74.4 p95=110.1 p99=126.6 max=184.5
+http_reqs: 23826 (396.1/s)
+iteration_duration: avg=242.2 p50=240.1 p95=302.8 p99=328.2 max=407.6
+iterations: 7942 (132.0/s)

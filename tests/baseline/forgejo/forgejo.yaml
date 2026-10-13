@@ -1,0 +1,93 @@
+# Forgejo for the baseline benchmark. Mirrors deploy/base/forge.yaml wherever the two can be
+# compared: same NodePort (30080), same requests/limits (250m/256Mi, 2 CPU/1Gi), same probes
+# cadence, same preStop sleep 5 + 60 s grace. Differences that are inherent to Forgejo:
+#   - repositories, LevelDB queues and the bleve issue index live on a ReadWriteOnce PVC, so it
+#     runs as exactly 1 replica (strategy Recreate). Scaling out would need shared RWX storage
+#     plus external queue/cache/indexer services (Redis, Elasticsearch/Meilisearch).
+#   - the stock image starts as root (s6 + su-exec to uid 1000), so no runAsNonRoot /
+#     readOnlyRootFilesystem.
+apiVersion: v1
+kind: Service
+metadata:
+  name: forgejo
+  labels: {app.kubernetes.io/name: forgejo}
+spec:
+  type: NodePort
+  selector: {app.kubernetes.io/name: forgejo}
+  ports:
+    - {name: http, port: 80, targetPort: http, nodePort: 30080}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: forgejo-data
+  labels: {app.kubernetes.io/name: forgejo}
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests: {storage: 10Gi}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: forgejo
+  labels: {app.kubernetes.io/name: forgejo}
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector:
+    matchLabels: {app.kubernetes.io/name: forgejo}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: forgejo}
+    spec:
+      terminationGracePeriodSeconds: 60
+      initContainers:
+        - name: wait-deps
+          image: codeberg.org/forgejo/forgejo:16.0.6
+          imagePullPolicy: IfNotPresent
+          command: ["bash", "-c", "until (exec 3<>/dev/tcp/postgres/5432) 2>/dev/null; do echo waiting for postgres; sleep 2; done"]
+          resources:
+            requests: {cpu: 10m, memory: 16Mi}
+            limits: {cpu: 100m, memory: 64Mi}
+      containers:
+        - name: forgejo
+          image: codeberg.org/forgejo/forgejo:16.0.6
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef: {name: forgejo-config}
+          env:
+            - name: FORGEJO__database__PASSWD
+              valueFrom: {secretKeyRef: {name: forgejo-secrets, key: POSTGRES_PASSWORD}}
+            - name: FORGEJO__security__SECRET_KEY
+              valueFrom: {secretKeyRef: {name: forgejo-secrets, key: SECRET_KEY}}
+            - name: FORGEJO__security__INTERNAL_TOKEN
+              valueFrom: {secretKeyRef: {name: forgejo-secrets, key: INTERNAL_TOKEN}}
+          ports:
+            - {name: http, containerPort: 3000}
+          startupProbe:
+            httpGet: {path: /api/healthz, port: http}
+            periodSeconds: 2
+            failureThreshold: 60
+          readinessProbe:
+            httpGet: {path: /api/healthz, port: http}
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 2
+          livenessProbe:
+            httpGet: {path: /api/healthz, port: http}
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sleep", "5"]
+          resources:
+            requests: {cpu: 250m, memory: 256Mi}
+            limits: {cpu: "2", memory: 1Gi}
+          volumeMounts:
+            - {name: data, mountPath: /data}
+      volumes:
+        - name: data
+          persistentVolumeClaim: {claimName: forgejo-data}

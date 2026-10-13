@@ -1,0 +1,18 @@
+PASS  create repo via API (POST user/repos -> 201)
+PASS  local repo with 5 commits
+PASS  git push (new repo, main)
+PASS  git ls-remote shows main
+PASS  git clone
+PASS  clone HEAD == pushed HEAD
+PASS  git fsck --strict on clone
+PASS  second clone
+PASS  commit + push from clone A
+PASS  git fetch in clone B
+PASS  fetched origin/main == A's HEAD
+PASS  push new branch
+PASS  push tag
+PASS  delete remote branch
+PASS  non-fast-forward push rejected
+PASS  shallow clone (--depth 1)
+PASS  protocol v2 advertised
+git smoke: PASS 17/17 (gitsmoke-1791852163-11787)

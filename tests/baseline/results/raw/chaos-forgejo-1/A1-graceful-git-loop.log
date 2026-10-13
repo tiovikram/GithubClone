@@ -1,0 +1,201 @@
+error: RPC failed; curl 52 Empty reply from server
+fatal: expected flush after ref listing
+22:45:45 clone 21 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:45:45 push 22 failed (unacked 374992fb69e02dd691e2c041ae19ed74892de6ff)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:45:45 clone 22 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:45:45 push 23 failed (unacked 8ebfc0897a8d4dd8ac64214db19086872f8276d6)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:45:45 clone 23 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:45:45 push 24 failed (unacked a25c630fbda33fd37afb3c01d5d0df247ee7b6d3)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:45:45 clone 24 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:45:45 push 25 failed (unacked 5e9409afe965b3d352b06d22d383dff57b728209)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:45:45 clone 25 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:45:46 push 26 failed (unacked 6dba452028a684f3f77599cda0c2ba83077063be)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:45:46 clone 26 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:45:46 push 27 failed (unacked 3a0b784df96f571d3b71db166154b70f9e0db809)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:45:46 clone 27 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:45:46 push 28 failed (unacked 4c6baee529bb3ebf0461ca41ca7f7f757c6df736)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:45:46 clone 28 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:45:46 push 29 failed (unacked ba916e4a6c6ab3e3f12c44f0046152fb456c7593)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:45:46 clone 29 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:45:46 push 30 failed (unacked 2b5abc30090987ed5dd970910afb7aac9dc1b76b)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:45:46 clone 30 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:45:46 push 31 failed (unacked 6f279b2c9eb34bf43dbd0051132ef4c5d8b28b7b)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:45:46 clone 31 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:45:46 push 32 failed (unacked 13b0070aec459a05070a63f812495d14002b6839)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:45:46 clone 32 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:45:46 push 33 failed (unacked 6ccdc2ac2ef41ba6c4c078a5438b8e412f930b73)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:45:48 clone 33 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:01 clone 45 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:01 push 46 failed (unacked 341ab1ee8d454bc04d9ab4c44db21454fe8b9d29)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:01 clone 46 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:01 push 47 failed (unacked 960238bac6abf8714a093550e101b0735ff18845)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:01 clone 47 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:01 push 48 failed (unacked 9dc56b7ce94e1f3ebb7e4a7fca67aadb41153c80)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:01 clone 48 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:01 push 49 failed (unacked 319345a420406e25c53a79c6a520a87e15502819)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:01 clone 49 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:01 push 50 failed (unacked bebaa6f945a8e3857572ff9b8c468e4fe3cc891b)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:01 clone 50 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:01 push 51 failed (unacked c96b5c0536d0f76b236e5e6560ca892f62c8de13)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:01 clone 51 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:02 push 52 failed (unacked f69abf6d093395f2d176159a2123d088e9e53ed8)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:02 clone 52 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:02 push 53 failed (unacked 9e462cd16477803329bc10daa16e5895f3f90a2c)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:02 clone 53 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:04 push 54 failed (unacked 9240917000ffe64554f7a936f0a12c4f7426239d)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:15 push 64 failed (unacked af6f58458fba1321c3b91f87e9177c8fa9cbcdf8)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:15 clone 64 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:16 push 65 failed (unacked 6c4ea00541f2396f9e6f9a652bdb2801a2036eda)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:16 clone 65 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:16 push 66 failed (unacked 30862a2ad49ddbdda19d504f5fe4ad96dcdccabd)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:16 clone 66 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:16 push 67 failed (unacked d7e11e2dca30fd43838cb4633f0d917959d48c37)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:16 clone 67 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:16 push 68 failed (unacked 029ea21716f7746f266ae58f7fea2426cc9e3249)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:16 clone 68 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:16 push 69 failed (unacked bea9d201668477bbf427b3840c9cda391a487bea)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:18 clone 69 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:31 push 78 failed (unacked 99148e367e12fbab2fa3d6689dd8fee2565adb96)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:31 clone 78 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:31 push 79 failed (unacked 027d718b2c51456725039b85b245b1730723401b)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:31 clone 79 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:31 push 80 failed (unacked 00c24489a106c461d1d0b76666ef80dc21abc3c1)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:31 clone 80 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:31 push 81 failed (unacked ab087f673218fd9c278a661d4593bf9755e7f3ae)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:31 clone 81 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:31 push 82 failed (unacked 1bda7010994417fd17a57942dcd0886d2459957f)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:31 clone 82 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:31 push 83 failed (unacked d2c40db6171ca9049a8a6e6f1dd61021b6a52a84)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:31 clone 83 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:32 push 84 failed (unacked 689e6b819a862a91e19f2b397ee1349d198cfc3f)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:32 clone 84 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:32 push 85 failed (unacked dfd3c4afa5571ab4c3ef6171bc2dbc26bd2bf39c)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:32 clone 85 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:32 push 86 failed (unacked ecc6d6c4db61c3a86bb9356cc7ec94edc6016e13)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:32 clone 86 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:32 push 87 failed (unacked c7dce72cf566fb571a7b8e772a508f206fbb6a0f)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:32 clone 87 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:33 push 88 failed (unacked f9d1318ea2b02c6abd25f748cd5e8eca72526a13)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:35 clone 88 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:46 push 96 failed (unacked b28c11a8fa3e71719cb91dd89a11aa0e7075d61b)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:46 clone 96 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:46 push 97 failed (unacked 5538772f95f38b076362063c7b836c35974738e9)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:46 clone 97 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:46 push 98 failed (unacked d389be70f39d5e552620ee65b95bbe083fce55c0)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:46 clone 98 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:46 push 99 failed (unacked 2decec422f2030e012fe80a786214c2963654bc6)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:46 clone 99 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:46 push 100 failed (unacked 0d31fafabc251d1f555449634621a5ed5cb38740)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:46:48 clone 100 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:47:00 push 108 failed (unacked eec9ac9086153d5007abbbad7d33764eebcf3410)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:47:00 clone 108 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:47:00 push 109 failed (unacked c0855926b3a088ac8d456694e4f83888084234f4)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:47:00 clone 109 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:47:00 push 110 failed (unacked ee4a8c8c02d1c5aa656e6c7f959d8546cf4afb0b)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:47:00 clone 110 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:47:01 push 111 failed (unacked 82d3dd54ac58bd11aa68af7530a9bccb26b2a140)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:47:01 clone 111 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:47:01 push 112 failed (unacked aa23669617b774f52fb00432d6c5a748f789f60b)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:47:01 clone 112 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:47:01 push 113 failed (unacked 7f7af1c03266bd4dc769d4e5390e542e7a9098a1)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:47:01 clone 113 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A1-graceful-20261012-224530.git/': Empty reply from server
+22:47:03 push 114 failed (unacked 2c2d3bd65f9e0efa8a579ee70741e6da34414c77)

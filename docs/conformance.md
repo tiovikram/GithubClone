@@ -208,6 +208,11 @@ which blocks the git/PR scenarios. Also use this run to check that the harness s
 a server that is not GitHub. (These numbers come from validating Gitea against GitHub's spec. That
 is the bar we have to clear. They do not measure Gitea's own API.)
 
+Forgejo 16.0.6, run with the same flags as forge (`--org`, `--collaborator`): **29/1105 (2.6%);
+tier 1 10/104 (9.6%); tier 2 19/129 (14.7%)** at `/api/v1`, and 0 at `/api/v3`. forge on the same
+run: tier 1 102/104, tier 2 120/129. See [baseline.md](baseline.md) and
+`tests/baseline/results/compat/`.
+
 ## Status and caveats
 
 - The write scenarios have been dry-run end to end against Gitea, which tests the harness

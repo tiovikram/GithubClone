@@ -13,6 +13,13 @@
 #   SKIP_BUILD=1       don't run cargo build
 #   KEEP=1             keep the work directory and leave the server running
 #   VERBOSE=1          print each command's output
+#   GH_SUITE_EXTERNAL=1  don't build/start forge; test an already running server (used by
+#                      tests/baseline/compat.sh to run this same suite against Forgejo). Needs
+#                      GH_SUITE_HOST (host name in the server's URLs), GH_SUITE_SOCK (unix socket
+#                      forwarded to the server; gh speaks plain HTTP over it), FORGE_GH_PORT (TCP
+#                      port git uses as http://GH_SUITE_HOST:port), GH_SUITE_ALICE, GH_SUITE_BOB,
+#                      GH_SUITE_TOKEN, GH_SUITE_BOB_TOKEN (two existing users and their tokens).
+#                      Optional: GH_SUITE_WORK, GH_SUITE_REPORT.
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -20,16 +27,20 @@ GH="${GH:-/opt/homebrew/bin/gh}"
 PORT="${FORGE_GH_PORT:-3104}"
 export PATH="/opt/homebrew/opt/rustup/bin:/opt/homebrew/opt/postgresql@16/bin:$HOME/.cargo/bin:$PATH"
 export DATABASE_URL="${DATABASE_URL:-postgres://forge:forge@localhost/forge_graphql}"
-HOST="forge.localhost"
+HOST="${GH_SUITE_HOST:-forge.localhost}"
 
-WORK="$ROOT/data/gh-suite"
-SOCK="/tmp/forge-gh-$PORT.sock"   # macOS sun_path is limited to 104 bytes
+WORK="${GH_SUITE_WORK:-$ROOT/data/gh-suite}"
+SOCK="${GH_SUITE_SOCK:-/tmp/forge-gh-$PORT.sock}"   # macOS sun_path is limited to 104 bytes
 rm -rf "$WORK"
 mkdir -p "$WORK"/{logs,gh,xdg-cache,xdg-config,xdg-state,xdg-data,work}
 
 # ------------------------------------------------------------------------------------------------
 # Build and start forge
 
+if [ "${GH_SUITE_EXTERNAL:-}" = "1" ]; then
+  ALICE="$GH_SUITE_ALICE"; BOB="$GH_SUITE_BOB"; TOKEN="$GH_SUITE_TOKEN"; BOB_TOKEN="$GH_SUITE_BOB_TOKEN"
+  [ -S "$SOCK" ] || { echo "GH_SUITE_SOCK $SOCK is not a socket" >&2; exit 2; }
+else
 if [ "${SKIP_BUILD:-}" != "1" ]; then
   (cd "$ROOT" && cargo build -q -p forge) || { echo "build failed" >&2; exit 2; }
 fi
@@ -68,6 +79,7 @@ BOB="bob-$SUFFIX"
 "$FORGE" admin create-user --login "$BOB" --password "password123" --email "$BOB@example.com" >/dev/null
 TOKEN="$("$FORGE" admin create-token --login "$ALICE" | tail -1)"
 BOB_TOKEN="$("$FORGE" admin create-token --login "$BOB" | tail -1)"
+fi
 
 # ------------------------------------------------------------------------------------------------
 # Isolated gh + git configuration (never touches ~/.config/gh, ~/.gitconfig or the keychain)
@@ -271,7 +283,8 @@ t "pr ready (undo the undo)"         0 ""                            "$GH" pr re
 
 # commit status for `pr checks` (REST statuses API; falls back to SQL if not implemented)
 HEAD_SHA="$(git -C "$SEED" rev-parse feature)"
-if ! "$GH" api "repos/$ALICE/demo/statuses/$HEAD_SHA" -f state=success -f context=ci/test -f description="All good" >/dev/null 2>&1; then
+if ! "$GH" api "repos/$ALICE/demo/statuses/$HEAD_SHA" -f state=success -f context=ci/test -f description="All good" >/dev/null 2>&1 \
+    && [ "${GH_SUITE_EXTERNAL:-}" != "1" ]; then
   psql "$DATABASE_URL" -q -c "INSERT INTO commit_statuses (repo_id, sha, state, context, description)
      SELECT r.id, '$HEAD_SHA', 'success', 'ci/test', 'All good' FROM repositories r JOIN users u ON u.id = r.owner_id
       WHERE u.login = '$ALICE' AND r.name = 'demo'" >/dev/null 2>&1
@@ -746,7 +759,7 @@ t "project delete"                           0 ""                            "$G
 # A command "works" when it has at least one case and all of its cases pass.
 
 PCT=$(( TOTAL > 0 ? PASS * 100 / TOTAL : 0 ))
-REPORT="$ROOT/tests/gh/report.md"
+REPORT="${GH_SUITE_REPORT:-$ROOT/tests/gh/report.md}"
 CATALOGUE="$ROOT/tests/gh/commands.tsv"
 CASES_TSV="$WORK/cases.tsv"
 : >"$CASES_TSV"

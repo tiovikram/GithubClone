@@ -1,0 +1,25 @@
+  [skipped] contents API: requires rp
+  [skipped] git data & refs: requires rp, baseSha
+  [skipped] branches, merges, protection, archives: requires rp, featureSha
+  [skipped] commits, compare, statuses, checks, commit comments: requires rp, featureSha
+  [skipped] labels & milestones: requires rp
+  [skipped] issues: requires rp, login, label, milestone
+  [skipped] issue comments & reactions: requires rp, issue
+  [skipped] pull requests: create, review comments, reviews: requires rp, featureSha
+  [skipped] pull requests: update-branch & close: requires rp, baseSha
+  [skipped] pull requests: merge: requires rp, pr
+  [skipped] releases & assets: requires rp
+  [skipped] deployments & webhooks: requires rp
+  [skipped] stars, watching, notifications, events: requires rp, login
+  [skipped] collaborators: requires rp, login
+  [skipped] template & fork: requires rp, login
+  [skipped] users & ssh keys: requires login
+  [skipped] organizations: requires login
+  [skipped] gists: requires login
+  [skipped] actions (read): requires rp
+  [skipped] search: requires rp, login
+  [skipped] cleanup: requires rp
+
+HTTP requests: 7
+report: ../../tests/baseline/results/compat/conformance-forgejo-v3.json
+summary: ../../tests/baseline/results/compat/conformance-forgejo-v3.md

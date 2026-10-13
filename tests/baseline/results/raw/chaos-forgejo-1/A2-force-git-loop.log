@@ -1,0 +1,22 @@
+remote: 
+remote: Forgejo: Internal Server Connection Error        
+fatal: unable to access 'http://localhost:8088/bench/chaos-A2-force-20261012-224530.git/': Empty reply from server
+22:47:34 clone 17 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A2-force-20261012-224530.git/': Empty reply from server
+22:47:36 push 18 failed (unacked b8f85b0d57c2dd8de89dc40d7fb3ec514e02140d)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A2-force-20261012-224530.git/': Empty reply from server
+22:47:49 push 31 failed (unacked 5c41efc7828ac3e5d718bf5cd65ab7937ab02f2b)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A2-force-20261012-224530.git/': Empty reply from server
+22:47:51 clone 31 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A2-force-20261012-224530.git/': Empty reply from server
+22:48:04 push 43 failed (unacked d2e7b60830b9de3bf139784cb8c05beac1eb0951)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A2-force-20261012-224530.git/': Empty reply from server
+22:48:06 clone 43 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A2-force-20261012-224530.git/': Empty reply from server
+22:48:21 push 54 failed (unacked 1a4932d0d8c1b3855f75cfece7f75db6e97c9552)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A2-force-20261012-224530.git/': Empty reply from server
+22:48:36 push 63 failed (unacked b85d9a9e11cbeeaef7d555f5174a86ed9fd0d791)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A2-force-20261012-224530.git/': Empty reply from server
+22:48:51 push 71 failed (unacked 5fd98ef208fbfb04c8546b44f428b1f466089cee)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A2-force-20261012-224530.git/': Empty reply from server
+22:48:53 clone 71 failed

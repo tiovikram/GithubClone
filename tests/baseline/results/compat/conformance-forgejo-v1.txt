@@ -1,0 +1,25 @@
+  activity           7/32 (21.9%), tested 13, nonconf 5, n/i 1
+  gists              0/20 (0%), tested 2, nonconf 0, n/i 2
+  reactions          0/15 (0%), tested 6, nonconf 4, n/i 2
+  git                0/13 (0%), tested 5, nonconf 1, n/i 4
+  search             0/7 (0%), tested 7, nonconf 0, n/i 7
+  meta               0/4 (0%), tested 4, nonconf 0, n/i 4
+  licenses           0/3 (0%), tested 2, nonconf 1, n/i 1
+  gitignore          1/2 (50%), tested 1, nonconf 0, n/i 0
+  markdown           1/2 (50%), tested 1, nonconf 0, n/i 0
+  emojis             0/1 (0%), tested 1, nonconf 0, n/i 1
+  rate-limit         0/1 (0%), tested 1, nonconf 0, n/i 1
+
+scenarios not completed:
+  [blocked] contents API: fixture step repos/create-or-update-file-contents returned 422: {"message":"[SHA]: Required","url":"http://localhost:3320/api/swagger"}
+
+  [blocked] git data & refs: fixture step git/create-ref returned 405: 
+  [skipped] branches, merges, protection, archives: requires featureSha
+  [skipped] commits, compare, statuses, checks, commit comments: requires featureSha
+  [skipped] pull requests: create, review comments, reviews: requires featureSha
+  [blocked] pull requests: update-branch & close: fixture step git/create-ref returned 405: 
+  [skipped] pull requests: merge: requires pr
+
+HTTP requests: 174
+report: ../../tests/baseline/results/compat/conformance-forgejo-v1.json
+summary: ../../tests/baseline/results/compat/conformance-forgejo-v1.md

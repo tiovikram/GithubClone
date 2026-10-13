@@ -1,0 +1,28 @@
+time="2026-10-12T22:03:12-05:00" level=warning msg="Request Failed" error="Post \"http://localhost:8088/bench/loadfix-1.git/git-upload-pack\": EOF"
+time="2026-10-12T22:03:27-05:00" level=warning msg="Request Failed" error="Post \"http://localhost:8088/bench/loadfix-2.git/git-upload-pack\": EOF"
+checks: 100.00%
+  threshold rate>0.99: PASS
+data_received: 2183331954 (19844897.9/s)
+data_sent: 20420261 (185605.3/s)
+git_clone_duration: avg=28.1 p50=27.0 p95=45.0 p99=57.0 max=102.0
+  threshold p(95)<2000: PASS
+git_pack_bytes: 2084265155 (18944452.8/s)
+http_req_blocked: avg=0.0 p50=0.0 p95=0.0 p99=0.0 max=1.3
+http_req_connecting: avg=0.0 p50=0.0 p95=0.0 p99=0.0 max=0.5
+http_req_duration: avg=7.6 p50=6.0 p95=17.0 p99=27.3 max=80.6
+http_req_duration{expected_response:true}: avg=7.6 p50=6.0 p95=17.0 p99=27.3 max=80.6
+http_req_duration{step:fetch}: avg=11.5 p50=10.7 p95=21.8 p99=32.0 max=80.6
+  threshold p(95)<1500: PASS
+http_req_duration{step:info_refs}: avg=5.8 p50=5.0 p95=12.0 p99=22.6 max=49.6
+  threshold p(95)<300: PASS
+http_req_duration{step:ls_refs}: avg=5.6 p50=5.0 p95=10.1 p99=21.0 max=55.6
+  threshold p(95)<300: PASS
+http_req_failed: 0.00%
+  threshold rate<0.01: PASS
+http_req_receiving: avg=2.7 p50=0.8 p95=9.8 p99=18.3 max=71.7
+http_req_sending: avg=0.0 p50=0.0 p95=0.0 p99=0.0 max=2.2
+http_req_tls_handshaking: avg=0.0 p50=0.0 p95=0.0 p99=0.0 max=0.0
+http_req_waiting: avg=5.0 p50=4.4 p95=9.3 p99=20.1 max=55.0
+http_reqs: 46979 (427.0/s)
+iteration_duration: avg=28.1 p50=27.2 p95=45.1 p99=56.8 max=101.5
+iterations: 15660 (142.3/s)
