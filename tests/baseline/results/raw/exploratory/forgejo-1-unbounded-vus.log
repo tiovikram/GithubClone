@@ -1,0 +1,5 @@
+==> forgejo-1: warm-up (not recorded)
+   read-r100 run 1: 99 req/s, p50 5.5 p95 18.1 p99 29.7 ms, failed 0%, dropped 0
+   read-r500 run 1: 372 req/s, p50 267.5 p95 9042.8 p99 10010.5 ms, failed 30.92%, dropped 7090
+   read-r1000 run 1: 405 req/s, p50 231.7 p95 9299.8 p99 10255.5 ms, failed 37.37%, dropped 35116
+   read-sat run 1: 271 req/s, p50 74.6 p95 941.9 p99 1021.8 ms, failed 0%, dropped 0

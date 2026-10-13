@@ -1,0 +1,18 @@
+fatal: unable to access 'http://localhost:8088/bench/chaos-A2-force-20261012-210431.git/': Empty reply from server
+21:06:36 push 23 failed (unacked 643d7b47b858cdc9a7b98cfa7d2b4f9c924f3107)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A2-force-20261012-210431.git/': Empty reply from server
+21:06:51 push 38 failed (unacked dccbc85e605b3fa59b0753b562f03fb7f4d78756)
+error: RPC failed; curl 52 Empty reply from server
+send-pack: unexpected disconnect while reading sideband packet
+fatal: the remote end hung up unexpectedly
+21:07:05 push 50 failed (unacked ed62eb536bf7e233780fc49ad8babe63d7c74324)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A2-force-20261012-210431.git/': Empty reply from server
+21:07:07 clone 50 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A2-force-20261012-210431.git/': Empty reply from server
+21:07:22 push 61 failed (unacked 2e157ca9f766560d1fb6d531c6e0574255fe14c7)
+fatal: unable to access 'http://localhost:8088/bench/chaos-A2-force-20261012-210431.git/': Empty reply from server
+21:07:24 clone 61 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A2-force-20261012-210431.git/': Empty reply from server
+21:07:37 clone 70 failed
+fatal: unable to access 'http://localhost:8088/bench/chaos-A2-force-20261012-210431.git/': Empty reply from server
+21:07:52 push 80 failed (unacked 80de12710ec3d97ebeae4ef057db2e1cddb44ede)

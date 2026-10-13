@@ -1,0 +1,32 @@
+==> forgejo-1: warm-up (not recorded)
+   read-r100 run 1: 100 req/s, p50 5.5 p95 18 p99 29.1 ms, failed 0%, dropped 0
+   read-r500 run 1: 261 req/s, p50 322.9 p95 6310 p99 6772.3 ms, failed 0%, dropped 14051
+   read-r1000 run 1: 257 req/s, p50 342.5 p95 6347.7 p99 6841.9 ms, failed 0%, dropped 44301
+   read-sat run 1: 267 req/s, p50 75.7 p95 961.2 p99 1046.3 ms, failed 0%, dropped 0
+   git-c1 run 1: 155 req/s, p50 3.6 p95 6.4 p99 6.7 ms, failed 0%, dropped 0
+   git-c8 run 1: 408 req/s, p50 14.1 p95 42.1 p99 53.1 ms, failed 0%, dropped 0
+   git-c32 run 1: 398 req/s, p50 78.1 p95 119.4 p99 142.8 ms, failed 0%, dropped 0
+   write-r10 run 1: 19 req/s, p50 12.1 p95 32.4 p99 43.3 ms, failed 0%, dropped 0
+   write-r25 run 1: 50 req/s, p50 16.3 p95 50.3 p99 66.6 ms, failed 0%, dropped 0
+   write-r50 run 1: 99 req/s, p50 33.5 p95 232.6 p99 271.1 ms, failed 0%, dropped 7
+   read-r100 run 2: 100 req/s, p50 5.5 p95 18.4 p99 28.3 ms, failed 0%, dropped 0
+   read-r500 run 2: 258 req/s, p50 329.5 p95 6398.7 p99 6866.1 ms, failed 0%, dropped 14291
+   read-r1000 run 2: 258 req/s, p50 344.7 p95 6264.6 p99 6826.5 ms, failed 0%, dropped 44224
+   read-sat run 2: 273 req/s, p50 74.4 p95 929.7 p99 1008.5 ms, failed 0%, dropped 0
+   git-c1 run 2: 155 req/s, p50 3.6 p95 6.5 p99 6.9 ms, failed 0%, dropped 0
+   git-c8 run 2: 402 req/s, p50 14.4 p95 42.5 p99 53.3 ms, failed 0%, dropped 0
+   git-c32 run 2: 396 req/s, p50 78.8 p95 121.4 p99 144.6 ms, failed 0%, dropped 0
+   write-r10 run 2: 19 req/s, p50 13.1 p95 26.8 p99 37.3 ms, failed 0%, dropped 0
+   write-r25 run 2: 50 req/s, p50 9.5 p95 30.1 p99 46 ms, failed 0%, dropped 0
+   write-r50 run 2: 99 req/s, p50 10.1 p95 40.5 p99 59.6 ms, failed 0%, dropped 0
+   read-r100 run 3: 100 req/s, p50 5.6 p95 19.1 p99 31.5 ms, failed 0%, dropped 0
+   read-r500 run 3: 256 req/s, p50 330.4 p95 6301.9 p99 6787.2 ms, failed 0%, dropped 14396
+   read-r1000 run 3: 257 req/s, p50 352.8 p95 6414.3 p99 6963.8 ms, failed 0%, dropped 44331
+   read-sat run 3: 273 req/s, p50 75.3 p95 950.8 p99 1047 ms, failed 0%, dropped 0
+   git-c1 run 3: 153 req/s, p50 3.7 p95 6.5 p99 7 ms, failed 0%, dropped 0
+   git-c8 run 3: 397 req/s, p50 14.8 p95 41.5 p99 53.4 ms, failed 0%, dropped 0
+   git-c32 run 3: 385 req/s, p50 80.8 p95 124 p99 148.4 ms, failed 0%, dropped 0
+   write-r10 run 3: 20 req/s, p50 12.9 p95 22 p99 36.9 ms, failed 0%, dropped 0
+   write-r25 run 3: 50 req/s, p50 9.5 p95 20 p99 35.9 ms, failed 0%, dropped 0
+   write-r50 run 3: 99 req/s, p50 9.3 p95 27.3 p99 47.3 ms, failed 0%, dropped 0
+==> forgejo-1 done: /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a69095d3dd37d103c/tests/baseline/results/raw/forgejo-1

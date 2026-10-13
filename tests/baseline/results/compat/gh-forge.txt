@@ -1,0 +1,92 @@
+#    case                                       res   notes
+1    auth status                                PASS  
+2    api user (REST GET)                        PASS  
+3    api graphql query                          PASS  
+4    repo create (GraphQL)                      PASS  
+5    repo create --add-readme (REST)            PASS  
+6    repo view                                  PASS  
+7    repo view (README)                         PASS  
+8    repo view --json                           PASS  
+9    repo list                                  PASS  
+10   repo list OWNER --json                     PASS  
+11   repo edit                                  PASS  
+12   repo view after edit                       PASS  
+13   repo clone                                 PASS  
+14   repo clone result                          PASS  
+15   repo fork (as other user)                  PASS  
+16   repo list --fork (other user)              PASS  
+17   label create (REST)                        PASS  
+18   label create --force (REST)                PASS  
+19   api graphql mutation (createLabel)         PASS  
+20   label list                                 PASS  
+21   label list --json                          PASS  
+22   issue create                               PASS  
+23   issue create with metadata                 PASS  
+24   issue create (to delete)                   PASS  
+25   issue list                                 PASS  
+26   issue list --json                          PASS  
+27   issue list --label (search)                PASS  
+28   issue list --search                        PASS  
+29   issue list --assignee                      PASS  
+30   issue view                                 PASS  
+31   issue comment                              PASS  
+32   issue view --comments                      PASS  
+33   issue view --json                          PASS  
+34   issue edit                                 PASS  
+35   issue edit --remove-label                  PASS  
+36   issue view after edit                      PASS  
+37   issue close                                PASS  
+38   issue list --state closed                  PASS  
+39   issue reopen                               PASS  
+40   issue status                               PASS  
+41   issue delete                               PASS  
+42   issue view deleted (404)                   PASS  
+43   pr create                                  PASS  
+44   pr create (reviewer, label, assignee)      PASS  
+45   pr create --draft                          PASS  
+46   pr create (4th)                            PASS  
+47   pr create duplicate fails                  PASS  
+48   pr list                                    PASS  
+49   pr list --json                             PASS  
+50   pr list --author (search)                  PASS  
+51   pr list --draft (search)                   PASS  
+52   pr view                                    PASS  
+53   pr view --json                             PASS  
+54   pr view reviewers                          PASS  
+55   pr diff                                    PASS  
+56   pr diff --name-only                        PASS  
+57   pr comment                                 PASS  
+58   pr review --comment                        PASS  
+59   pr review --approve (other user)           PASS  
+60   pr review --request-changes (other user)   PASS  
+61   pr view review decision                    PASS  
+62   pr edit                                    PASS  
+63   pr ready --undo                            PASS  
+64   pr ready                                   PASS  
+65   pr view after ready                        PASS  
+66   pr ready (undo the undo)                   PASS  
+67   pr checks                                  PASS  
+68   pr checkout                                PASS  
+69   pr checkout result                         PASS  
+70   pr status                                  PASS  
+71   pr view (current branch)                   PASS  
+72   pr merge --merge --delete-branch           PASS  
+73   pr merge result (local main)               PASS  
+74   pr view merged                             PASS  
+75   pr close                                   PASS  
+76   pr reopen                                  PASS  
+77   pr merge --squash                          PASS  
+78   pr merge --rebase                          PASS  
+79   pr list --state merged                     PASS  
+80   pr merge result (remote log)               PASS  
+81   release create                             PASS  
+82   release list                               PASS  
+83   release view                               PASS  
+84   api POST -f (REST)                         PASS  
+85   api --paginate (REST)                      PASS  
+86   api graphql --paginate                     PASS  
+87   repo delete                                PASS  
+88   repo view deleted (404)                    PASS  
+
+PASS 88/88 (100%)
+logs: /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a69095d3dd37d103c/data/bench/gh-forge/logs   report: /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a69095d3dd37d103c/tests/baseline/results/compat/gh-forge.md

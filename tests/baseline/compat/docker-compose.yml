@@ -1,0 +1,64 @@
+# Compatibility test bed (no Kubernetes needed): one Postgres 16 with two databases, forge
+# (image forge:dev built from this repo) and Forgejo (pinned stable image). Used by
+# tests/baseline/compat.sh for the REST conformance, gh suite and git smart-HTTP checks.
+#   FORGE_BASE_URL / FORGEJO_ROOT_URL decide the URLs both servers put into API responses:
+#   conformance needs the real origin (http://localhost:<port>), the gh suite an https
+#   "enterprise host" name (https://forge.localhost, https://forgejo.localhost).
+name: forge-baseline-compat
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: bench
+      POSTGRES_PASSWORD: bench
+      POSTGRES_DB: forge
+    command: ["-c", "max_connections=300"]
+    volumes:
+      - ./initdb.sql:/docker-entrypoint-initdb.d/initdb.sql:ro
+      - pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bench -d forgejo"]
+      interval: 2s
+      retries: 60
+
+  forge:
+    image: forge:dev
+    command: ["serve"]
+    depends_on: {postgres: {condition: service_healthy}}
+    ports: ["127.0.0.1:${FORGE_PORT:-3310}:3000"]
+    environment:
+      FORGE_LISTEN: 0.0.0.0:3000
+      FORGE_BASE_URL: ${FORGE_BASE_URL:-http://localhost:3310}
+      DATABASE_URL: postgres://bench:bench@postgres:5432/forge
+      FORGE_STORAGE: file:///var/cache/forge/objects
+      FORGE_CACHE_DIR: /var/cache/forge/cache
+      RUST_LOG: forge=info,tower_http=warn
+    volumes: [forgedata:/var/cache/forge]
+
+  forgejo:
+    image: ${FORGEJO_IMAGE:-codeberg.org/forgejo/forgejo:16.0.6}
+    depends_on: {postgres: {condition: service_healthy}}
+    ports: ["127.0.0.1:${FORGEJO_PORT:-3320}:3000"]
+    environment:
+      USER_UID: "1000"
+      USER_GID: "1000"
+      FORGEJO__database__DB_TYPE: postgres
+      FORGEJO__database__HOST: postgres:5432
+      FORGEJO__database__NAME: forgejo
+      FORGEJO__database__USER: bench
+      FORGEJO__database__PASSWD: bench
+      FORGEJO__server__ROOT_URL: ${FORGEJO_ROOT_URL:-http://localhost:3320/}
+      FORGEJO__server__HTTP_PORT: "3000"
+      FORGEJO__server__DISABLE_SSH: "true"
+      FORGEJO__server__LFS_START_SERVER: "false"
+      FORGEJO__security__INSTALL_LOCK: "true"
+      FORGEJO__security__SECRET_KEY: baseline-compat-secret-key-0123456789
+      FORGEJO__service__DISABLE_REGISTRATION: "true"
+      FORGEJO__repository__DEFAULT_BRANCH: main
+      FORGEJO__log__LEVEL: Warn
+    volumes: [forgejodata:/data]
+
+volumes:
+  pg: {}
+  forgedata: {}
+  forgejodata: {}

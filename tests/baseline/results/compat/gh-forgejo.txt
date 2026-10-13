@@ -1,0 +1,93 @@
+fatal: cannot change to '/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a69095d3dd37d103c/data/bench/gh-forgejo/seed': No such file or directory
+#    case                                       res   notes
+1    auth status                                FAIL  exit 1 (want 0): forgejo.localhost   X Failed to log in to forgejo.localhost using token (GH_ENTERPRISE_TOKEN)   - Active account: true 
+2    api user (REST GET)                        FAIL  exit 1 (want 0): Not found. gh: HTTP 404 
+3    api graphql query                          FAIL  exit 1 (want 0): gh: HTTP 405 
+4    repo create (GraphQL)                      FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+5    repo create --add-readme (REST)            FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/user/repos) 
+6    repo view                                  FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+7    repo view (README)                         FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+8    repo view --json                           FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+9    repo list                                  FAIL  exit 1 (want 0): non-200 OK status code: 405 Method Not Allowed body: "" 
+10   repo list OWNER --json                     FAIL  exit 1 (want 0): non-200 OK status code: 405 Method Not Allowed body: "" 
+11   repo edit                                  FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-a47457/demo) 
+12   repo view after edit                       FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+13   repo clone                                 FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+14   repo clone result                          FAIL  exit 128 (want 0): fatal: cannot change to '/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a69095d3dd37d103c/data/bench/gh-forgejo/work/clone': No such file or directory 
+15   repo fork (as other user)                  FAIL  exit 1 (want 0): failed to fork: HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-a47457/demo/forks) 
+16   repo list --fork (other user)              FAIL  exit 1 (want 0): non-200 OK status code: 405 Method Not Allowed body: "" 
+17   label create (REST)                        FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-a47457/demo/labels) 
+18   label create --force (REST)                FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-a47457/demo/labels) 
+19   api graphql mutation (createLabel)         FAIL  exit 1 (want 0): gh: HTTP 405 
+20   label list                                 FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+21   label list --json                          FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+22   issue create                               FAIL  exit 1 (want 0): non-200 OK status code: 405 Method Not Allowed body: "" 
+23   issue create with metadata                 FAIL  exit 1 (want 0): non-200 OK status code: 405 Method Not Allowed body: "" 
+24   issue create (to delete)                   FAIL  exit 1 (want 0): non-200 OK status code: 405 Method Not Allowed body: "" 
+25   issue list                                 FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+26   issue list --json                          FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+27   issue list --label (search)                FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/meta) 
+28   issue list --search                        FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/meta) 
+29   issue list --assignee                      FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+30   issue view                                 FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+31   issue comment                              FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+32   issue view --comments                      FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+33   issue view --json                          FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+34   issue edit                                 FAIL  exit 1 (want 0): non-200 OK status code: 405 Method Not Allowed body: "" 
+35   issue edit --remove-label                  FAIL  exit 1 (want 0): non-200 OK status code: 405 Method Not Allowed body: "" 
+36   issue view after edit                      FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+37   issue close                                FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+38   issue list --state closed                  FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+39   issue reopen                               FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+40   issue status                               FAIL  exit 1 (want 0): non-200 OK status code: 405 Method Not Allowed body: "" 
+41   issue delete                               FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+42   issue view deleted (404)                   FAIL  output did not match /Could not resolve/: HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+43   pr create                                  FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+44   pr create (reviewer, label, assignee)      FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+45   pr create --draft                          FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+46   pr create (4th)                            FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+47   pr create duplicate fails                  FAIL  output did not match /already exists/: HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+48   pr list                                    FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+49   pr list --json                             FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+50   pr list --author (search)                  FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/meta) 
+51   pr list --draft (search)                   FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/meta) 
+52   pr view                                    FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+53   pr view --json                             FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+54   pr view reviewers                          FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+55   pr diff                                    FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+56   pr diff --name-only                        FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+57   pr comment                                 FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+58   pr review --comment                        FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+59   pr review --approve (other user)           FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+60   pr review --request-changes (other user)   FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+61   pr view review decision                    FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+62   pr edit                                    FAIL  exit 1 (want 0): non-200 OK status code: 405 Method Not Allowed body: "" 
+63   pr ready --undo                            FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+64   pr ready                                   FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+65   pr view after ready                        FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+66   pr ready (undo the undo)                   FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+67   pr checks                                  FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+68   pr checkout                                FAIL  exit 1 (want 0): /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a69095d3dd37d103c/tests/gh/run.sh: line 134: cd: /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent
+69   pr checkout result                         FAIL  exit 1 (want 0): /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a69095d3dd37d103c/tests/gh/run.sh: line 134: cd: /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent
+70   pr status                                  FAIL  exit 1 (want 0): /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a69095d3dd37d103c/tests/gh/run.sh: line 134: cd: /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent
+71   pr view (current branch)                   FAIL  exit 1 (want 0): /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a69095d3dd37d103c/tests/gh/run.sh: line 134: cd: /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent
+72   pr merge --merge --delete-branch           FAIL  exit 1 (want 0): /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a69095d3dd37d103c/tests/gh/run.sh: line 134: cd: /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent
+73   pr merge result (local main)               FAIL  exit 1 (want 0): /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a69095d3dd37d103c/tests/gh/run.sh: line 134: cd: /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent
+74   pr view merged                             FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+75   pr close                                   FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+76   pr reopen                                  FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+77   pr merge --squash                          FAIL  exit 1 (want 0): non-200 OK status code: 405 Method Not Allowed body: "" 
+78   pr merge --rebase                          FAIL  exit 1 (want 0): non-200 OK status code: 405 Method Not Allowed body: "" 
+79   pr list --state merged                     FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+80   pr merge result (remote log)               FAIL  exit 1 (want 0): invalid character 'N' looking for beginning of value 
+81   release create                             FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-a47457/demo/releases) 
+82   release list                               FAIL  exit 1 (want 0): non-200 OK status code: 405 Method Not Allowed body: "" 
+83   release view                               FAIL  exit 1 (want 0): release not found 
+84   api POST -f (REST)                         FAIL  exit 1 (want 0): Not found. gh: HTTP 404 
+85   api --paginate (REST)                      FAIL  exit 1 (want 0): invalid character 'N' looking for beginning of value 
+86   api graphql --paginate                     FAIL  exit 1 (want 0): gh: HTTP 405 
+87   repo delete                                FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-a47457/apirepo) 
+88   repo view deleted (404)                    FAIL  output did not match /Could not resolve/: HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+
+PASS 0/88 (0%)
+logs: /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a69095d3dd37d103c/data/bench/gh-forgejo/logs   report: /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a69095d3dd37d103c/tests/baseline/results/compat/gh-forgejo.md
