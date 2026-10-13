@@ -475,7 +475,7 @@ t "pr update-branch --rebase"                0 ""                            "$G
 K="pr update-branch" t "pr update-branch --rebase result" 0 "Add CI workflow" "$GH" api "repos/$ALICE/demo/commits/behind~1" --jq .commit.message
 t "pr revert"                                0 "/pull/[0-9]+"                "$GH" pr revert 4 -R "$R"
 RNUM="$(last_num)"
-K="pr revert" t "pr revert result"           0 "Revert \"Add feature"        "$GH" pr view "$RNUM" -R "$R" --json title,body,headRefName
+K="pr revert" t "pr revert result"           0 "Revert \\\\?\"Add feature"    "$GH" pr view "$RNUM" -R "$R" --json title,body,headRefName
 K="pr revert" t "pr revert diff"             0 "^-feature change"            "$GH" pr diff "$RNUM" -R "$R"
 t "pr comment --edit-last"                   0 "#issuecomment-"              "$GH" pr comment 5 -R "$R" --edit-last -b "Edited PR comment"
 t "pr view --comments"                       0 "Edited PR comment"           "$GH" pr view 5 -R "$R" --comments
