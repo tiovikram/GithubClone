@@ -7,7 +7,8 @@
 //! demand by `POST /check-suites` or implicitly by the first check run on that commit. A suite's
 //! status/conclusion are derived from its runs (the stored values only apply to a suite without
 //! runs). Annotations sent in `output.annotations` are appended on create and on every update,
-//! like GitHub. Commit statuses live in `statuses.rs`; the GraphQL `statusCheckRollup` merges
+//! like GitHub. `PATCH /check-suites/preferences` (`auto_trigger_checks`) is stored per repo and
+//! makes pushes create the forge app's suite for new branch heads. Commit statuses live in `statuses.rs`; the GraphQL `statusCheckRollup` merges
 //! both via [`latest_runs_for_sha`].
 use std::collections::HashMap;
 
@@ -233,6 +234,10 @@ async fn branch_at(s: &AppState, ctx: &RepoCtx, sha: &str) -> ApiResult<Option<S
 /// The forge app's suite for `sha` (a resolved commit), created if missing.
 /// Returns the suite and whether it was created now.
 pub async fn ensure_suite(s: &AppState, ctx: &RepoCtx, actor: &User, sha: &str) -> ApiResult<(SuiteRow, bool)> {
+    ensure_suite_by(s, ctx, Some(actor.id), sha).await
+}
+
+async fn ensure_suite_by(s: &AppState, ctx: &RepoCtx, creator: Option<i64>, sha: &str) -> ApiResult<(SuiteRow, bool)> {
     let branch = branch_at(s, ctx, sha).await?;
     let inserted: Option<SuiteRow> = sqlx::query_as(
         "INSERT INTO check_suites (repo_id, app_id, head_sha, head_branch, creator_id) VALUES ($1, $2, $3, $4, $5)
@@ -242,7 +247,7 @@ pub async fn ensure_suite(s: &AppState, ctx: &RepoCtx, actor: &User, sha: &str) 
     .bind(FORGE_APP_ID)
     .bind(sha)
     .bind(&branch)
-    .bind(actor.id)
+    .bind(creator)
     .fetch_optional(&s.db)
     .await?;
     if let Some(row) = inserted {
@@ -834,12 +839,79 @@ async fn create_suite_h(State(s): State<AppState>, AuthUser(u): AuthUser, Path((
     }
 }
 
-/// Suite preferences (auto-trigger per app): forge has a single built-in app and never
-/// auto-creates suites on push, so this just echoes the settings.
-async fn suite_preferences_h(State(s): State<AppState>, AuthUser(u): AuthUser, Path((owner, repo)): Path<(String, String)>, Json(b): Json<Value>) -> ApiResult<Json<Value>> {
-    let ctx = gitapi::load(&s, Some(&u), &owner, &repo).await?;
+#[derive(Deserialize, Debug, Clone)]
+pub struct AutoTrigger {
+    pub app_id: Option<i64>,
+    pub setting: Option<bool>,
+}
+
+#[derive(Deserialize, Debug, Clone, Default)]
+pub struct SuitePreferencesInput {
+    pub auto_trigger_checks: Option<Vec<AutoTrigger>>,
+}
+
+/// Stored `auto_trigger_checks` of a repository as (app_id, setting).
+pub async fn suite_preferences(s: &AppState, repo_id: i64) -> ApiResult<Vec<(i64, bool)>> {
+    Ok(sqlx::query_as("SELECT app_id, setting FROM check_suite_preferences WHERE repo_id = $1 ORDER BY app_id")
+        .bind(repo_id)
+        .fetch_all(&s.db)
+        .await?)
+}
+
+/// Sets whether check suites are created automatically on push, per app (admin only). forge's
+/// only app is [`FORGE_APP_ID`]; other app ids are rejected like GitHub rejects unknown apps.
+pub async fn set_suite_preferences(s: &AppState, ctx: &RepoCtx, input: SuitePreferencesInput) -> ApiResult<Vec<(i64, bool)>> {
     ctx.require(crate::db::Perm::Admin)?;
-    let auto = b.get("auto_trigger_checks").cloned().filter(Value::is_array).unwrap_or_else(|| json!([]));
+    for a in input.auto_trigger_checks.unwrap_or_default() {
+        let app = a.app_id.ok_or_else(|| ApiError::validation("CheckSuitePreference", "app_id", "missing_field"))?;
+        let setting = a.setting.ok_or_else(|| ApiError::validation("CheckSuitePreference", "setting", "missing_field"))?;
+        if app != FORGE_APP_ID {
+            return Err(ApiError::unprocessable(format!("Invalid app_id: {app}")));
+        }
+        sqlx::query(
+            "INSERT INTO check_suite_preferences (repo_id, app_id, setting) VALUES ($1, $2, $3)
+             ON CONFLICT (repo_id, app_id) DO UPDATE SET setting = EXCLUDED.setting, updated_at = now()",
+        )
+        .bind(ctx.repo.id)
+        .bind(app)
+        .bind(setting)
+        .execute(&s.db)
+        .await?;
+    }
+    suite_preferences(s, ctx.repo.id).await
+}
+
+/// Push hook (`hooks::after_refs_changed`): when `auto_trigger_checks` is enabled for the forge
+/// app, every new branch head gets its (queued) check suite, like GitHub does for installed
+/// apps. Off by default: forge's app runs nothing, so empty suites would only be noise.
+pub async fn on_refs_changed(s: &AppState, ctx: &RepoCtx, actor: Option<&User>, changed: &[(String, String, String)]) {
+    let enabled = match suite_preferences(s, ctx.repo.id).await {
+        Ok(p) => p.iter().any(|(app, on)| *app == FORGE_APP_ID && *on),
+        Err(_) => false,
+    };
+    if !enabled {
+        return;
+    }
+    for (name, _, new) in changed {
+        if !name.starts_with("refs/heads/") || new.is_empty() || new.bytes().all(|b| b == b'0') {
+            continue;
+        }
+        match ensure_suite_by(s, ctx, actor.map(|u| u.id), new).await {
+            Ok((suite, true)) => {
+                if let (Some(a), Ok(v)) = (actor, render_suites(s, ctx, std::slice::from_ref(&suite)).await) {
+                    emit(s, ctx, a, "check_suite", "requested", "check_suite", v.into_iter().next().unwrap_or(Value::Null)).await;
+                }
+            }
+            Ok(_) => {}
+            Err(e) => tracing::warn!(repo = ctx.repo.id, error = %e.message, "auto-creating check suite failed"),
+        }
+    }
+}
+
+async fn suite_preferences_h(State(s): State<AppState>, AuthUser(u): AuthUser, Path((owner, repo)): Path<(String, String)>, Json(b): Json<SuitePreferencesInput>) -> ApiResult<Json<Value>> {
+    let ctx = gitapi::load(&s, Some(&u), &owner, &repo).await?;
+    let prefs = set_suite_preferences(&s, &ctx, b).await?;
+    let auto: Vec<Value> = prefs.iter().map(|(app, on)| json!({ "app_id": app, "setting": on })).collect();
     Ok(Json(json!({
         "preferences": { "auto_trigger_checks": auto },
         "repository": crate::json::repo::repo(&s.api_url(), s.base_url(), &ctx),
