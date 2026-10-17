@@ -21,6 +21,7 @@ pub fn routes() -> Router<AppState> {
         .route("/session", post(login).delete(logout).get(whoami))
         .route("/tokens", post(create_token).get(list_tokens))
         .route("/tokens/{id}", delete(delete_token))
+        .route("/orgs", post(create_org))
         .route("/healthz", axum::routing::get(|| async { "ok" }))
         .layer(axum::middleware::from_fn(require_csrf_header))
 }
@@ -178,4 +179,17 @@ async fn delete_token(State(s): State<AppState>, AuthUser(u): AuthUser, Path(id)
         return Err(ApiError::not_found());
     }
     Ok(StatusCode::NO_CONTENT.into_response())
+}
+
+#[derive(Deserialize)]
+struct CreateOrgBody {
+    login: String,
+    profile_name: Option<String>,
+}
+
+/// `POST /api/forge/orgs` (forge-only): any signed-in user can create an organization they
+/// administer. The GHES `POST /admin/organizations` endpoint is reserved for site admins.
+async fn create_org(State(s): State<AppState>, AuthUser(u): AuthUser, Json(b): Json<CreateOrgBody>) -> ApiResult<Response> {
+    let org = crate::api::repos::create_organization(&s, &b.login, b.profile_name.as_deref(), &u).await?;
+    Ok((StatusCode::CREATED, axum::Json(json::user::org_simple(&s.api_url(), s.base_url(), &org))).into_response())
 }

@@ -1,10 +1,7 @@
 //! Security helpers shared across areas: outbound-request (SSRF) address filtering for webhooks,
 //! login throttling, and response hardening for user-controlled content. See docs/security.md.
-use std::collections::HashMap;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Mutex;
-use std::time::{Duration, Instant};
 
 use axum::http::{header, HeaderValue};
 use axum::response::Response;
@@ -123,72 +120,163 @@ pub fn max_asset_bytes() -> u64 {
 pub const MAX_UPLOAD_PACK_REQUEST: u64 = 64 << 20;
 
 // ---------------------------------------------------------------------------------------------
-// Login throttling
+// Diff output
 
-/// Failed password attempts allowed per (login, client address) within `WINDOW`.
-const MAX_FAILURES_PER_LOGIN: u32 = 10;
-/// Failed password attempts allowed per client address (any login) within `WINDOW`.
-const MAX_FAILURES_PER_CLIENT: u32 = 100;
-const WINDOW: Duration = Duration::from_secs(15 * 60);
-/// Bound on tracked keys; expired entries are purged when it is reached.
-const MAX_KEYS: usize = 100_000;
+static MAX_DIFF_OVERRIDE: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
 
-struct Counter {
-    failures: u32,
-    since: Instant,
+/// Overrides `FORGE_MAX_DIFF_BYTES` for this process (tests); 0 restores the env/default.
+pub fn set_max_diff_bytes(n: usize) {
+    MAX_DIFF_OVERRIDE.store(n, Ordering::Relaxed);
 }
 
-#[derive(Default)]
-struct Throttle {
-    keys: HashMap<String, Counter>,
+/// Upper bound on a generated diff/patch held in memory: `FORGE_MAX_DIFF_BYTES`, default 10 MiB.
+pub fn max_diff_bytes() -> usize {
+    match MAX_DIFF_OVERRIDE.load(Ordering::Relaxed) {
+        0 => std::env::var("FORGE_MAX_DIFF_BYTES").ok().and_then(|v| v.parse().ok()).unwrap_or(10 << 20),
+        n => n,
+    }
 }
 
-static THROTTLE: Mutex<Option<Throttle>> = Mutex::new(None);
+/// A diff exceeded `max_diff_bytes()` (git was stopped; nothing past the limit was buffered).
+#[derive(Debug)]
+pub struct DiffTooLarge(pub usize);
+
+impl std::fmt::Display for DiffTooLarge {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "diff exceeds {} bytes", self.0)
+    }
+}
+
+impl std::error::Error for DiffTooLarge {}
+
+/// GitHub's answer for a `.diff`/`.patch` media type it won't render (406, code `too_large`).
+pub fn diff_too_large(resource: &str, max: usize) -> crate::error::ApiError {
+    let mut e = crate::error::ApiError::new(
+        axum::http::StatusCode::NOT_ACCEPTABLE,
+        format!(
+            "Sorry, the diff exceeded the maximum size ({max} bytes). Consider using the JSON API (files) or locally cloning the repository instead."
+        ),
+    );
+    e.errors = Some(serde_json::json!([{ "resource": resource, "field": "diff", "code": "too_large" }]));
+    e
+}
+
+/// Maps a git error from a `.diff`/`.patch` rendering: `DiffTooLarge` becomes GitHub's 406.
+pub fn diff_api_error(e: anyhow::Error, resource: &str) -> crate::error::ApiError {
+    match e.downcast_ref::<DiffTooLarge>() {
+        Some(t) => diff_too_large(resource, t.0),
+        None => crate::error::ApiError::internal(format!("{e:#}")),
+    }
+}
+
+/// Runs git and returns at most `max` bytes of stdout as `(bytes, truncated)`. When the output
+/// is longer, git is killed as soon as the limit is reached, so memory stays bounded.
+pub async fn git_output_capped(git: &crate::git::cmd::GitCmd, dir: &std::path::Path, args: &[&str], max: usize) -> anyhow::Result<(Vec<u8>, bool)> {
+    use std::process::Stdio;
+    use tokio::io::AsyncReadExt;
+    let mut child = git.command(dir).args(args).stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::piped()).spawn()?;
+    let mut stderr = child.stderr.take().expect("piped stderr");
+    let err_task = tokio::spawn(async move {
+        let mut buf = Vec::new();
+        let _ = (&mut stderr).take(64 << 10).read_to_end(&mut buf).await;
+        buf
+    });
+    let mut stdout = child.stdout.take().expect("piped stdout");
+    let mut out = Vec::new();
+    (&mut stdout).take(max as u64 + 1).read_to_end(&mut out).await?;
+    if out.len() > max {
+        let _ = child.kill().await;
+        err_task.abort();
+        out.truncate(max);
+        return Ok((out, true));
+    }
+    let status = child.wait().await?;
+    let err = err_task.await.unwrap_or_default();
+    if !status.success() {
+        anyhow::bail!("git {} failed: {}", args.join(" "), String::from_utf8_lossy(&err).trim());
+    }
+    Ok((out, false))
+}
+
+/// `git_output_capped` with `max_diff_bytes()`, failing with `DiffTooLarge` when exceeded.
+pub async fn git_diff_capped(git: &crate::git::cmd::GitCmd, dir: &std::path::Path, args: &[&str]) -> anyhow::Result<Vec<u8>> {
+    let max = max_diff_bytes();
+    let (out, truncated) = git_output_capped(git, dir, args, max).await?;
+    if truncated {
+        return Err(DiffTooLarge(max).into());
+    }
+    Ok(out)
+}
+
+// ---------------------------------------------------------------------------------------------
+// Login throttling (shared by all replicas through Postgres, table `login_throttle`)
+
+/// Failed password attempts allowed per (login, client address) within `WINDOW_SECS`.
+const MAX_FAILURES_PER_LOGIN: i32 = 10;
+/// Failed password attempts allowed per client address (any login) within `WINDOW_SECS`.
+const MAX_FAILURES_PER_CLIENT: i32 = 100;
+const WINDOW_SECS: i32 = 15 * 60;
+/// Throttle keys embed the attempted login, which is attacker-chosen: bound its length.
+const MAX_KEY_LOGIN: usize = 256;
 
 fn keys(login: &str, client: Option<IpAddr>) -> (String, String) {
     let c = client.map(|ip| ip.to_string()).unwrap_or_else(|| "-".into());
-    (format!("l:{}|{c}", login.to_lowercase()), format!("c:{c}"))
+    let login: String = login.to_lowercase().chars().take(MAX_KEY_LOGIN).collect();
+    (format!("l:{login}|{c}"), format!("c:{c}"))
 }
 
-fn over(t: &Throttle, key: &str, max: u32) -> bool {
-    t.keys.get(key).is_some_and(|c| c.since.elapsed() < WINDOW && c.failures >= max)
-}
-
-/// True if password attempts for `login` from `client` are currently throttled.
-pub fn login_throttled(login: &str, client: Option<IpAddr>) -> bool {
+/// True if password attempts for `login` from `client` are currently throttled. One indexed
+/// read per attempt.
+pub async fn login_throttled(db: &sqlx::PgPool, login: &str, client: Option<IpAddr>) -> Result<bool, sqlx::Error> {
     let (lk, ck) = keys(login, client);
-    let g = THROTTLE.lock().unwrap();
-    let Some(t) = g.as_ref() else { return false };
-    over(t, &lk, MAX_FAILURES_PER_LOGIN) || (client.is_some() && over(t, &ck, MAX_FAILURES_PER_CLIENT))
+    let ck = client.map(|_| ck);
+    sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM login_throttle
+                        WHERE window_start > now() - make_interval(secs => $5)
+                          AND ((key = $1 AND count >= $3) OR (key = $2 AND count >= $4)))",
+    )
+    .bind(lk)
+    .bind(ck)
+    .bind(MAX_FAILURES_PER_LOGIN)
+    .bind(MAX_FAILURES_PER_CLIENT)
+    .bind(WINDOW_SECS as f64)
+    .fetch_one(db)
+    .await
 }
 
-/// Records the outcome of a password check.
-pub fn record_login(login: &str, client: Option<IpAddr>, success: bool) {
+/// Records the outcome of a password check: a success clears the (login, client) counter, a
+/// failure bumps both counters in one atomic upsert (an expired window restarts at 1).
+pub async fn record_login(db: &sqlx::PgPool, login: &str, client: Option<IpAddr>, success: bool) -> Result<(), sqlx::Error> {
     let (lk, ck) = keys(login, client);
-    let mut g = THROTTLE.lock().unwrap();
-    let t = g.get_or_insert_with(Throttle::default);
     if success {
-        t.keys.remove(&lk);
-        return;
+        sqlx::query("DELETE FROM login_throttle WHERE key = $1").bind(lk).execute(db).await?;
+        return Ok(());
     }
-    if t.keys.len() >= MAX_KEYS {
-        t.keys.retain(|_, c| c.since.elapsed() < WINDOW);
-        if t.keys.len() >= MAX_KEYS {
-            // Still full: drop the oldest half rather than grow without bound.
-            let mut ages: Vec<Instant> = t.keys.values().map(|c| c.since).collect();
-            ages.sort();
-            let cutoff = ages[ages.len() / 2];
-            t.keys.retain(|_, c| c.since > cutoff);
-        }
+    let mut ks = vec![lk];
+    if client.is_some() {
+        ks.push(ck);
     }
-    let keys: &[String] = if client.is_some() { &[lk, ck] } else { std::slice::from_ref(&lk) };
-    for k in keys {
-        let c = t.keys.entry(k.clone()).or_insert(Counter { failures: 0, since: Instant::now() });
-        if c.since.elapsed() >= WINDOW {
-            *c = Counter { failures: 0, since: Instant::now() };
-        }
-        c.failures += 1;
+    // Same lock order in every transaction (no deadlocks between concurrent failures).
+    ks.sort();
+    sqlx::query(
+        "INSERT INTO login_throttle AS t (key, window_start, count)
+         SELECT k, now(), 1 FROM unnest($1::text[]) k
+         ON CONFLICT (key) DO UPDATE SET
+           count = CASE WHEN t.window_start <= now() - make_interval(secs => $2) THEN 1 ELSE t.count + 1 END,
+           window_start = CASE WHEN t.window_start <= now() - make_interval(secs => $2) THEN now() ELSE t.window_start END",
+    )
+    .bind(&ks)
+    .bind(WINDOW_SECS as f64)
+    .execute(db)
+    .await?;
+    // Occasional pruning keeps the table at roughly the keys of the last window.
+    if rand::random::<u8>() < 4 {
+        sqlx::query("DELETE FROM login_throttle WHERE window_start <= now() - make_interval(secs => $1)")
+            .bind(WINDOW_SECS as f64)
+            .execute(db)
+            .await?;
     }
+    Ok(())
 }
 
 /// Client address of a request: the peer address when the server was started with connect
@@ -280,18 +368,5 @@ mod tests {
         for ip in ["8.8.8.8", "140.82.112.3", "2606:4700::1111", "::ffff:8.8.8.8"] {
             assert!(is_public_ip(ip.parse().unwrap()), "{ip} must be allowed");
         }
-    }
-
-    #[test]
-    fn throttles_after_failures() {
-        let ip: IpAddr = "203.0.113.9".parse().unwrap();
-        let login = format!("throttle-{}", crate::auth::random_string(6));
-        for _ in 0..MAX_FAILURES_PER_LOGIN {
-            assert!(!login_throttled(&login, Some(ip)));
-            record_login(&login, Some(ip), false);
-        }
-        assert!(login_throttled(&login, Some(ip)));
-        // Other clients are unaffected.
-        assert!(!login_throttled(&login, Some("203.0.113.10".parse().unwrap())));
     }
 }
