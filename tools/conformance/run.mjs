@@ -20,6 +20,8 @@ const USAGE = `usage: node run.mjs --base URL [options]
   --repo OWNER/NAME     repo for --readonly (default cli/cli)
   --org ORG             org the token can create repos in (enables org scenarios)
   --collaborator LOGIN  second existing user (enables collaborator / review-request scenarios)
+  --collaborator-token T  API token of --collaborator (or env CONFORMANCE_COLLABORATOR_TOKEN);
+                        enables scenarios that need a second actor (approve + pulls/dismiss-review)
   --only REGEX          only run scenarios whose name matches
   --keep                do not delete the fixture repository at the end
   --report FILE         write JSON report (default reports/latest.json)
@@ -64,6 +66,7 @@ const oracle = new Oracle({
 const state = oracle.state;
 Object.assign(state, {
   org: opt('--org'), collaborator: opt('--collaborator'), keep: has('--keep'),
+  collaboratorToken: opt('--collaborator-token', process.env.CONFORMANCE_COLLABORATOR_TOKEN || '') || null,
   runId: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
 });
 

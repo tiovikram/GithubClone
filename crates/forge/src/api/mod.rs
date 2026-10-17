@@ -1,6 +1,8 @@
 //! REST API mounted at /api/v3. One module per area; each exposes `routes()`.
 pub mod keys;
 pub mod branches;
+pub mod checks;
+pub mod review_reactions;
 pub mod commits;
 pub mod contents;
 pub mod cross_compare;
@@ -90,6 +92,8 @@ pub fn routes() -> Router<AppState> {
         .merge(rulesets::routes())
         .merge(signing_keys::routes())
         .merge(actions::routes())
+        .merge(checks::routes())
+        .merge(review_reactions::routes())
         .merge(actions_secrets::routes())
         .merge(ref_dispatch::routes())
         .fallback(|| async { crate::error::ApiError::not_found() })
