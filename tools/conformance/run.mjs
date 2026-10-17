@@ -87,6 +87,14 @@ async function main() {
   } else {
     if (!token) throw new Error('--token is required for write scenarios (or use --readonly)');
     scenarios = (await import('./scenarios/write.mjs')).scenarios;
+    // Area files scenarios/write-<area>.mjs (one per feature owner, so edits don't conflict) run
+    // after the core scenarios and before 'cleanup', in file-name order.
+    const extra = [];
+    for (const f of fs.readdirSync(path.join(HERE, 'scenarios')).filter((f) => /^write-.+\.mjs$/.test(f)).sort()) {
+      extra.push(...(await import(`./scenarios/${f}`)).scenarios);
+    }
+    const at = scenarios.findIndex((sc) => sc.name === 'cleanup');
+    scenarios = at < 0 ? [...scenarios, ...extra] : [...scenarios.slice(0, at), ...extra, ...scenarios.slice(at)];
   }
   for (const sc of scenarios) {
     if (onlyRe && !onlyRe.test(sc.name) && !sc.always) { scenarioResults.push({ name: sc.name, status: 'filtered' }); continue; }
