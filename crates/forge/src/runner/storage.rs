@@ -116,7 +116,8 @@ pub async fn create_artifact(s: &AppState, run: &crate::api::actions::RunRow, jo
     }
     let key = format!("actions/artifacts/{}/{}-{}.zip", run.repo_id, run.id, crate::auth::random_string(12));
     let (size, digest) = write_body(s, &key, body).await.map_err(|e| ApiError::bad_request(format!("{e:#}")))?;
-    let days = retention_days.unwrap_or(90).clamp(1, 400);
+    let max = super::settings::retention_days(s, run.repo_id).await.max(1);
+    let days = retention_days.unwrap_or(max).clamp(1, max);
     let row: Option<ArtifactRow> = sqlx::query_as(
         "INSERT INTO actions_artifacts (repo_id, run_id, job_id, name, size_in_bytes, object_key, digest, head_branch, head_sha, expires_at)
          SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, now() + make_interval(days => $10)

@@ -44,6 +44,7 @@ pub struct JobRow {
     pub created_at: DateTime<Utc>,
     pub started_at: Option<DateTime<Utc>>,
     pub completed_at: Option<DateTime<Utc>>,
+    pub waiting_since: Option<DateTime<Utc>>,
 }
 
 /// What a new run is for.
@@ -64,6 +65,8 @@ pub struct NewRun {
     pub inputs: Option<Value>,
     pub pull_requests: Value,
     pub display_title: Option<String>,
+    /// head repository of a pull request (forks)
+    pub head_repo_id: Option<i64>,
 }
 
 /// Marker in a placeholder job's `matrix`: only these instances are planned.
@@ -113,8 +116,8 @@ pub async fn create_run(s: &AppState, ctx: &RepoCtx, nr: NewRun) -> ApiResult<Ru
         run = sqlx::query_as(
             "INSERT INTO actions_runs (repo_id, workflow_id, workflow_path, name, run_number, event, status, head_branch, head_sha,
                  head_commit, inputs, actor_id, triggering_actor_id, git_ref, github_sha, display_title, event_payload, definition,
-                 pull_requests)
-             SELECT $1, $2, $3, $4, COALESCE(MAX(run_number), 0) + 1, $5, 'queued', $6, $7, $8, $9, $10, $10, $11, $12, $13, $14, $15, $16
+                 pull_requests, head_repo_id)
+             SELECT $1, $2, $3, $4, COALESCE(MAX(run_number), 0) + 1, $5, 'queued', $6, $7, $8, $9, $10, $10, $11, $12, $13, $14, $15, $16, $17
                FROM actions_runs WHERE repo_id = $1 AND workflow_id = $2
              ON CONFLICT (repo_id, workflow_id, run_number) DO NOTHING RETURNING *",
         )
@@ -134,6 +137,7 @@ pub async fn create_run(s: &AppState, ctx: &RepoCtx, nr: NewRun) -> ApiResult<Ru
         .bind(&nr.payload)
         .bind(&definition)
         .bind(&nr.pull_requests)
+        .bind(nr.head_repo_id)
         .fetch_optional(&s.db)
         .await?;
         if run.is_some() {
@@ -454,6 +458,30 @@ pub async fn advance(s: &AppState, run_id: i64) -> ApiResult<()> {
                 progressed = true;
                 continue;
             }
+            // deployment environment gates (branch policy, reviewers, wait timer)
+            let target = match super::environments::env_name(&j.definition) {
+                None => "queued",
+                Some(name) => {
+                    let name = expr::interpolate(&ectx, &name).unwrap_or(name);
+                    match super::environments::gate(s, &ctx, &run, &name, Utc::now()).await {
+                        Ok(super::environments::Gate::Open) => "queued",
+                        Ok(super::environments::Gate::Wait) => "waiting",
+                        Ok(super::environments::Gate::Fail(msg)) => {
+                            fail_job_startup(&mut tx, j, &msg).await?;
+                            let _ = super::logs::append(s, j.id, 1, format!("{} ##[error]{msg}\n", super::logs::stamp()).as_bytes()).await;
+                            changed_jobs.push(j.id);
+                            progressed = true;
+                            continue;
+                        }
+                        Err(e) => {
+                            fail_job_startup(&mut tx, j, &format!("Environment '{name}': {}", e.message)).await?;
+                            changed_jobs.push(j.id);
+                            progressed = true;
+                            continue;
+                        }
+                    }
+                }
+            };
             match workflow::plan_job(&j.job_key, &j.definition, &contexts) {
                 Ok(mut planned) => {
                     if let Some(Value::Array(only)) = j.matrix.as_ref().and_then(|m| m.get(ONLY)) {
@@ -466,11 +494,15 @@ pub async fn advance(s: &AppState, run_id: i64) -> ApiResult<()> {
                     }
                     for (i, p) in planned.iter().enumerate() {
                         if i == 0 {
-                            sqlx::query("UPDATE actions_jobs SET name = $2, matrix = $3, labels = $4, status = 'queued' WHERE id = $1")
+                            sqlx::query(
+                                "UPDATE actions_jobs SET name = $2, matrix = $3, labels = $4, status = $5,
+                                     waiting_since = CASE WHEN $5 = 'waiting' THEN now() END WHERE id = $1",
+                            )
                                 .bind(j.id)
                                 .bind(&p.name)
                                 .bind(&p.matrix)
                                 .bind(&p.labels)
+                                .bind(target)
                                 .execute(&mut *tx)
                                 .await?;
                             changed_jobs.push(j.id);
@@ -479,7 +511,7 @@ pub async fn advance(s: &AppState, run_id: i64) -> ApiResult<()> {
                             let id: i64 = sqlx::query_scalar(
                                 "INSERT INTO actions_jobs (id, run_id, repo_id, run_attempt, job_key, name, matrix, needs, definition, labels, status)
                                  OVERRIDING SYSTEM VALUE
-                                 VALUES (COALESCE($10, nextval(pg_get_serial_sequence('actions_jobs', 'id'))), $1, $2, $3, $4, $5, $6, $7, $8, $9, 'queued') RETURNING id",
+                                 VALUES (COALESCE($10, nextval(pg_get_serial_sequence('actions_jobs', 'id'))), $1, $2, $3, $4, $5, $6, $7, $8, $9, $11) RETURNING id",
                             )
                             .bind(j.run_id)
                             .bind(j.repo_id)
@@ -491,6 +523,7 @@ pub async fn advance(s: &AppState, run_id: i64) -> ApiResult<()> {
                             .bind(&j.definition)
                             .bind(&p.labels)
                             .bind(cid)
+                            .bind(target)
                             .fetch_one(&mut *tx)
                             .await?;
                             changed_jobs.push(id);
@@ -555,8 +588,10 @@ async fn recompute_run(tx: &mut sqlx::PgConnection, run: &RunRow) -> ApiResult<(
             "success"
         };
         ("completed", Some(concl))
-    } else if started {
+    } else if jobs.iter().any(|(st, _)| st == "in_progress") || (started && !jobs.iter().any(|(st, _)| st == "waiting")) {
         ("in_progress", None)
+    } else if jobs.iter().any(|(st, _)| st == "waiting") {
+        ("waiting", None)
     } else {
         ("queued", None)
     };

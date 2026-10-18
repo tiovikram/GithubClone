@@ -223,6 +223,9 @@ async fn run_uses(job: &mut Job, uses: &str, with: Map<String, Value>, env: &BTr
     if scope.depth > 9 {
         return Err("Composite actions are nested too deeply (limit 10)".into());
     }
+    if job.msg["blocked_uses"].as_array().is_some_and(|b| b.iter().any(|x| x.as_str() == Some(uses))) {
+        return Err(format!("The action {uses} is not allowed in {} because all actions must be from a repository owned by your enterprise, created by GitHub, or match one of the patterns allowed by the Actions policy.", expr::to_string(&job.contexts["github"]["repository"])));
+    }
     if uses.starts_with("docker://") {
         return Err(format!("'{uses}': docker container actions are not supported by forge runner"));
     }

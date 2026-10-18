@@ -50,19 +50,14 @@ pub fn routes() -> Router<AppState> {
         .route("/users/{username}/received_events", get(received_events))
         .route("/users/{username}/received_events/public", get(received_events))
         .route("/orgs/{org}/events", get(org_events))
-        .route("/notifications", get(empty_list).put(mark_read))
-        .route("/notifications/threads/{thread_id}", get(not_found).patch(not_found).delete(not_found))
-        .route("/notifications/threads/{thread_id}/subscription", get(not_found).put(not_found).delete(not_found))
-        .route("/repos/{owner}/{repo}/notifications", get(repo_notifications).put(repo_mark_read))
-        .route("/repos/{owner}/{repo}/invitations/{invitation_id}", axum::routing::patch(not_found).delete(not_found))
-        .route("/user/repository_invitations", get(empty_list))
-        .route("/user/repository_invitations/{invitation_id}", axum::routing::patch(not_found).delete(not_found))
 }
 
+#[allow(dead_code)]
 async fn not_found() -> ApiError {
     ApiError::not_found()
 }
 
+#[allow(dead_code)]
 async fn empty_list(_u: AuthUser) -> Json<Value> {
     Json(json!([]))
 }
@@ -205,11 +200,11 @@ fn enabled(cfg: &Value, k: &str) -> bool {
     cfg.get(k).and_then(Value::as_bool).unwrap_or(false)
 }
 
-fn users_list(s: &AppState, users: &[User]) -> Vec<Value> {
+pub(crate) fn users_list(s: &AppState, users: &[User]) -> Vec<Value> {
     users.iter().map(|u| crate::json::user::simple(&s.api_url(), s.base_url(), u)).collect()
 }
 
-async fn load_users(s: &AppState, logins: Option<&Value>) -> ApiResult<Vec<User>> {
+pub(crate) async fn load_users(s: &AppState, logins: Option<&Value>) -> ApiResult<Vec<User>> {
     let names: Vec<String> = logins
         .and_then(Value::as_array)
         .map(|a| a.iter().filter_map(Value::as_str).map(|x| x.to_lowercase()).collect())
@@ -294,17 +289,12 @@ pub async fn protection_json(s: &AppState, ctx: &RepoCtx, branch: &str, cfg: &Va
         v["required_pull_request_reviews"] = reviews_json(s, &format!("{url}/required_pull_request_reviews"), r).await?;
     }
     if let Some(r) = cfg.get("restrictions").filter(|x| x.is_object()) {
-        let users = load_users(s, r.get("users")).await?;
-        let rurl = format!("{url}/restrictions");
-        v["restrictions"] = json!({
-            "url": rurl, "users_url": format!("{rurl}/users"), "teams_url": format!("{rurl}/teams"), "apps_url": format!("{rurl}/apps"),
-            "users": users_list(s, &users), "teams": [], "apps": [],
-        });
+        v["restrictions"] = super::repos_rules::restrictions_json(s, ctx, &url, r).await?;
     }
     Ok(v)
 }
 
-async fn prot_ctx(s: &AppState, u: &User, owner: &str, repo: &str, branch: &str) -> ApiResult<RepoCtx> {
+pub(crate) async fn prot_ctx(s: &AppState, u: &User, owner: &str, repo: &str, branch: &str) -> ApiResult<RepoCtx> {
     let ctx = db::load_repo(&s.db, Some(u), owner, repo).await?;
     ctx.require(Perm::Admin)?;
     let (_, refs) = s.git.refs(ctx.repo.id).await?;
@@ -314,13 +304,13 @@ async fn prot_ctx(s: &AppState, u: &User, owner: &str, repo: &str, branch: &str)
     Ok(ctx)
 }
 
-async fn load_protection(s: &AppState, ctx: &RepoCtx, branch: &str) -> ApiResult<Value> {
+pub(crate) async fn load_protection(s: &AppState, ctx: &RepoCtx, branch: &str) -> ApiResult<Value> {
     branch_protection(&s.db, ctx.repo.id, branch)
         .await?
         .ok_or_else(|| ApiError::new(StatusCode::NOT_FOUND, "Branch not protected"))
 }
 
-async fn save_protection(s: &AppState, ctx: &RepoCtx, branch: &str, cfg: &Value) -> ApiResult<()> {
+pub(crate) async fn save_protection(s: &AppState, ctx: &RepoCtx, branch: &str, cfg: &Value) -> ApiResult<()> {
     sqlx::query(
         "INSERT INTO branch_protections (repo_id, branch, config) VALUES ($1,$2,$3)
          ON CONFLICT (repo_id, branch) DO UPDATE SET config = $3, updated_at = now()",
@@ -686,15 +676,18 @@ async fn org_events(State(s): State<AppState>, uri: OriginalUri, MaybeUser(v): M
 // ---------------------------------------------------------------------------------------------
 // Notifications & invitations (forge has no notification inbox yet: lists are empty)
 
+#[allow(dead_code)]
 async fn mark_read(_u: AuthUser) -> Response {
     StatusCode::RESET_CONTENT.into_response()
 }
 
+#[allow(dead_code)]
 async fn repo_notifications(State(s): State<AppState>, AuthUser(u): AuthUser, Path((owner, repo)): Path<(String, String)>) -> ApiResult<Json<Value>> {
     db::load_repo(&s.db, Some(&u), &owner, &repo).await?;
     Ok(Json(json!([])))
 }
 
+#[allow(dead_code)]
 async fn repo_mark_read(State(s): State<AppState>, AuthUser(u): AuthUser, Path((owner, repo)): Path<(String, String)>) -> ApiResult<Response> {
     db::load_repo(&s.db, Some(&u), &owner, &repo).await?;
     Ok(StatusCode::RESET_CONTENT.into_response())

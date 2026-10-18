@@ -1,4 +1,5 @@
-//! Actions odds and ends: OIDC subject customisation, cache usage and cache size policy,
+//! Actions odds and ends: organization OIDC subject customisation (the repository level lives in
+//! actions_settings), cache usage and cache size policy,
 //! run approvals, pending deployments and custom deployment protection rule reviews.
 use axum::extract::{OriginalUri, Path, Query, State};
 use axum::http::StatusCode;
@@ -19,7 +20,6 @@ use crate::state::AppState;
 pub fn routes() -> Router<AppState> {
     let r = "/repos/{owner}/{repo}/actions";
     Router::new()
-        .route(&format!("{r}/oidc/customization/sub"), get(repo_oidc).put(put_repo_oidc))
         .route("/orgs/{org}/actions/oidc/customization/sub", get(org_oidc).put(put_org_oidc))
         .route(&format!("{r}/cache/usage"), get(repo_cache_usage))
         .route(&format!("{r}/cache/usage-policy"), get(repo_cache_policy).patch(set_repo_cache_policy))
@@ -95,10 +95,10 @@ async fn store_oidc(s: &AppState, kind: &str, id: i64, use_default: bool, keys: 
     Ok(())
 }
 
-/// The subject claim template a job of `ctx` gets: repository setting, else organization
-/// template, else GitHub's default (`repo`, `context`).
+/// The subject claim template a job of `ctx` gets: the repository setting (actions-settings
+/// area), else the organization template (this module), else GitHub's default.
 pub async fn subject_claim_keys(s: &AppState, ctx: &RepoCtx) -> ApiResult<Vec<String>> {
-    if let Some((false, keys)) = load_oidc(s, "repo", ctx.repo.id).await? {
+    if let Some(keys) = super::actions_settings::policy::oidc_sub_claim_keys(s, ctx.repo.id).await? {
         return Ok(keys);
     }
     if let Some((_, keys)) = load_oidc(s, "org", ctx.owner.id).await? {
@@ -107,36 +107,6 @@ pub async fn subject_claim_keys(s: &AppState, ctx: &RepoCtx) -> ApiResult<Vec<St
         }
     }
     Ok(vec!["repo".into(), "context".into()])
-}
-
-async fn repo_oidc(State(s): State<AppState>, AuthUser(u): AuthUser, Path((owner, repo)): Path<(String, String)>) -> ApiResult<Json<Value>> {
-    let ctx = db::load_repo(&s.db, Some(&u), &owner, &repo).await?;
-    ctx.require(Perm::Admin)?;
-    let (use_default, keys) = load_oidc(&s, "repo", ctx.repo.id).await?.unwrap_or((true, vec![]));
-    let mut v = json!({ "use_default": use_default });
-    if !use_default {
-        v["include_claim_keys"] = json!(keys);
-    }
-    Ok(Json(v))
-}
-
-#[derive(Deserialize)]
-struct RepoOidcBody {
-    use_default: Option<bool>,
-    include_claim_keys: Option<Vec<String>>,
-}
-
-async fn put_repo_oidc(State(s): State<AppState>, AuthUser(u): AuthUser, Path((owner, repo)): Path<(String, String)>, Json(b): Json<RepoOidcBody>) -> ApiResult<Response> {
-    let ctx = db::load_repo(&s.db, Some(&u), &owner, &repo).await?;
-    ctx.require(Perm::Admin)?;
-    let use_default = b.use_default.ok_or_else(|| ApiError::validation("OidcSubjectClaim", "use_default", "missing_field"))?;
-    let keys = b.include_claim_keys.unwrap_or_default();
-    if !use_default && keys.is_empty() {
-        return Err(ApiError::unprocessable("include_claim_keys is required when use_default is false"));
-    }
-    check_claims(&keys)?;
-    store_oidc(&s, "repo", ctx.repo.id, use_default, &keys).await?;
-    Ok((StatusCode::CREATED, Json(json!({}))).into_response())
 }
 
 async fn org_oidc(State(s): State<AppState>, AuthUser(u): AuthUser, Path(org): Path<String>) -> ApiResult<Json<Value>> {
@@ -319,33 +289,35 @@ async fn approvals(State(s): State<AppState>, MaybeUser(u): MaybeUser, Path((own
     Ok(Json(Value::Array(out)))
 }
 
-/// forge environments (derived from deployments) have no protection rules, so jobs never wait
-/// for an environment review: the pending list is always empty.
+/// Environments the run's jobs wait on for review (required reviewers).
 async fn pending_deployments(State(s): State<AppState>, MaybeUser(u): MaybeUser, Path((owner, repo, id)): Path<(String, String, String)>) -> ApiResult<Json<Value>> {
     let ctx = db::load_repo(&s.db, u.as_ref(), &owner, &repo).await?;
-    super::actions::run_by_id(&s, &ctx, &id).await?;
-    Ok(Json(json!([])))
+    let run = super::actions::run_by_id(&s, &ctx, &id).await?;
+    Ok(Json(crate::runner::environments::pending_json(&s, &ctx, &run, u.as_ref()).await?))
 }
 
 #[derive(Deserialize)]
 struct ReviewBody {
     environment_ids: Option<Vec<i64>>,
     state: Option<String>,
-    #[allow(dead_code)]
     comment: Option<String>,
 }
 
 async fn review_pending_deployments(State(s): State<AppState>, AuthUser(u): AuthUser, Path((owner, repo, id)): Path<(String, String, String)>, Json(b): Json<ReviewBody>) -> ApiResult<Response> {
     let ctx = db::load_repo(&s.db, Some(&u), &owner, &repo).await?;
-    super::actions::run_by_id(&s, &ctx, &id).await?;
-    ctx.require(Perm::Write)?;
-    b.environment_ids.ok_or_else(|| ApiError::validation("PendingDeployment", "environment_ids", "missing_field"))?;
-    if !matches!(b.state.as_deref(), Some("approved" | "rejected")) {
+    let run = super::actions::run_by_id(&s, &ctx, &id).await?;
+    let ids = b.environment_ids.ok_or_else(|| ApiError::validation("PendingDeployment", "environment_ids", "missing_field"))?;
+    let state = b.state.clone().unwrap_or_default();
+    if !matches!(state.as_str(), "approved" | "rejected") {
         return Err(ApiError::validation("PendingDeployment", "state", "invalid"));
     }
-    Err(ApiError::unprocessable("No pending deployment requests to approve or reject"))
+    let comment = b.comment.unwrap_or_default();
+    let deployments = crate::runner::environments::review(&s, &ctx, &run, &u, &ids, &state, &comment).await?;
+    Ok(Json(Value::Array(deployments)).into_response())
 }
 
+/// Custom deployment protection rules are GitHub Apps; forge has no app that can gate a run,
+/// so no run ever waits on one.
 async fn review_custom_gates(State(s): State<AppState>, AuthUser(u): AuthUser, Path((owner, repo, id)): Path<(String, String, String)>, Json(_b): Json<Value>) -> ApiResult<Response> {
     let ctx = db::load_repo(&s.db, Some(&u), &owner, &repo).await?;
     super::actions::run_by_id(&s, &ctx, &id).await?;

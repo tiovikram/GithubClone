@@ -64,6 +64,7 @@ pub async fn create_comment(state: &AppState, ctx: &RepoCtx, actor: &User, numbe
     sqlx::query("UPDATE issues SET updated_at = now() WHERE id = $1").bind(issue.id).execute(&mut *tx).await?;
     tx.commit().await?;
     super::issues::record_cross_references(state, ctx, actor, &issue, body).await;
+    super::events_emit::comment_event(state, ctx, actor, "created", &row, serde_json::json!({})).await;
     Ok(row)
 }
 
@@ -86,6 +87,9 @@ pub async fn update_comment(state: &AppState, ctx: &RepoCtx, actor: &User, comme
         .bind(body)
         .fetch_one(&state.db)
         .await?;
+    if c.body != row.body {
+        super::events_emit::comment_event(state, ctx, actor, "edited", &row, serde_json::json!({"changes": {"body": {"from": c.body}}})).await;
+    }
     Ok(row)
 }
 
@@ -94,6 +98,7 @@ pub async fn delete_comment(state: &AppState, ctx: &RepoCtx, actor: &User, comme
     can_edit(ctx, actor, &c)?;
     // Reactions go with it (trigger, migration 0201).
     sqlx::query("DELETE FROM issue_comments WHERE id = $1").bind(c.id).execute(&state.db).await?;
+    super::events_emit::comment_event(state, ctx, actor, "deleted", &c, serde_json::json!({})).await;
     Ok(())
 }
 

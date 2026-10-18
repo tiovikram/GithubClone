@@ -174,6 +174,8 @@ CREATE TABLE actions_schedules (
 -- sequence only serves as a fallback and starts far above any check run id.
 ALTER TABLE actions_runs ADD COLUMN check_suite_id BIGINT;
 ALTER TABLE actions_jobs ALTER COLUMN id RESTART WITH 1000000000000;
+-- when a job started waiting for its environment (wait timer, required reviewers)
+ALTER TABLE actions_jobs ADD COLUMN waiting_since TIMESTAMPTZ;
 
 -- Reviews of deployment environments for a run (get-reviews-for-run).
 CREATE TABLE actions_run_approvals (

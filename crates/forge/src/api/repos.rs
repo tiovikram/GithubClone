@@ -427,10 +427,8 @@ async fn list_rows(s: &AppState, where_sql: &str, binds: Vec<i64>, viewer: Optio
         Some("private") => " AND r.private",
         _ => "",
     };
-    // Repos visible to the viewer: public, or owner/collaborator/org member.
-    let visible = "(NOT r.private OR r.owner_id = $1 OR EXISTS(SELECT 1 FROM repo_collaborators c WHERE c.repo_id = r.id AND c.user_id = $1)
-                    OR EXISTS(SELECT 1 FROM org_members m WHERE m.org_id = r.owner_id AND m.user_id = $1)
-                    OR EXISTS(SELECT 1 FROM users a WHERE a.id = $1 AND a.site_admin))";
+    // Repos visible to the viewer (the shared rule, see `db::readable_sql`).
+    let visible = db::readable_sql("r.id", "$1");
     let sql_base = format!("FROM repositories r JOIN users o ON o.id = r.owner_id WHERE {visible} AND ({where_sql}){vis}");
     let sql = format!("SELECT r.id {sql_base} ORDER BY {} LIMIT {} OFFSET {}", q.order(), p.limit(), p.offset());
     let count_sql = format!("SELECT count(*) {sql_base}");

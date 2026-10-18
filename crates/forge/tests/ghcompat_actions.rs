@@ -127,7 +127,9 @@ async fn secrets_and_variables() {
     let key_id = pk["key_id"].as_str().unwrap();
 
     // Create (201), update (204), wrong key id (422), bad name (422); value never returned.
-    let body = json!({"encrypted_value": "c2VhbGVk", "key_id": key_id});
+    // A real libsodium sealed box: forge rejects values it could not decrypt for jobs.
+    let sealed = forge::api::actions_settings::crypto::seal_for(pk["key"].as_str().unwrap(), "s3cret").unwrap();
+    let body = json!({"encrypted_value": sealed, "key_id": key_id});
     let (st, _) = s.call(Some(&u), "PUT", &format!("{rp}/actions/secrets/API_KEY"), Some(body.clone())).await;
     assert_eq!(st, 201);
     let (st, _) = s.call(Some(&u), "PUT", &format!("{rp}/actions/secrets/API_KEY"), Some(body.clone())).await;

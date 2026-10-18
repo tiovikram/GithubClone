@@ -96,6 +96,29 @@ fn labels_json(r: &RunnerRow) -> Vec<Value> {
         .collect()
 }
 
+/// Runners registered to an organization (`"org"`, org id) or the enterprise
+/// (`"enterprise"`, 0), rendered: used by the runner groups API (actions-settings area).
+pub async fn runners_for_owner(s: &AppState, owner_kind: &str, owner_id: i64) -> ApiResult<Vec<(i64, Value)>> {
+    let rows: Vec<RunnerRow> = match owner_kind {
+        "org" => sqlx::query_as("SELECT * FROM actions_runners WHERE org_id = $1 ORDER BY id").bind(owner_id).fetch_all(&s.db).await?,
+        "enterprise" => sqlx::query_as("SELECT * FROM actions_runners WHERE org_id IS NULL AND repo_id IS NULL ORDER BY id").fetch_all(&s.db).await?,
+        _ => vec![],
+    };
+    rendered(s, &rows).await.map(|v| rows.iter().map(|r| r.id).zip(v).collect())
+}
+
+/// Runner JSON for rows (busy state, runner group from the actions-settings area).
+async fn rendered(s: &AppState, rows: &[RunnerRow]) -> ApiResult<Vec<Value>> {
+    let busy = busy_ids(s, &rows.iter().map(|r| r.id).collect::<Vec<_>>()).await?;
+    let mut out = Vec::new();
+    for r in rows {
+        let mut v = runner_json(r, busy.contains(&r.id));
+        v["runner_group_id"] = json!(crate::runner::settings::runner_group_id(s, r).await);
+        out.push(v);
+    }
+    Ok(out)
+}
+
 pub fn runner_json(r: &RunnerRow, busy: bool) -> Value {
     json!({
         "id": r.id,
@@ -153,8 +176,7 @@ async fn list(State(s): State<AppState>, AuthUser(u): AuthUser, uri: OriginalUri
         .bind(pp.offset())
         .fetch_all(&s.db)
         .await?;
-    let busy = busy_ids(&s, &rows.iter().map(|r| r.id).collect::<Vec<_>>()).await?;
-    let items: Vec<Value> = rows.iter().map(|r| runner_json(r, busy.contains(&r.id))).collect();
+    let items = rendered(&s, &rows).await?;
     let links = super::Paged::new(&uri, &s, pp, Some(total), vec![]).into_response();
     let mut res = Json(total_envelope("runners", items, total)).into_response();
     if let Some(l) = links.headers().get(header::LINK) {
@@ -166,8 +188,7 @@ async fn list(State(s): State<AppState>, AuthUser(u): AuthUser, uri: OriginalUri
 async fn get_one(State(s): State<AppState>, AuthUser(u): AuthUser, Path(p): Params) -> ApiResult<Json<Value>> {
     let (sc, _) = scope(&s, &u, &p).await?;
     let r = runner_in(&s, &sc, p.get("runner_id").map(String::as_str).unwrap_or("")).await?;
-    let busy = !busy_ids(&s, &[r.id]).await?.is_empty();
-    Ok(Json(runner_json(&r, busy)))
+    Ok(Json(rendered(&s, std::slice::from_ref(&r)).await?.remove(0)))
 }
 
 async fn delete_one(State(s): State<AppState>, AuthUser(u): AuthUser, Path(p): Params) -> ApiResult<Response> {
@@ -211,9 +232,13 @@ async fn jitconfig(State(s): State<AppState>, AuthUser(u): AuthUser, Path(p): Pa
     if labels.is_empty() || labels.len() > 100 {
         return Err(ApiError::validation("Runner", "labels", "invalid"));
     }
-    if b.runner_group_id.is_some_and(|g| g != 1) {
-        return Err(ApiError::not_found());
-    }
+    // runner group: 1 / the owner's default group, or a group of the owner (runner_groups)
+    let group = match (b.runner_group_id, &sc) {
+        (None | Some(1), _) => None,
+        (Some(g), RunnerScope::Org(o)) => Some(owned_group(&s, "org", *o, g).await?),
+        (Some(g), RunnerScope::Enterprise) => Some(owned_group(&s, "enterprise", 0, g).await?),
+        (Some(_), RunnerScope::Repo(_)) => return Err(ApiError::not_found()),
+    };
     let os = labels.iter().find_map(|l| match l.to_ascii_lowercase().as_str() {
         "linux" => Some("Linux"),
         "macos" => Some("macOS"),
@@ -223,6 +248,13 @@ async fn jitconfig(State(s): State<AppState>, AuthUser(u): AuthUser, Path(p): Pa
     let os = os.map(str::to_string).unwrap_or_else(|| if std::env::consts::OS == "macos" { "macOS".into() } else { "Linux".into() });
     let arch = if labels.iter().any(|l| l.eq_ignore_ascii_case("arm64")) { "ARM64" } else { "X64" };
     let (row, cred) = protocol::create_runner(&s, &sc, &name, &labels, &os, arch, None, true, false).await?;
+    if let Some(g) = group {
+        sqlx::query("INSERT INTO actions_runner_group_runners (runner_id, group_id) VALUES ($1, $2) ON CONFLICT (runner_id) DO UPDATE SET group_id = EXCLUDED.group_id")
+            .bind(row.id)
+            .bind(g)
+            .execute(&s.db)
+            .await?;
+    }
     let cfg = json!({
         "url": s.base_url(),
         "runner_id": row.id,
@@ -232,7 +264,18 @@ async fn jitconfig(State(s): State<AppState>, AuthUser(u): AuthUser, Path(p): Pa
         "ephemeral": true,
     });
     let encoded = base64::engine::general_purpose::STANDARD.encode(cfg.to_string());
-    Ok((StatusCode::CREATED, Json(json!({ "runner": runner_json(&row, false), "encoded_jit_config": encoded }))).into_response())
+    let runner = rendered(&s, std::slice::from_ref(&row)).await?.remove(0);
+    Ok((StatusCode::CREATED, Json(json!({ "runner": runner, "encoded_jit_config": encoded }))).into_response())
+}
+
+async fn owned_group(s: &AppState, kind: &str, owner: i64, id: i64) -> ApiResult<i64> {
+    sqlx::query_scalar("SELECT id FROM actions_runner_groups WHERE id = $1 AND owner_kind = $2 AND owner_id = $3")
+        .bind(id)
+        .bind(kind)
+        .bind(owner)
+        .fetch_optional(&s.db)
+        .await?
+        .ok_or_else(ApiError::not_found)
 }
 
 async fn downloads(State(s): State<AppState>, AuthUser(u): AuthUser, Path(p): Params) -> ApiResult<Json<Value>> {

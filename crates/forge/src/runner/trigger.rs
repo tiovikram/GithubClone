@@ -147,6 +147,14 @@ async fn on_event_inner(s: &AppState, ctx: &RepoCtx, event: &str, payload: &Valu
             (sha.clone(), git_ref, branch, sha.clone(), sha, None, json!([]))
         }
     };
+    // pull requests from forks follow the repository's fork policy
+    let head_repo_id = if event.starts_with("pull_request") { payload.pointer("/pull_request/head/repo/id").and_then(Value::as_i64) } else { None };
+    if head_repo_id.is_some_and(|h| h != ctx.repo.id) {
+        match super::settings::fork_pr_policy(s, ctx.repo.id).await {
+            Some(p) if p.run_workflows_from_fork_pull_requests => {}
+            _ => return Ok(()),
+        }
+    }
     let files = workflow_files(s, ctx.repo.id, &rev).await;
     if event == "push" && git_ref == format!("refs/heads/{}", ctx.repo.default_branch) {
         refresh_schedules(s, ctx.repo.id, &files).await;
@@ -195,6 +203,7 @@ async fn on_event_inner(s: &AppState, ctx: &RepoCtx, event: &str, payload: &Valu
             inputs: None,
             pull_requests: pull_requests.clone(),
             display_title,
+            head_repo_id,
         };
         engine::create_run(s, ctx, nr).await?;
     }
@@ -273,6 +282,7 @@ pub async fn dispatch(s: &AppState, ctx: &RepoCtx, actor: &User, path: &str, bra
         inputs: Some(Value::Object(inputs)),
         pull_requests: json!([]),
         display_title: Some(w.name.clone().unwrap_or_else(|| path.to_string())),
+        head_repo_id: None,
     };
     engine::create_run(s, ctx, nr).await
 }
@@ -365,6 +375,7 @@ pub async fn fire_schedules(s: &AppState, minute: DateTime<Utc>) -> ApiResult<us
             inputs: None,
             pull_requests: json!([]),
             display_title: None,
+            head_repo_id: None,
         };
         if engine::create_run(s, &ctx, nr).await.is_ok() {
             fired += 1;
@@ -386,6 +397,7 @@ pub async fn tick(s: &AppState) -> anyhow::Result<bool> {
         let minute = now.with_second(0).and_then(|t| t.with_nanosecond(0)).unwrap_or(now);
         fire_schedules(s, minute).await.map_err(|e| anyhow::anyhow!(e.message))?;
         engine::reap(s).await.map_err(|e| anyhow::anyhow!(e.message))?;
+        super::environments::release_waiting(s, None).await.map_err(|e| anyhow::anyhow!(e.message))?;
         super::storage::expire_artifacts(s).await.map_err(|e| anyhow::anyhow!(e.message))?;
         sqlx::query("DELETE FROM actions_job_tokens WHERE expires_at < now()").execute(&s.db).await?;
         sqlx::query("DELETE FROM actions_runner_tokens WHERE expires_at < now() - interval '1 day'").execute(&s.db).await?;

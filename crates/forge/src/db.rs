@@ -172,18 +172,41 @@ pub async fn permission(db: &PgPool, viewer: Option<&User>, repo: &Repo, owner: 
     Ok(best)
 }
 
+/// SQL predicate "repository `repo` is readable by user `user`" (both SQL expressions; `user`
+/// may evaluate to NULL for anonymous callers). This is the only visibility rule list and
+/// search queries may use: it is the SQL twin of [`permission`] (`forge_repo_readable`,
+/// migration 1201), so org base permission `none`, teams, org roles and collaborators are
+/// honoured everywhere.
+pub fn readable_sql(repo: &str, user: &str) -> String {
+    format!("forge_repo_readable({repo}, {user})")
+}
+
 /// Resolve `owner/name` for `viewer`. Invisible repos are reported as 404.
 pub async fn load_repo(db: &PgPool, viewer: Option<&User>, owner: &str, name: &str) -> ApiResult<RepoCtx> {
     let name = name.strip_suffix(".git").unwrap_or(name);
-    let owner = user_by_login(db, owner).await?;
-    let repo = sqlx::query_as::<_, Repo>(
-        "SELECT * FROM repositories WHERE owner_id = $1 AND lower(name) = lower($2)",
-    )
-    .bind(owner.id)
-    .bind(name)
-    .fetch_optional(db)
-    .await?
-    .ok_or_else(ApiError::not_found)?;
+    let found = match user_by_login(db, owner).await {
+        Ok(o) => sqlx::query_as::<_, Repo>("SELECT * FROM repositories WHERE owner_id = $1 AND lower(name) = lower($2)")
+            .bind(o.id)
+            .bind(name)
+            .fetch_optional(db)
+            .await?
+            .map(|r| (o, r)),
+        Err(_) => None,
+    };
+    let (owner, repo) = match found {
+        Some(x) => x,
+        // Transferred repositories keep answering at their old path (repos area).
+        None => {
+            let id: i64 = sqlx::query_scalar("SELECT repo_id FROM repo_redirects WHERE lower(owner_login) = lower($1) AND lower(name) = lower($2)")
+                .bind(owner)
+                .bind(name)
+                .fetch_optional(db)
+                .await?
+                .ok_or_else(ApiError::not_found)?;
+            let repo = repo_by_id(db, id).await?;
+            (user_by_id(db, repo.owner_id).await?, repo)
+        }
+    };
     let perm = permission(db, viewer, &repo, &owner).await?;
     if perm == Perm::None {
         return Err(ApiError::not_found());

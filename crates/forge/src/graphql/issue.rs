@@ -119,15 +119,7 @@ impl IssueQuery {
             qb.push(" AND r.owner_id IN (SELECT id FROM users WHERE lower(login) = ANY(").push_bind(lower).push("))");
         }
         if let Some(v) = self.visible_to {
-            qb.push(" AND (NOT r.private OR r.owner_id = ")
-                .push_bind(v)
-                .push(" OR EXISTS(SELECT 1 FROM repo_collaborators c WHERE c.repo_id = r.id AND c.user_id = ")
-                .push_bind(v)
-                .push(") OR EXISTS(SELECT 1 FROM org_members m WHERE m.org_id = r.owner_id AND m.user_id = ")
-                .push_bind(v)
-                .push(") OR EXISTS(SELECT 1 FROM users a WHERE a.id = ")
-                .push_bind(v)
-                .push(" AND a.site_admin))");
+            qb.push(" AND forge_repo_readable(r.id, ").push_bind(v).push(")");
         }
         if let Some(p) = self.is_pull {
             qb.push(" AND i.is_pull = ").push_bind(p);

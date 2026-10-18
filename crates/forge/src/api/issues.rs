@@ -625,6 +625,7 @@ pub async fn create_issue(state: &AppState, ctx: &RepoCtx, actor: &User, input: 
     if let Some(b) = &row.body {
         record_cross_references(state, ctx, actor, &row, b).await;
     }
+    super::events_emit::issue_event(state, ctx, actor, "opened", &row, json!({})).await;
     Ok(row)
 }
 
@@ -745,6 +746,21 @@ pub async fn update_issue(state: &AppState, ctx: &RepoCtx, actor: &User, number:
     tx.commit().await?;
     if let Some(Some(b)) = &input.body {
         record_cross_references(state, ctx, actor, &row, b).await;
+    }
+    let mut changes = serde_json::Map::new();
+    if row.title != cur.title {
+        changes.insert("title".into(), json!({"from": cur.title}));
+    }
+    if row.body != cur.body {
+        changes.insert("body".into(), json!({"from": cur.body}));
+    }
+    if !changes.is_empty() {
+        super::events_emit::issue_event(state, ctx, actor, "edited", &row, json!({"changes": changes})).await;
+    }
+    match (cur.state.as_str(), row.state.as_str()) {
+        ("open", "closed") => super::events_emit::issue_event(state, ctx, actor, "closed", &row, json!({})).await,
+        ("closed", "open") => super::events_emit::issue_event(state, ctx, actor, "reopened", &row, json!({})).await,
+        _ => {}
     }
     Ok(row)
 }
@@ -1348,13 +1364,16 @@ async fn list_cross_repo(s: &AppState, uri: &OriginalUri, u: &User, q: ListIssue
     match scope {
         Scope::All => {
             push_member(&mut qb);
-            qb.push(" OR EXISTS(SELECT 1 FROM org_members m WHERE m.org_id = r.owner_id AND m.user_id = ").push_bind(uid).push(")");
+            // Org repositories the user can read (base permission, teams, roles).
+            qb.push(" OR (EXISTS(SELECT 1 FROM org_members m WHERE m.org_id = r.owner_id AND m.user_id = ")
+                .push_bind(uid)
+                .push(") AND forge_repo_readable(r.id, ")
+                .push_bind(uid)
+                .push("))");
         }
         Scope::OwnedAndMember => push_member(&mut qb),
         Scope::Org(org_id) => {
-            qb.push("r.owner_id = ").push_bind(org_id).push(" AND (NOT r.private OR ");
-            push_member(&mut qb);
-            qb.push(" OR EXISTS(SELECT 1 FROM org_members m WHERE m.org_id = r.owner_id AND m.user_id = ").push_bind(uid).push("))");
+            qb.push("r.owner_id = ").push_bind(org_id).push(" AND forge_repo_readable(r.id, ").push_bind(uid).push(")");
         }
     }
     qb.push(")");

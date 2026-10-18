@@ -12,6 +12,7 @@
 pub mod agent;
 pub mod cron;
 pub mod engine;
+pub mod environments;
 pub mod builtin;
 pub mod exec;
 pub mod expr;

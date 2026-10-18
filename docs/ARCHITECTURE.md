@@ -32,6 +32,7 @@ Configuration is environment only:
 | `FORGE_SSH_LISTEN` | start the git-over-SSH server on this address (e.g. `0.0.0.0:2222`) | unset (no SSH) |
 | `FORGE_SSH_HOST_KEY` | OpenSSH private host key file | unset = shared ed25519 key in Postgres |
 | `FORGE_SSH_URL_HOST`, `FORGE_SSH_URL_PORT` | host (`host` or `host:port`) / port used in `ssh_url` | base URL host, `FORGE_SSH_LISTEN` port |
+| `FORGE_SECRET_KEY` | master key (any string; X25519 secret = sha256 of it) sealing the Actions secret private keys; same value on every pod | unset = random master key stored in `signing_secrets` |
 
 ## URL layout (mirrors GitHub Enterprise Server)
 - `/api/v3/...` — REST API (GitHub shapes).
@@ -123,6 +124,26 @@ An embedded `russh` server, started by `forge serve` when `FORGE_SSH_LISTEN` is 
   `ssh://git@host:port/o/r.git` (`ssh::ssh_url`; `build_state` registers the prefix per base URL).
 - **REST**: `/user/keys`, `/user/keys/{id}`, `/users/{u}/keys`, `/repos/{o}/{r}/keys[/{id}]`
   (repo admin), and plain-text `GET /{login}.keys` (a middleware that runs before the router).
+
+## Actions secrets and settings (`api/actions_secrets.rs`, `api/actions_settings/`)
+- **Secrets.** Clients seal values with libsodium `crypto_box_seal` (X25519 + XSalsa20-Poly1305)
+  for the owner's public key (`.../secrets/public-key`; environments use their repository's key).
+  Each repository/org has an X25519 key pair in `actions_public_keys`; the private half is itself
+  sealed with the master key (`FORGE_SECRET_KEY`, else a DB-stored random key) and tagged
+  `v1:env:` / `v1:db:`. A PUT whose value does not open with the current key is a 422. Values are
+  decrypted only by `actions_settings::secrets_for_job(state, repo_id, env)` (environment >
+  repository > organization; org secrets by visibility `all` / `private` / `selected`).
+  `variables_for_job` is the same for `vars.*`.
+- **Policies** (`actions_policies`, one row per repo / org / the enterprise, owner id 0): Actions
+  enabled, allowed actions + patterns, SHA pinning, default `GITHUB_TOKEN` permissions, PR
+  approval by workflows, retention, fork PR settings, workflow access, self-hosted runner access,
+  OIDC `sub` template. A level can be at most as permissive as an explicit setting above it.
+  The runner calls `actions_allowed`, `workflow_token_permissions`, `action_allowed`,
+  `fork_pr_policy`, `retention_days`, `self_hosted_runners_allowed`, `workflow_access_allowed`,
+  `oidc_sub_claim_keys`, `runner_group_of`, `runner_group_allows`.
+- **Runner groups** (`actions_runner_groups`): per org and for the enterprise, with a `Default`
+  group each; membership in `actions_runner_group_runners` (no row = default group). forge has no
+  GitHub-hosted runner fleet: jobs run on self-hosted runners (`forge runner`).
 
 ## Crate layout (`crates/forge/src`)
 ```

@@ -201,26 +201,44 @@ struct AcquireBody {
 /// `FOR UPDATE SKIP LOCKED`, so any number of runners and pods can poll concurrently.
 pub async fn claim(s: &AppState, r: &RunnerRow) -> ApiResult<Option<JobRow>> {
     let labels: Vec<String> = all_labels(r).into_iter().map(|l| l.to_lowercase()).collect();
-    Ok(sqlx::query_as(
-        "WITH c AS (
-             SELECT j.id FROM actions_jobs j JOIN repositories rp ON rp.id = j.repo_id
-              WHERE j.status = 'queued'
-                AND ($1::bigint IS NULL OR j.repo_id = $1)
-                AND ($2::bigint IS NULL OR rp.owner_id = $2)
-                AND NOT EXISTS (SELECT 1 FROM unnest(j.labels) l
-                                 WHERE NOT (lower(l) = ANY($3) OR lower(l) ~ '^(ubuntu|macos|windows)-' OR lower(l) IN ('ubuntu', 'github-hosted')))
-              ORDER BY j.id LIMIT 1 FOR UPDATE OF j SKIP LOCKED)
-         UPDATE actions_jobs j SET status = 'in_progress', runner_id = $4, runner_name = $5, started_at = now(), heartbeat_at = now(),
-                timeout_at = now() + make_interval(mins => COALESCE(NULLIF(j.definition->>'timeout-minutes', '')::float8::int, 360))
-           FROM c WHERE j.id = c.id RETURNING j.*",
+    let mut tx = s.db.begin().await?;
+    // Candidates by scope and labels, locked; then Actions policy (self-hosted runners allowed,
+    // runner group) decides which one this runner takes. Other candidates unlock on commit.
+    let cands: Vec<(i64, i64, String)> = sqlx::query_as(
+        "SELECT j.id, j.repo_id, u.login || '/' || rp.name || '/' || r.workflow_path || '@' || COALESCE(r.git_ref, '')
+           FROM actions_jobs j JOIN repositories rp ON rp.id = j.repo_id JOIN users u ON u.id = rp.owner_id
+           JOIN actions_runs r ON r.id = j.run_id
+          WHERE j.status = 'queued'
+            AND ($1::bigint IS NULL OR j.repo_id = $1)
+            AND ($2::bigint IS NULL OR rp.owner_id = $2)
+            AND NOT EXISTS (SELECT 1 FROM unnest(j.labels) l
+                             WHERE NOT (lower(l) = ANY($3) OR lower(l) ~ '^(ubuntu|macos|windows)-' OR lower(l) IN ('ubuntu', 'github-hosted')))
+          ORDER BY j.id LIMIT 20 FOR UPDATE OF j SKIP LOCKED",
     )
     .bind(r.repo_id)
     .bind(r.org_id)
     .bind(&labels)
-    .bind(r.id)
-    .bind(&r.name)
-    .fetch_optional(&s.db)
-    .await?)
+    .fetch_all(&mut *tx)
+    .await?;
+    for (id, repo_id, wref) in cands {
+        if !super::settings::runner_may_take(s, r, repo_id, Some(&wref)).await {
+            continue;
+        }
+        let job: JobRow = sqlx::query_as(
+            "UPDATE actions_jobs j SET status = 'in_progress', runner_id = $2, runner_name = $3, started_at = now(), heartbeat_at = now(),
+                    timeout_at = now() + make_interval(mins => COALESCE(NULLIF(j.definition->>'timeout-minutes', '')::float8::int, 360))
+              WHERE j.id = $1 RETURNING j.*",
+        )
+        .bind(id)
+        .bind(r.id)
+        .bind(&r.name)
+        .fetch_one(&mut *tx)
+        .await?;
+        tx.commit().await?;
+        return Ok(Some(job));
+    }
+    tx.commit().await?;
+    Ok(None)
 }
 
 async fn acquire(State(s): State<AppState>, headers: HeaderMap, body: axum::body::Bytes) -> ApiResult<Response> {
@@ -251,10 +269,10 @@ async fn acquire(State(s): State<AppState>, headers: HeaderMap, body: axum::body
 
 /// GITHUB_TOKEN permission: write unless the workflow/job restricts `contents` to read (or
 /// the run comes from a fork).
-fn token_perm(run: &RunRow, job_def: &Value, default: Perm) -> Perm {
+fn token_perm(run: &RunRow, job_def: &Value, default: Perm, fork_write: bool) -> Perm {
     let perms = job_def.get("permissions").or_else(|| run.definition.as_ref().and_then(|d| d.get("permissions")));
     let fork = run.head_repo_id.is_some_and(|h| h != run.repo_id);
-    if fork {
+    if fork && !fork_write {
         return Perm::Read;
     }
     match perms {
@@ -271,10 +289,10 @@ fn token_perm(run: &RunRow, job_def: &Value, default: Perm) -> Perm {
 
 /// Secrets for a job: GITHUB_TOKEN plus the Actions-settings secrets; fork pull requests get
 /// none.
-async fn secrets_context(s: &AppState, ctx: &RepoCtx, run: &RunRow, environment: Option<&str>, job_token: &str) -> Value {
+async fn secrets_context(s: &AppState, ctx: &RepoCtx, run: &RunRow, environment: Option<&str>, job_token: &str, fork_secrets: bool) -> Value {
     let mut m = Map::new();
     let fork = run.head_repo_id.is_some_and(|h| h != run.repo_id);
-    if !fork {
+    if !fork || fork_secrets {
         for (k, v) in super::settings::secrets_for_job(s, ctx, environment).await {
             m.insert(k, Value::String(v));
         }
@@ -301,7 +319,10 @@ pub async fn job_message(s: &AppState, job: &JobRow, runner: &RunnerRow) -> ApiR
     let def = &job.definition;
     let timeout = def.get("timeout-minutes").and_then(Value::as_f64).unwrap_or(360.0);
     let expires = chrono::Utc::now() + chrono::Duration::minutes(timeout as i64 + 30);
-    let perm = token_perm(&run, def, super::settings::default_token_perm(s, ctx.repo.id).await);
+    let fork_policy = super::settings::fork_pr_policy(s, ctx.repo.id).await;
+    let fork_write = fork_policy.as_ref().is_some_and(|p| p.send_write_tokens_to_workflows);
+    let fork_secrets = fork_policy.as_ref().is_some_and(|p| p.send_secrets_and_variables);
+    let perm = token_perm(&run, def, super::settings::default_token_perm(s, ctx.repo.id).await, fork_write);
     let job_token = token::mint_job_token(&s.db, job.id, ctx.repo.id, perm, expires).await?;
     let mut github = engine::github_context(s, &ctx, &run, actor.as_ref(), trig.as_ref(), &job.job_key);
     github["token"] = json!(job_token);
@@ -324,8 +345,18 @@ pub async fn job_message(s: &AppState, job: &JobRow, runner: &RunnerRow) -> ApiR
         Some(Value::Object(o)) => o.get("name").and_then(Value::as_str).map(str::to_string),
         _ => None,
     };
-    let vars = engine::vars_context(s, &ctx, environment.as_deref()).await?;
-    let secrets = secrets_context(s, &ctx, &run, environment.as_deref(), &job_token).await;
+    let fork = run.head_repo_id.is_some_and(|h| h != run.repo_id);
+    let vars = if fork && !fork_secrets { json!({}) } else { engine::vars_context(s, &ctx, environment.as_deref()).await? };
+    let secrets = secrets_context(s, &ctx, &run, environment.as_deref(), &job_token, fork_secrets).await;
+    // `uses:` the Actions policy forbids (the runner fails those steps)
+    let mut blocked: Vec<String> = Vec::new();
+    for st in def.get("steps").and_then(Value::as_array).cloned().unwrap_or_default() {
+        if let Some(u) = st.get("uses").and_then(Value::as_str) {
+            if !u.contains("${{") && !super::settings::action_allowed(s, ctx.repo.id, u).await && !blocked.iter().any(|b| b == u) {
+                blocked.push(u.to_string());
+            }
+        }
+    }
     let wdef = run.definition.clone().unwrap_or(Value::Null);
     let _ = sqlx::query("UPDATE actions_jobs SET steps = '[]' WHERE id = $1").bind(job.id).execute(&s.db).await;
     // mark the run in progress and announce the job
@@ -358,6 +389,7 @@ pub async fn job_message(s: &AppState, job: &JobRow, runner: &RunnerRow) -> ApiR
         },
         "runner": { "id": runner.id, "name": runner.name, "os": runner.os, "arch": runner.arch },
         "environment": environment,
+        "blocked_uses": blocked,
     }))
 }
 

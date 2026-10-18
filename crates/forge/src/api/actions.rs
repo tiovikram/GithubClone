@@ -51,7 +51,7 @@ pub fn routes() -> Router<AppState> {
         .route(&format!("{r}/artifacts/{{artifact_id}}/{{archive_format}}"), get(download_artifact))
         .route(&format!("{r}/caches"), get(caches).delete(delete_caches_by_key))
         .route(&format!("{r}/caches/{{cache_id}}"), axum::routing::delete(delete_cache))
-        .route(&format!("{r}/permissions"), get(permissions))
+    // `{r}/permissions*` lives in actions_settings::policy; runners in runner_runners.
 }
 
 /// Signed downloads (followed without credentials after the API's 302, like GitHub's
@@ -240,6 +240,9 @@ async fn dispatch_workflow(
 ) -> ApiResult<Response> {
     let ctx = repo(&s, Some(&u), &owner, &name).await?;
     let w = find_workflow(&s, &ctx, &id).await?;
+    if !super::actions_settings::actions_allowed(&s, ctx.repo.id).await {
+        return Err(ApiError::unprocessable("Actions has been disabled for this repository."));
+    }
     let git_ref = body.git_ref.filter(|r| !r.is_empty()).ok_or_else(|| ApiError::validation("Workflow", "ref", "missing_field"))?;
     let run = dispatch(&s, &ctx, &u, &w, &git_ref, body.inputs).await?;
     if body.return_run_details == Some(true) {
@@ -1025,10 +1028,4 @@ async fn delete_cache(State(s): State<AppState>, AuthUser(u): AuthUser, Path((ow
         .ok_or_else(ApiError::not_found)?;
     storage::delete_cache(&s, &c).await?;
     Ok(no_content())
-}
-
-async fn permissions(State(s): State<AppState>, MaybeUser(u): MaybeUser, Path((owner, name)): Path<(String, String)>) -> ApiResult<Json<Value>> {
-    let ctx = repo(&s, u.as_ref(), &owner, &name).await?;
-    ctx.require(Perm::Admin)?;
-    Ok(Json(json!({ "enabled": true, "allowed_actions": "all", "selected_actions_url": null })))
 }
