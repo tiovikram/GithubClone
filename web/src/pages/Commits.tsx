@@ -7,6 +7,7 @@ import { DiffView } from "../components/Diff";
 import { useRepo } from "../components/RepoLayout";
 import { useAsync, useTitle } from "../hooks";
 import { encPath, firstLine, restLines, shortSha } from "../util";
+import { Slot } from "../areas";
 
 /** `/{o}/{r}/commits/{ref}` (also `/commits` → default branch) */
 export function CommitsPage() {
@@ -51,7 +52,8 @@ export function CommitsPage() {
 
 /** `/{o}/{r}/commit/{sha}` */
 export function CommitPage() {
-  const { repo, owner, name, base } = useRepo();
+  const repoCtx = useRepo();
+  const { repo, owner, name, base } = repoCtx;
   const { sha = "" } = useParams();
   useTitle(`Commit ${shortSha(sha)} · ${repo.full_name}`);
   const st = useAsync(() => api.commit(owner, name, sha), [owner, name, sha]);
@@ -91,6 +93,7 @@ export function CommitPage() {
                 <CopyButton text={c.sha} label="Copy full SHA" />
               </div>
             </div>
+            <Slot name="commit.header" ctx={repoCtx} sha={c.sha} />
             <DiffView files={c.files || []} />
           </div>
         );

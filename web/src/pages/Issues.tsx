@@ -7,6 +7,7 @@ import { CommentBox, CommentForm, LabelsSidebar, MarkdownEditor, useComments } f
 import { CommentIcon, IssueClosedIcon, IssueOpenIcon } from "../components/icons";
 import { useRepo } from "../components/RepoLayout";
 import { useAsync, useTitle } from "../hooks";
+import { Slot } from "../areas";
 
 export function IssueRow({ item, base, kind }: { item: Issue; base: string; kind: "issues" | "pull" }) {
   const href = `${base}/${kind}/${item.number}`;
@@ -184,7 +185,8 @@ export function EditableTitle({ title, number, canEdit, onSave }: {
 
 /** `/{o}/{r}/issues/{n}` */
 export function IssuePage() {
-  const { repo, owner, name, base, canPush } = useRepo();
+  const repoCtx = useRepo();
+  const { repo, owner, name, base, canPush } = repoCtx;
   const { user } = useAuth();
   const n = Number(useParams().number);
   const st = useAsync(() => api.issue(owner, name, n), [owner, name, n]);
@@ -271,6 +273,7 @@ export function IssuePage() {
                   {issue.assignees?.length ? issue.assignees.map((a) => <div key={a.id}><UserLink user={a} /></div>) :
                     <p className="muted small">No one assigned</p>}
                 </section>
+                <Slot name="issue.sidebar" ctx={repoCtx} issue={issue} setIssue={(i: Issue) => st.setData(i)} />
               </aside>
             </div>
           </div>

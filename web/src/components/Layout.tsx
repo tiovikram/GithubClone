@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth";
+import { headerNav, Slot, userMenu } from "../areas";
 import { AnnouncementBanner } from "./Announcement";
 import { Avatar } from "./common";
 import { ChevronDownIcon, LogoIcon, MoonIcon, PlusIcon, SearchIcon, SunIcon } from "./icons";
@@ -104,6 +105,10 @@ function UserMenu() {
           <div className="menu-divider" />
           <Link role="menuitem" className="menu-item" to={`/${user.login}?tab=stars`}>Your stars</Link>
           <div className="menu-divider" />
+          {userMenu.filter((l) => !l.show || l.show(user)).map((l) => (
+            <Link key={l.key} role="menuitem" className="menu-item" to={typeof l.to === "string" ? l.to : l.to(user)}>{l.label}</Link>
+          ))}
+          <Link role="menuitem" className="menu-item" to="/settings">Settings</Link>
           <Link role="menuitem" className="menu-item" to="/settings/tokens">Access tokens</Link>
           <Link role="menuitem" className="menu-item" to="/settings/keys">SSH keys</Link>
           <div className="menu-divider" />
@@ -133,9 +138,13 @@ export function Layout() {
         </Link>
         <nav className="header-nav" aria-label="Global">
           {user && <NavLink to="/" end>Dashboard</NavLink>}
+          {user && headerNav.filter((l) => !l.show || l.show(user)).map((l) => (
+            <NavLink key={l.key} to={typeof l.to === "string" ? l.to : l.to(user)}>{l.label}</NavLink>
+          ))}
         </nav>
         <HeaderSearch />
         <div className="header-right">
+          {!loading && <Slot name="header.right" user={user} />}
           <ThemeToggle />
           {loading ? null : user ? (
             <>

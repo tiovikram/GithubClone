@@ -4,19 +4,22 @@ import { useAuth } from "../auth";
 import { Async, Avatar, Blankslate, Pagination, RelTime } from "../components/common";
 import { LockIcon, RepoIcon, StarIcon } from "../components/icons";
 import { useAsync, useTitle } from "../hooks";
+import { orgProfile as OrgProfile, profileTabs, Slot } from "../areas";
 
 export function ProfilePage() {
   const { owner = "" } = useParams();
   const { user: me } = useAuth();
   const [sp, setSp] = useSearchParams();
   const page = Number(sp.get("page") || 1);
-  const tab = sp.get("tab") === "stars" ? "stars" : "repositories";
+  const raw = sp.get("tab") || "";
+  const tab = raw === "stars" || profileTabs.some((t) => t.key === raw) ? raw : "repositories";
   const user = useAsync(() => api.user(owner), [owner]);
-  const repos = useAsync(() => (tab === "stars" ? api.starred(owner, page) : api.userRepos(owner, page)), [owner, page, tab]);
+  const repos = useAsync(() => (tab === "stars" ? api.starred(owner, page) : api.userRepos(owner, page)), [owner, page, tab === "stars"]);
+  const areaTab = profileTabs.find((t) => t.key === tab);
   useTitle(user.data ? `${user.data.login}${user.data.name ? ` (${user.data.name})` : ""}` : owner);
   return (
     <Async state={user}>
-      {(u) => (
+      {(u) => OrgProfile && u.type === "Organization" ? <OrgProfile org={u} /> : (
         <div className="container profile">
           <aside className="profile-side">
             <Avatar user={u} size={260} />
@@ -31,7 +34,8 @@ export function ProfilePage() {
               {u.blog && <li><a href={u.blog.startsWith("http") ? u.blog : `https://${u.blog}`} rel="nofollow noopener">{u.blog}</a></li>}
               {u.created_at && <li>Joined <RelTime iso={u.created_at} /></li>}
             </ul>
-            {me?.login === u.login && <Link to="/settings/tokens" className="btn btn-block">Access tokens</Link>}
+            {me?.login === u.login && <Link to="/settings" className="btn btn-block">Edit profile</Link>}
+            <Slot name="profile.sidebar" user={u} me={me} />
           </aside>
           <section className="profile-main">
             <nav className="tabnav" aria-label="Profile">
@@ -41,7 +45,16 @@ export function ProfilePage() {
               <Link to={`/${u.login}?tab=stars`} className={"tabnav-tab" + (tab === "stars" ? " selected" : "")} data-testid="stars-tab">
                 <StarIcon /> Stars
               </Link>
+              {profileTabs.filter((t) => !t.show || t.show(u, me)).map((t) => {
+                const Icon = t.icon;
+                return (
+                  <Link key={t.key} to={`/${u.login}?tab=${t.key}`} className={"tabnav-tab" + (tab === t.key ? " selected" : "")} data-testid={`profile-tab-${t.key}`}>
+                    {Icon && <Icon />} {t.label}
+                  </Link>
+                );
+              })}
             </nav>
+            {areaTab ? <areaTab.element user={u} /> : <>
             <div className="toolbar">
               <span className="spacer" />
               {me?.login === u.login && <Link to="/new" className="btn btn-primary btn-sm">New</Link>}
@@ -75,6 +88,7 @@ export function ProfilePage() {
             </Async>
             {repos.data && <Pagination page={page} next={repos.data.next} prev={repos.data.prev} last={repos.data.last}
               onPage={(n) => setSp(tab === "stars" ? { tab, page: String(n) } : { page: String(n) })} />}
+            </>}
           </section>
         </div>
       )}

@@ -5,11 +5,25 @@ import { BranchSelect } from "../components/BranchSelect";
 import { ErrorBox, Flash } from "../components/common";
 import { useRepo } from "../components/RepoLayout";
 import { useAsync, useTitle } from "../hooks";
+import { repoSettings } from "../areas";
+import type { SettingsSection } from "../areas/types";
+import type { RepoCtx } from "../components/RepoLayout";
+import { SettingsShell } from "../components/SettingsShell";
 
+const general: SettingsSection<RepoCtx> = { key: "general", path: "general", label: "General", order: 0, element: GeneralSettings };
+export const allRepoSettings = [general, ...repoSettings].sort((a, b) => a.order - b.order);
+
+/** `/{o}/{r}/settings/*`: sidebar of core + area sections. */
 export function RepoSettingsPage() {
+  const ctx = useRepo();
+  useTitle(`Settings · ${ctx.repo.full_name}`);
+  if (!ctx.isAdmin) return <Navigate to={ctx.base} replace />;
+  return <SettingsShell root={`${ctx.base}/settings`} sections={allRepoSettings} ctx={ctx} label="Repository settings" container={false} />;
+}
+
+function GeneralSettings() {
   const { repo, owner, name, base, isAdmin, setRepo } = useRepo();
   const nav = useNavigate();
-  useTitle(`Settings · ${repo.full_name}`);
   const branches = useAsync(() => api.branches(owner, name), [owner, name]);
   const [description, setDescription] = useState(repo.description || "");
   const [homepage, setHomepage] = useState(repo.homepage || "");
@@ -65,7 +79,7 @@ export function RepoSettingsPage() {
   };
   const names = (branches.data || []).map((b) => b.name);
   return (
-    <div className="narrow-form settings">
+    <div className="settings">
       <h2 className="h3">General</h2>
       <form className="box box-body" onSubmit={save}>
         {saved && <Flash kind="success">Repository settings saved.</Flash>}

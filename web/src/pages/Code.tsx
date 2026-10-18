@@ -9,6 +9,7 @@ import { highlightLines } from "../highlight";
 import { useAsync, useTitle } from "../hooks";
 import { Markdown } from "../markdown";
 import { encPath, firstLine, humanSize, shortSha, splitRefPath } from "../util";
+import { Slot } from "../areas";
 
 function useRefPath(branches: Branch[] | undefined, repo: Repo) {
   const params = useParams();
@@ -191,7 +192,8 @@ export function CodePage() {
 }
 
 function Tree({ branches }: { branches: Branch[] }) {
-  const { repo, owner, name, base } = useRepo();
+  const repoCtx = useRepo();
+  const { repo, owner, name, base } = repoCtx;
   const { ref, path } = useRefPath(branches, repo);
   const nav = useNavigate();
   const st = useAsync(() => api.contents(owner, name, path, ref), [owner, name, path, ref]);
@@ -261,6 +263,7 @@ function Tree({ branches }: { branches: Branch[] }) {
             <li><ForkIcon /> {repo.forks_count} fork{repo.forks_count === 1 ? "" : "s"}</li>
           </ul>
           <CloneBox repo={repo} refName={ref} />
+          <Slot name="repo.code.sidebar" ctx={repoCtx} refName={ref} />
         </aside>
       )}
     </div>

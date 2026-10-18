@@ -14,6 +14,7 @@ import { useRepo } from "../components/RepoLayout";
 import { useAsync, useTitle } from "../hooks";
 import { firstLine } from "../util";
 import { EditableTitle } from "./Issues";
+import { Slot } from "../areas";
 
 function PullRow({ pr, base }: { pr: Pull; base: string }) {
   const href = `${base}/pull/${pr.number}`;
@@ -399,7 +400,8 @@ function Conversation({ pr, canEdit, canPush, reload, setPr }: {
   pr: Pull; canEdit: boolean; canPush: boolean; reload: () => void; setPr: (p: Pull) => void;
 }) {
   const { user } = useAuth();
-  const { repo, owner, name, base } = useRepo();
+  const repoCtx = useRepo();
+  const { repo, owner, name, base } = repoCtx;
   const comments = useComments(owner, name, pr.number);
   const reviews = useAsync(() => api.reviews(owner, name, pr.number), [owner, name, pr.number]);
   const [err, setErr] = useState<unknown>();
@@ -437,7 +439,10 @@ function Conversation({ pr, canEdit, canPush, reload, setPr }: {
             <PullClosedIcon className="icon c-closed" /> This pull request was closed <RelTime iso={pr.closed_at} />.
           </div>
         ) : (
-          <MergeBox pr={pr} canPush={canPush} onMerged={reload} />
+          <>
+            <Slot name="pull.merge.top" ctx={repoCtx} pull={pr} />
+            <MergeBox pr={pr} canPush={canPush} onMerged={reload} />
+          </>
         )}
         {err !== undefined && <ErrorBox error={err} />}
         {user && !pr.merged_at && pr.state === "open" && (
@@ -462,6 +467,7 @@ function Conversation({ pr, canEdit, canPush, reload, setPr }: {
       <aside className="layout-aside">
         <LabelsSidebar owner={owner} name={name} number={pr.number} labels={pr.labels} canEdit={canPush}
           onChange={(labels) => setPr({ ...pr, labels })} />
+        <Slot name="pull.sidebar" ctx={repoCtx} pull={pr} setPull={setPr} />
       </aside>
     </div>
   );

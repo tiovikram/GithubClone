@@ -5,6 +5,7 @@ import { useAuth } from "../auth";
 import { Async, Avatar, Blankslate, ErrorBox, ItemIcon, RelTime, Spinner } from "../components/common";
 import { LockIcon, LogoIcon, RepoIcon } from "../components/icons";
 import { useAsync, useTitle } from "../hooks";
+import { Slot } from "../areas";
 
 function Landing() {
   return (
@@ -65,6 +66,7 @@ function Dashboard({ user }: { user: User }) {
             {list.length === 0 && <li className="muted small">{filter ? "No matching repositories." : "You don't have any repositories yet."}</li>}
           </ul>
         )}
+        <Slot name="home.sidebar" user={user} />
       </aside>
       <section className="dashboard-main">
         <h1 className="h3">Welcome, {user.name || user.login}</h1>

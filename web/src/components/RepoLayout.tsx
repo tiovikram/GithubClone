@@ -1,8 +1,10 @@
 import { useState } from "react";
+import type { RepoTab } from "../areas/types";
 import { Link, NavLink, Navigate, Outlet, useLocation, useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { api, errorMessage, type Repo } from "../api";
 import { useAuth } from "../auth";
 import { useAsync } from "../hooks";
+import { repoTabs, Slot } from "../areas";
 import { Async } from "./common";
 import { CodeIcon, ForkIcon, GearIcon, IssueOpenIcon, LockIcon, PullIcon, RepoIcon, StarIcon, TagIcon } from "./icons";
 
@@ -74,6 +76,18 @@ function ForkButton({ repo }: { repo: Repo }) {
   );
 }
 
+function AreaTab({ t, base }: { t: RepoTab; base: string }) {
+  const loc = useLocation();
+  const rest = loc.pathname.slice(base.length);
+  const on = rest === `/${t.path}` || rest.startsWith(`/${t.path}/`) || (t.alsoActive || []).some((p) => rest.startsWith(p));
+  const Icon = t.icon;
+  return (
+    <NavLink to={`${base}/${t.path}`} className={() => "tab" + (on ? " selected" : "")} data-testid={`repo-tab-${t.key}`}>
+      {Icon && <Icon />} {t.label}
+    </NavLink>
+  );
+}
+
 export interface RepoCtx {
   repo: Repo;
   owner: string;
@@ -125,6 +139,7 @@ export function RepoLayout() {
                   </div>
                 )}
                 <div className="repo-actions">
+                  <Slot name="repo.header.actions" ctx={ctx} />
                   <ForkButton repo={repo} />
                   <StarButton repo={repo} onChange={(n) => state.setData({ ...repo, stargazers_count: n })} />
                 </div>
@@ -143,9 +158,11 @@ export function RepoLayout() {
                   "tab" + (isActive || /^\/(pull|compare)/.test(loc.pathname.slice(base.length)) ? " selected" : "")}>
                   <PullIcon /> Pull requests
                 </NavLink>
+                {repoTabs.filter((t) => t.order < 80 && (!t.show || t.show(ctx))).map((t) => <AreaTab key={t.key} t={t} base={base} />)}
                 <NavLink to={`${base}/releases`} className={tab}>
                   <TagIcon /> Releases
                 </NavLink>
+                {repoTabs.filter((t) => t.order >= 80 && (!t.show || t.show(ctx))).map((t) => <AreaTab key={t.key} t={t} base={base} />)}
                 {ctx.isAdmin && (
                   <NavLink to={`${base}/settings`} className={tab}>
                     <GearIcon /> Settings

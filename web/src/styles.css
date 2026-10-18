@@ -650,3 +650,9 @@ td.ln a:hover { color: var(--fg); text-decoration: none; }
 .announcement-body { flex: 1; font-size: 14px; }
 .announcement-body > :last-child { margin-bottom: 0; }
 .announcement-dismiss { background: transparent; border: 0; font-size: 20px; line-height: 1; cursor: pointer; color: inherit; padding: 0 4px; }
+
+/* settings sidebars (user, repository, organization, site admin) */
+.settings-nav-group { display: flex; flex-direction: column; gap: 2px; }
+.settings-nav-group + .settings-nav-group { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-muted); }
+.settings-nav-heading { margin: 0 0 4px; padding: 0 8px; font-size: 12px; font-weight: 600; color: var(--fg-muted); }
+.repo-body > .settings-layout { padding-top: 0; }

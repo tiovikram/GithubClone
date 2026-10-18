@@ -3,13 +3,17 @@
 //
 //   node e2e/run.mjs --base http://localhost:3109 --login alice --password 'secret-pass-1' \
 //       [--login2 bob] [--chrome /path/to/chrome] [--headful] [--keep-going]
+//       [--areas actions,orgs] [--only-areas]
 //
+// Feature areas add their flows in e2e/areas/<area>.mjs (`export async function run(t)`, see
+// the `t` object in main()). All area files run after the core flows; --areas limits which run,
+// and --only-areas skips the core flows (sign-up and token creation still run).
 // The logins should be fresh (they are signed up through the UI; if they already exist the
 // script signs in instead). Needs `git` and `ssh-keygen` on PATH. Every git call runs with
 // GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null GIT_TERMINAL_PROMPT=0 so no credential helper
 // or user config is touched. Screenshots go to e2e/screenshots/. Exit status 0 = all passed.
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -260,6 +264,7 @@ async function main() {
     me = u.login;
   });
 
+  if (!args["only-areas"]) {
   await step("create repo with README", async () => {
     await goto("/new");
     await fill("#repo-name", REPO);
@@ -739,6 +744,62 @@ async function main() {
     }
     await m.close();
   });
+
+  } // core flows
+
+  // ---------- feature areas (e2e/areas/*.mjs) ----------
+  let page2Lazy;
+  const t = {
+    BASE, LOGIN, LOGIN2, PASSWORD, RUN, WORK, args,
+    get page() { return page; },
+    get token() { return token; },
+    get me() { return me; },
+    browser, step, goto, waitText, waitBody, bodyText, click, fill, clickText, pageFetch, api, shot, git, assert, log, signUpOrIn,
+    /** A second browser context signed in as LOGIN2 (created on first use). */
+    async page2() {
+      if (page2Lazy) return page2Lazy;
+      const c = await browser.createBrowserContext();
+      const p = await c.newPage();
+      p.setDefaultTimeout(45000);
+      p.setDefaultNavigationTimeout(60000);
+      await p.setViewport({ width: 1280, height: 900 });
+      p.on("dialog", (d) => d.accept());
+      p.on("pageerror", (e) => consoleErrors.push(String(e)));
+      await signUpOrIn(p, LOGIN2, PASSWORD);
+      page2Lazy = p;
+      return p;
+    },
+    /** Authenticated API call with the token (not the session), from node. */
+    async rest(path, init = {}) {
+      const headers = { Accept: "application/vnd.github+json", Authorization: `token ${token}`, ...(init.headers || {}) };
+      let body = init.body;
+      if (body !== undefined && typeof body !== "string" && !(body instanceof Uint8Array)) {
+        body = JSON.stringify(body);
+        headers["Content-Type"] = "application/json";
+      }
+      const r = await fetch(`${BASE}/api/v3${path}`, { ...init, headers, body });
+      const text = await r.text();
+      let json = null;
+      try { json = text ? JSON.parse(text) : null; } catch { /* not JSON */ }
+      return { status: r.status, headers: r.headers, text, json };
+    },
+    /** Create a repository for the signed-in user via the API (auto_init) and return its JSON. */
+    async newRepo(name, extra = {}) {
+      const r = await t.rest("/user/repos", { method: "POST", body: { name, auto_init: true, ...extra } });
+      assert(r.status === 201, `create repo ${name}: ${r.status} ${r.text}`);
+      return r.json;
+    },
+  };
+  const want = typeof args.areas === "string" ? args.areas.split(",").map((a) => a.trim()).filter(Boolean) : null;
+  const areaDir = join(HERE, "areas");
+  const files = existsSync(areaDir) ? readdirSync(areaDir).filter((f) => f.endsWith(".mjs")).sort() : [];
+  for (const f of files) {
+    const name = f.replace(/\.mjs$/, "");
+    if (want && !want.includes(name)) continue;
+    log(`  -- area ${name}`);
+    const mod = await import(join(areaDir, f));
+    await mod.run(t);
+  }
 
   await step("no uncaught page errors", async () => {
     assert(consoleErrors.length === 0, consoleErrors.join("\n"));

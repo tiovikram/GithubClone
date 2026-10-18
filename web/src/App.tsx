@@ -17,6 +17,8 @@ import { KeysPage } from "./pages/Keys";
 import { BranchesPage, TagsPage } from "./pages/Refs";
 import { NewReleasePage, ReleasePage, ReleasesPage } from "./pages/Releases";
 import { SearchPage } from "./pages/Search";
+import { UserSettingsPage } from "./pages/UserSettings";
+import { repoRoutes, topRoutes } from "./areas";
 
 /** github.com-style `/o/r/pulls/123` → `/o/r/pull/123`. */
 function PullsRedirect() {
@@ -37,7 +39,9 @@ export function App() {
             <Route path="settings/tokens" element={<TokensPage />} />
             <Route path="settings/keys" element={<KeysPage />} />
             <Route path="search" element={<SearchPage />} />
-            <Route path="settings" element={<Navigate to="/settings/tokens" replace />} />
+            <Route path="settings" element={<UserSettingsPage />} />
+            <Route path="settings/*" element={<UserSettingsPage />} />
+            {topRoutes()}
             <Route path=":owner" element={<ProfilePage />} />
             <Route path=":owner/:repo" element={<RepoLayout />}>
               <Route index element={<CodePage />} />
@@ -64,6 +68,8 @@ export function App() {
               <Route path="releases/latest" element={<ReleasePage latest />} />
               <Route path="releases/tag/*" element={<ReleasePage />} />
               <Route path="settings" element={<RepoSettingsPage />} />
+              <Route path="settings/*" element={<RepoSettingsPage />} />
+              {repoRoutes()}
               <Route path="*" element={<NotFoundView />} />
             </Route>
             <Route path="*" element={<NotFoundView />} />
