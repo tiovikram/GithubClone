@@ -22,5 +22,7 @@ pub async fn after_refs_changed(
     if let Err(e) = crate::webhooks::on_refs_changed(state, ctx, actor, changed).await {
         tracing::error!(error = %format!("{e:#}"), "webhooks/activity for ref changes failed");
     }
+    // repos area: ref activity log, ruleset rule suites, Pages builds.
+    crate::api::repos_stats::on_refs_changed(state, ctx, actor, changed).await;
     Ok(())
 }

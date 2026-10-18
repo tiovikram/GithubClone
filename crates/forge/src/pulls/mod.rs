@@ -403,6 +403,7 @@ pub async fn create_pull(state: &AppState, ctx: &RepoCtx, actor: &User, input: C
         // keep the issue in sync with the new PR.
         sqlx::query("UPDATE issues SET updated_at = now() WHERE id = $1").bind(issue_id).execute(&state.db).await?;
     }
+    crate::api::events_emit::pull_event(state, ctx, actor, "opened", pull.clone(), json!({})).await;
     Ok(pull)
 }
 
@@ -835,8 +836,13 @@ pub async fn update_pull(state: &AppState, ctx: &RepoCtx, actor: &User, number: 
 pub async fn close_pull(state: &AppState, ctx: &RepoCtx, actor: &User, number: i64) -> ApiResult<Pull> {
     let pull = pull_by_number(&state.db, ctx.repo.id, number).await?;
     can_edit(ctx, actor, &pull)?;
+    let was_open = pull.is_open();
     close_issue_row(state, &pull, Some(actor.id)).await?;
-    pull_by_issue_id(&state.db, pull.issue.id).await
+    let p = pull_by_issue_id(&state.db, pull.issue.id).await?;
+    if was_open {
+        crate::api::events_emit::pull_event(state, ctx, actor, "closed", p.clone(), json!({})).await;
+    }
+    Ok(p)
 }
 
 pub async fn reopen_pull(state: &AppState, ctx: &RepoCtx, actor: &User, number: i64) -> ApiResult<Pull> {
@@ -864,7 +870,11 @@ pub async fn reopen_pull(state: &AppState, ctx: &RepoCtx, actor: &User, number: 
     tx.commit().await?;
     let p = pull_by_issue_id(&state.db, pull.issue.id).await?;
     refresh(state, ctx.repo.id, vec![RefreshItem { pull: p, base_old: None, head_old: None }], Some(actor)).await?;
-    pull_by_issue_id(&state.db, pull.issue.id).await
+    let p = pull_by_issue_id(&state.db, pull.issue.id).await?;
+    if n > 0 {
+        crate::api::events_emit::pull_event(state, ctx, actor, "reopened", p.clone(), json!({})).await;
+    }
+    Ok(p)
 }
 
 async fn set_draft(state: &AppState, ctx: &RepoCtx, actor: &User, number: i64, draft: bool) -> ApiResult<Pull> {
@@ -1062,6 +1072,9 @@ pub async fn merge_pull(state: &AppState, ctx: &RepoCtx, actor: &User, number: i
     let (new_sha, head_sha, deleted) = res;
     mark_merged(state, &pull, Some(actor.id), &head_sha, &new_sha, deleted.as_deref()).await?;
     crate::hooks::after_refs_changed(state, ctx, Some(actor), &updates.changed()).await?;
+    if let Ok(p) = pull_by_issue_id(&state.db, pull.issue.id).await {
+        crate::api::events_emit::pull_event(state, ctx, actor, "closed", p, json!({})).await;
+    }
     Ok(MergeResult { sha: new_sha, merged: true, message: "Pull Request successfully merged".into() })
 }
 
@@ -1193,6 +1206,8 @@ pub async fn request_reviewers(state: &AppState, ctx: &RepoCtx, actor: &User, nu
         if added > 0 {
             record_event(&state.db, &pull, Some(actor.id), "review_requested", None, json!({"requested_reviewer": u.id, "review_requester": actor.id}))
                 .await?;
+            let reviewer = crate::json::user::simple(&state.api_url(), state.base_url(), &u);
+            crate::api::events_emit::pull_event(state, ctx, actor, "review_requested", pull.clone(), json!({"requested_reviewer": reviewer})).await;
         }
     }
     pull_by_issue_id(&state.db, pull.issue.id).await

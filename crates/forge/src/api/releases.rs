@@ -531,6 +531,7 @@ pub async fn upload_asset(
     body: Body,
 ) -> ApiResult<AssetRow> {
     ctx.require(Perm::Write)?;
+    super::repos_settings::check_release_mutable(s, ctx.repo.id, release.draft).await?;
     let name = sanitize_asset_name(name);
     if name.is_empty() {
         return Err(ApiError::validation("ReleaseAsset", "name", "missing_field"));
@@ -841,6 +842,7 @@ async fn update_asset(
     let ctx = ctx_for(&s, Some(&u), &owner, &repo).await?;
     ctx.require(Perm::Write)?;
     let (a, r) = load_asset(&s.db, &ctx, asset_id).await?;
+    super::repos_settings::check_release_mutable(&s, ctx.repo.id, r.draft).await?;
     let name = req.name.as_deref().map(sanitize_asset_name).filter(|n| !n.is_empty());
     let a: AssetRow = sqlx::query_as(
         "UPDATE release_assets SET name = COALESCE($2, name), label = COALESCE($3, label),
@@ -866,7 +868,8 @@ async fn delete_asset(
 ) -> ApiResult<Response> {
     let ctx = ctx_for(&s, Some(&u), &owner, &repo).await?;
     ctx.require(Perm::Write)?;
-    let (a, _) = load_asset(&s.db, &ctx, asset_id).await?;
+    let (a, r) = load_asset(&s.db, &ctx, asset_id).await?;
+    super::repos_settings::check_release_mutable(&s, ctx.repo.id, r.draft).await?;
     sqlx::query("DELETE FROM release_assets WHERE id = $1").bind(a.id).execute(&s.db).await?;
     let _ = s.store.delete(&ObjPath::from(a.storage_key)).await;
     Ok(no_content())

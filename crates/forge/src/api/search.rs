@@ -199,13 +199,8 @@ pub(crate) fn push_visible(qb: &mut QueryBuilder<Postgres>, viewer: Option<&User
             qb.push("TRUE");
         }
         Some(u) => {
-            qb.push("(NOT r.private OR r.owner_id = ")
-                .push_bind(u.id)
-                .push(" OR EXISTS(SELECT 1 FROM repo_collaborators vc WHERE vc.repo_id = r.id AND vc.user_id = ")
-                .push_bind(u.id)
-                .push(") OR EXISTS(SELECT 1 FROM org_members vm WHERE vm.org_id = r.owner_id AND vm.user_id = ")
-                .push_bind(u.id)
-                .push("))");
+            // The shared visibility rule (`db::readable_sql`).
+            qb.push("forge_repo_readable(r.id, ").push_bind(u.id).push(")");
         }
         None => {
             qb.push("NOT r.private");

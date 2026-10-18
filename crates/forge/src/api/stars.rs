@@ -163,10 +163,7 @@ async fn user_repos(
     let extra = if table == "watches" { " AND t.subscribed" } else { "" };
     let sql = format!(
         "SELECT r.id, t.created_at FROM {table} t JOIN repositories r ON r.id = t.repo_id
-          WHERE t.user_id = $1{extra} AND (NOT r.private OR r.owner_id = $2
-            OR EXISTS(SELECT 1 FROM repo_collaborators c WHERE c.repo_id = r.id AND c.user_id = $2)
-            OR EXISTS(SELECT 1 FROM org_members m WHERE m.org_id = r.owner_id AND m.user_id = $2)
-            OR EXISTS(SELECT 1 FROM users a WHERE a.id = $2 AND a.site_admin))
+          WHERE t.user_id = $1{extra} AND forge_repo_readable(r.id, $2)
           ORDER BY {col} {dir}, r.id {dir} LIMIT $3 OFFSET $4"
     );
     let rows: Vec<(i64, DateTime<Utc>)> = sqlx::query_as(sqlx::AssertSqlSafe(sql))

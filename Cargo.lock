@@ -1529,6 +1529,7 @@ dependencies = [
  "comrak",
  "crypto_box",
  "curve25519-dalek 5.0.0",
+ "flate2",
  "futures",
  "hex",
  "hmac",

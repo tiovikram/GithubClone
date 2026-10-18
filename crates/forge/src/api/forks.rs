@@ -198,9 +198,7 @@ async fn list_forks(
         _ => "r.created_at DESC, r.id DESC",
     };
     let viewer = u.as_ref().map(|x| x.id).unwrap_or(-1);
-    let visible = "(NOT r.private OR r.owner_id = $2 OR EXISTS(SELECT 1 FROM repo_collaborators c WHERE c.repo_id = r.id AND c.user_id = $2)
-                    OR EXISTS(SELECT 1 FROM org_members m WHERE m.org_id = r.owner_id AND m.user_id = $2)
-                    OR EXISTS(SELECT 1 FROM users a WHERE a.id = $2 AND a.site_admin))";
+    let visible = crate::db::readable_sql("r.id", "$2");
     let sql = format!(
         "SELECT r.* FROM repositories r WHERE r.fork_parent_id = $1 AND {visible} ORDER BY {order} LIMIT {} OFFSET {}",
         pages.limit(),
