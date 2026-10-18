@@ -145,3 +145,62 @@ Severity reflects impact on a multi-tenant instance where anyone can sign up.
   stream key and are verified, never decrypted into responses) but forge does not deliver events
   to external vendors. **Live migrations** are recorded with GHES's state machine; forge transfers
   no data to the target.
+
+## GitHub Actions (runner area)
+Workflow jobs run arbitrary code from anyone who can push a workflow file, or open a pull
+request when a workflow runs on `pull_request`.
+- **Never in the API server.** `forge serve` only plans jobs. Jobs run in `forge runner`, a
+  separate process or pod (`deploy/base/forge-runner.yaml`). It talks to forge over HTTP only
+  (`/api/forge/runner/*`), and it gets no database, object storage or Kubernetes credentials.
+  With the shell executor the runner pod or host is the sandbox: one pod per job slot, an
+  `emptyDir` work dir, non-root, a read-only root filesystem and no service account token.
+  Every step process gets a scrubbed environment: `PATH`, `HOME` (a per-job directory), locale,
+  the `GITHUB_*`/`RUNNER_*` variables, `CI`, `GIT_CONFIG_NOSYSTEM=1` and the job's own env. The
+  runner's own variables, such as its credential, are never passed. Each step runs in its own
+  process group, and the whole group is killed on cancel or timeout.
+- **Credentials.**
+  - *Registration tokens* (REST, valid 1 h, stored as sha256) register a runner for one
+    repository, organization or the enterprise. They return a *runner credential* (`fgr_…`,
+    sha256 stored). The runner credential can only claim jobs and report on jobs its runner
+    holds.
+  - *Job tokens* (`GITHUB_TOKEN`) are installation access tokens (`ghs_…`) of the built-in
+    `github-actions` app, as on GitHub. One is minted per job when the job is claimed. It
+    covers only the job's repository and acts as `github-actions[bot]`. Its permissions come
+    from the job's or workflow's `permissions:` (GitHub's keys, `read-all`/`write-all`).
+    Without `permissions:` they come from the repository's default workflow permissions:
+    permissive (everything write) or restricted (contents/packages read, the default). Fork
+    pull requests get read-only tokens unless the fork policy allows write. The apps area
+    enforces the token the same way on REST, GraphQL and git smart HTTP (`apps::scope`, 403
+    "Resource not accessible by integration"). The token is revoked when the job completes,
+    and expires at the latest at the job timeout + 30 min. The app's installations are hidden
+    from installation listings.
+  - Events caused by `github-actions[bot]`, such as a push made with `GITHUB_TOKEN`, never
+    trigger workflows (GitHub's recursion guard).
+- **Secrets.** Secrets reach a job only through `runner::settings::secrets_for_job`
+  (actions-settings). They go into the job message for the claiming runner. The runner masks
+  every secret value, every line of a multi-line secret and every `::add-mask::` value in logs,
+  and it masks the job token and its base64 auth header. Job outputs that contain a secret are
+  dropped, as on GitHub. Pull requests from forks follow the fork policy
+  (`fork_pr_policy`): workflows are skipped in private repositories unless allowed, the token is
+  read-only and secrets/variables are withheld unless the policy sends them.
+- **Actions policy.** The server checks `actions_allowed` (no runs at all when disabled),
+  `action_allowed` for every top-level `uses:` (the runner fails a disallowed step),
+  `self_hosted_runners_allowed` and runner groups (`runner_group_allows`) when it claims a
+  job. It also checks environment branch policies, required reviewers, wait timers and custom
+  protection rules before a job is queued.
+- **`uses:`** never downloads code from github.com. `actions/checkout`, `upload-artifact`,
+  `download-artifact` and `cache` are built into the runner. Other actions must be composite
+  actions in repositories on this forge, fetched with the job token (so private repositories
+  are not reachable). Node and docker actions fail with a clear message.
+- **Downloads.** Run logs, job logs and artifacts are served after a 302 to a short-lived
+  signed URL (HMAC with the server secret, bound to repository and object, 5 minutes), like
+  GitHub's blob-storage redirects. Artifact downloads require authentication even on public
+  repositories (GitHub does the same). Uploads stream to object storage and are capped by
+  `FORGE_ACTIONS_MAX_UPLOAD` (2 GiB).
+- **Known gaps.**
+  - No per-job kernel isolation with the shell executor: jobs on the same runner host can see
+    each other's processes. Use one slot per pod (the shipped default), or the docker executor.
+  - No OIDC ID tokens (`ACTIONS_ID_TOKEN_REQUEST_URL`); only the subject-claim settings are
+    stored.
+  - First-time-contributor approval for fork pull requests is not enforced, because there is
+    no approval UI.

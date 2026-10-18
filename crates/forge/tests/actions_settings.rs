@@ -269,7 +269,7 @@ async fn workflow_dispatch_respects_disabled_actions() {
     let u = s.user().await;
     let repo = s.create_repo(&u, true).await;
     let rp = format!("/repos/{}/{repo}", u.login);
-    let content = base64_encode("name: CI\non: workflow_dispatch\njobs: {}\n");
+    let content = base64_encode("name: CI\non: workflow_dispatch\njobs:\n  a:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n");
     let (st, _) = s.call(Some(&u), "PUT", &format!("{rp}/contents/.github/workflows/ci.yml"), Some(json!({"message": "ci", "content": content}))).await;
     assert_eq!(st, 201);
     s.call(Some(&u), "PUT", &format!("{rp}/actions/permissions"), Some(json!({"enabled": false}))).await;

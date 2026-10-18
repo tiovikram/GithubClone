@@ -753,7 +753,7 @@ async fn audit_log(State(s): State<AppState>, uri: OriginalUri, AuthUser(u): Aut
 async fn installations(State(s): State<AppState>, AuthUser(u): AuthUser, Path(org): Path<String>, Query(_p): Query<PageParams>) -> ApiResult<Json<Value>> {
     let o = org_by_login(&s, &org).await?;
     require_owner(&s, &o, &u).await?;
-    let rows: Vec<crate::apps::InstallationRow> = sqlx::query_as("SELECT * FROM app_installations WHERE target_id = $1 ORDER BY id")
+    let rows: Vec<crate::apps::InstallationRow> = sqlx::query_as("SELECT * FROM app_installations WHERE target_id = $1 AND app_id NOT IN (SELECT id FROM apps WHERE slug = 'github-actions') ORDER BY id")
         .bind(o.id)
         .fetch_all(&s.db)
         .await?;

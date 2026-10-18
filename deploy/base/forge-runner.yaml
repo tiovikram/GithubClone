@@ -1,0 +1,86 @@
+# GitHub Actions runners (`forge runner`, shell executor). Jobs run untrusted code, so they
+# never run in the forge API pods: each runner pod is the sandbox. Runner pods only talk HTTP
+# to the forge Service — no database or object-storage credentials are mounted here — and
+# register at start with the instance-wide registration token shared with the server through
+# the forge-secrets Secret (FORGE_RUNNER_REGISTRATION_TOKEN). The pod name is the runner name
+# (re-registration replaces it); runners offline for 14 days are pruned by the server.
+#
+# Scale with `kubectl scale deployment/forge-runner --replicas=N`. Each pod runs
+# FORGE_RUNNER_SLOTS jobs at a time; on SIGTERM it stops taking jobs and finishes running ones
+# (FORGE_RUNNER_DRAIN_SECS, bounded by terminationGracePeriodSeconds).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: forge-runner
+  labels: {app.kubernetes.io/name: forge-runner}
+spec:
+  replicas: 2
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels: {app.kubernetes.io/name: forge-runner}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: forge-runner}
+    spec:
+      terminationGracePeriodSeconds: 660
+      # No Kubernetes API access from job code.
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10002
+        runAsGroup: 10002
+        fsGroup: 10002
+        seccompProfile: {type: RuntimeDefault}
+      initContainers:
+        - name: wait-forge
+          image: forge:dev
+          imagePullPolicy: IfNotPresent
+          command:
+            - bash
+            - -c
+            - until (exec 3<>/dev/tcp/forge/80) 2>/dev/null; do echo waiting for forge; sleep 2; done
+          resources:
+            requests: {cpu: 10m, memory: 16Mi}
+            limits: {cpu: 100m, memory: 64Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+      containers:
+        - name: runner
+          image: forge:dev
+          imagePullPolicy: IfNotPresent
+          args: ["runner"]
+          env:
+            - name: FORGE_RUNNER_URL
+              value: http://forge
+            - name: FORGE_RUNNER_TOKEN
+              valueFrom: {secretKeyRef: {name: forge-secrets, key: FORGE_RUNNER_REGISTRATION_TOKEN}}
+            - name: FORGE_RUNNER_LABELS
+              value: kubernetes
+            - name: FORGE_RUNNER_EXECUTOR
+              value: shell
+            - name: FORGE_RUNNER_SLOTS
+              value: "1"
+            - name: FORGE_RUNNER_WORKDIR
+              value: /work
+            - name: FORGE_RUNNER_DRAIN_SECS
+              value: "600"
+            - name: RUST_LOG
+              value: forge=info
+          resources:
+            requests: {cpu: 250m, memory: 256Mi}
+            limits: {cpu: "2", memory: 2Gi, ephemeral-storage: 8Gi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          volumeMounts:
+            - {name: work, mountPath: /work}
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - name: work
+          emptyDir: {sizeLimit: 8Gi}
+        - name: tmp
+          emptyDir: {sizeLimit: 1Gi}

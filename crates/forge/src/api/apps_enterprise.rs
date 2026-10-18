@@ -94,13 +94,13 @@ fn ent_installation(s: &AppState, inst: &InstallationRow, app: &apps::AppRow, or
 async fn list(State(s): State<AppState>, uri: OriginalUri, AuthUser(u): AuthUser, Path((e, org)): Path<(String, String)>, Query(p): Query<PageParams>) -> ApiResult<Paged> {
     check(&e, &u)?;
     let o = crate::orgs::org_by_login(&s, &org).await?;
-    let rows: Vec<InstallationRow> = sqlx::query_as("SELECT * FROM app_installations WHERE target_id = $1 ORDER BY id LIMIT $2 OFFSET $3")
+    let rows: Vec<InstallationRow> = sqlx::query_as("SELECT * FROM app_installations WHERE target_id = $1 AND app_id NOT IN (SELECT id FROM apps WHERE slug = 'github-actions') ORDER BY id LIMIT $2 OFFSET $3")
         .bind(o.id)
         .bind(p.limit())
         .bind(p.offset())
         .fetch_all(&s.db)
         .await?;
-    let total: i64 = sqlx::query_scalar("SELECT count(*) FROM app_installations WHERE target_id = $1").bind(o.id).fetch_one(&s.db).await?;
+    let total: i64 = sqlx::query_scalar("SELECT count(*) FROM app_installations WHERE target_id = $1 AND app_id NOT IN (SELECT id FROM apps WHERE slug = 'github-actions')").bind(o.id).fetch_one(&s.db).await?;
     let mut items = Vec::new();
     for r in &rows {
         let app = apps::app_by_id(&s.db, r.app_id).await?;

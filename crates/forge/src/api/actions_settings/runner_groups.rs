@@ -42,8 +42,9 @@ pub struct RunnerInfo {
 /// return its runners for the owner (id + `runner` JSON); runner-group membership, listing and
 /// validation here then work unchanged. Until then no runner is registered at org/enterprise
 /// level, so adding a runner to a group answers 404.
-pub async fn registered_runners(_s: &AppState, _owner_kind: &str, _owner_id: i64) -> ApiResult<Vec<RunnerInfo>> {
-    Ok(vec![])
+pub async fn registered_runners(s: &AppState, owner_kind: &str, owner_id: i64) -> ApiResult<Vec<RunnerInfo>> {
+    // runner area: the registry lives in `actions_runners`.
+    Ok(crate::api::runner_runners::runners_for_owner(s, owner_kind, owner_id).await?.into_iter().map(|(id, json)| RunnerInfo { id, json }).collect())
 }
 
 // ---------------------------------------------------------------------------------------------

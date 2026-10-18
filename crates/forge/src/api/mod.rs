@@ -13,6 +13,8 @@ pub mod meta;
 pub mod pulls;
 pub mod actions;
 pub mod actions_secrets;
+pub mod runner_misc;
+pub mod runner_runners;
 pub mod apps_core;
 pub mod apps_enterprise;
 pub mod apps_forge;
@@ -137,6 +139,8 @@ pub fn routes() -> Router<AppState> {
         .merge(checks::routes())
         .merge(review_reactions::routes())
         .merge(actions_secrets::routes())
+        .merge(runner_runners::routes())
+        .merge(runner_misc::routes())
         .merge(ref_dispatch::routes())
         .merge(apps_core::routes())
         .merge(apps_oauth::routes())

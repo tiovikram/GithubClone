@@ -23,6 +23,7 @@ pub mod orgs;
 pub mod packages;
 pub mod ssh;
 pub mod pulls;
+pub mod runner;
 pub mod security;
 pub mod protection;
 pub mod signed_url;
@@ -97,6 +98,9 @@ pub fn app(state: AppState) -> Router {
         .route("/healthz", get(|| async { "ok" }))
         .route("/readyz", get(readyz))
         .merge(git::http::routes())
+        .merge(runner::protocol::routes())
+        .merge(api::actions::download_routes())
+        .merge(api::runner_runners::download_routes())
         .merge(api::branches::web_routes())
         .merge(api::repos_pages::web_routes())
         .merge(api::activity_extra::web_routes())

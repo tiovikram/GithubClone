@@ -15,6 +15,10 @@ working on it. Change it deliberately.
 ## Process layout
 One binary, `forge` (crate `forge` in `crates/forge`):
 - `forge serve` — HTTP server (REST, GraphQL, git smart HTTP, web UI). Stateless.
+- `forge runner` — GitHub Actions runner (separate process/pod; registers with a registration
+  token, long-polls `/api/forge/runner/acquire`, runs jobs with the shell or docker executor).
+  Jobs never run inside `serve`; `serve` only plans them (and runs the cron scheduler under an
+  advisory lock). See docs/deploy.md (runners) and docs/security.md (Actions).
 - `forge migrate` — run SQL migrations (also run automatically on `serve` unless `FORGE_SKIP_MIGRATIONS=1`).
 - `forge admin create-user --login L --password P [--admin]`, `forge admin create-token --login L`.
 

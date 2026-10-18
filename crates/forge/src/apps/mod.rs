@@ -874,7 +874,8 @@ pub async fn apps_installed_on(db: &PgPool, repo: &db::Repo) -> ApiResult<Vec<Ap
 pub async fn installations_for_user(db: &PgPool, u: &User) -> ApiResult<Vec<InstallationRow>> {
     Ok(sqlx::query_as(
         "SELECT i.* FROM app_installations i
-          WHERE i.target_id = $1 OR i.target_id IN (SELECT org_id FROM org_members WHERE user_id = $1)
+          WHERE (i.target_id = $1 OR i.target_id IN (SELECT org_id FROM org_members WHERE user_id = $1))
+            AND i.app_id NOT IN (SELECT id FROM apps WHERE slug = 'github-actions')
           ORDER BY i.id",
     )
     .bind(u.id)

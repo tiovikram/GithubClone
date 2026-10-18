@@ -1,4 +1,4 @@
-//! Actions without a runner: workflow enable/disable, dispatched runs (queued until cancelled),
+//! Actions with no runner attached: workflow enable/disable, dispatched runs (queued until cancelled),
 //! run cancel/rerun/delete, and secrets/variables for repositories and environments.
 mod common;
 
@@ -16,8 +16,8 @@ async fn setup(s: &TestServer) -> (TestUser, String, i64) {
     let u = s.user().await;
     let repo = s.create_repo(&u, true).await;
     let rp = format!("/repos/{}/{}", u.login, repo);
-    put_file(s, &u, &rp, ".github/workflows/ci.yml", "name: CI\non:\n  push:\n  workflow_dispatch:\njobs: {}\n").await;
-    put_file(s, &u, &rp, ".github/workflows/push-only.yml", "name: Push only\non: push\njobs: {}\n").await;
+    put_file(s, &u, &rp, ".github/workflows/ci.yml", "name: CI\non:\n  push:\n  workflow_dispatch:\njobs:\n  b:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n").await;
+    put_file(s, &u, &rp, ".github/workflows/push-only.yml", "name: Push only\non: push\njobs:\n  b:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n").await;
     let (st, wfs) = s.call(Some(&u), "GET", &format!("{rp}/actions/workflows"), None).await;
     assert_eq!(st, 200);
     assert_eq!(wfs["total_count"], 2, "{wfs}");
@@ -62,7 +62,8 @@ async fn workflow_state_dispatch_and_run_lifecycle() {
     assert_eq!(st, 200);
     assert_eq!(runs["total_count"], 2, "{runs}");
     let run = &runs["workflow_runs"][0];
-    assert_eq!(run["run_number"], 2);
+    // run numbers also count the two push runs (both workflow files trigger ci.yml on push)
+    assert_eq!(run["run_number"], 4);
     assert_eq!(run["status"], "queued");
     assert_eq!(run["event"], "workflow_dispatch");
     assert_eq!(run["name"], "CI");
@@ -71,13 +72,15 @@ async fn workflow_state_dispatch_and_run_lifecycle() {
     assert_eq!(run["actor"]["login"], u.login.as_str());
     let id = run["id"].as_i64().unwrap();
     let (_, per_wf) = s.call(Some(&u), "GET", &format!("{rp}/actions/workflows/{ci}/runs"), None).await;
-    assert_eq!(per_wf["total_count"], 2);
+    assert_eq!(per_wf["total_count"], 4, "2 push + 2 dispatch runs");
     let (_, none) = s.call(Some(&u), "GET", &format!("{rp}/actions/runs?status=success"), None).await;
     assert_eq!(none["total_count"], 0);
 
-    // Jobs/artifacts are validly empty; logs don't exist.
+    // One queued job (no runner picks it up); no artifacts or logs yet.
     let (st, jobs) = s.call(Some(&u), "GET", &format!("{rp}/actions/runs/{id}/jobs"), None).await;
-    assert_eq!((st, jobs["total_count"].clone()), (200, json!(0)));
+    assert_eq!((st, jobs["total_count"].clone(), jobs["jobs"][0]["status"].clone()), (200, json!(1), json!("queued")));
+    let (st, _) = s.call(Some(&u), "GET", &format!("{rp}/actions/runs/{id}/logs"), None).await;
+    assert_eq!(st, 404);
     let (st, arts) = s.call(Some(&u), "GET", &format!("{rp}/actions/runs/{id}/artifacts"), None).await;
     assert_eq!((st, arts["total_count"].clone()), (200, json!(0)));
 

@@ -125,6 +125,8 @@ pub async fn enqueue_event_ctx(state: &AppState, ctx: &RepoCtx, event: &str, mut
                 .or_insert_with(|| crate::json::user::org_simple(&state.api_url(), state.base_url(), &ctx.owner));
         }
     }
+    // runner: workflows triggered by this event (push, pull_request, issues, release, ...)
+    crate::runner::trigger::on_event(state, ctx, event, &payload).await;
     let hooks: Vec<HookRow> = sqlx::query_as(
         "SELECT * FROM webhooks WHERE active AND (repo_id = $1 OR org_id = $2)
             AND (events && ARRAY[$3, '*']::text[])",
