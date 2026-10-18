@@ -1,4 +1,4 @@
-import { NavLink, useLocation, useParams } from "react-router-dom";
+import { NavLink, useParams } from "react-router-dom";
 import { groupSections } from "../areas";
 import type { SettingsSection } from "../areas/types";
 import { NotFoundView } from "./common";
@@ -40,18 +40,19 @@ export function SettingsSidebar<C>({ root, sections, ctx, label = "Settings", ac
 }
 
 /** A complete settings page: sidebar + the section matched by the route splat. */
-export function SettingsShell<C>({ root, sections, ctx, label, container = true }: {
+export function SettingsShell<C>({ root, sections, ctx, label, container = true, splat: splatProp }: {
   root: string;
   sections: SettingsSection<C>[];
   ctx: C;
   label?: string;
   /** Wrap in `.container` (top-level pages) or not (inside the repository layout). */
   container?: boolean;
+  /** Path below `root` (defaults to the route splat). */
+  splat?: string;
 }) {
-  const { "*": star } = useParams();
-  const { pathname } = useLocation();
-  // Two-segment URLs (`/settings/apps`) are matched by explicit routes without a splat.
-  const splat = star ?? (pathname.startsWith(`${root}/`) ? pathname.slice(root.length + 1) : "");
+  const params = useParams();
+  // `settings/*` routes give the splat; `settings/:section` routes only the single segment
+  const splat = splatProp ?? params["*"] ?? params.section ?? "";
   const section = pickSection(sections, ctx, splat);
   const El = section?.element;
   return (

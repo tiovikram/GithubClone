@@ -152,6 +152,12 @@ pub async fn create_repo(state: &AppState, owner: &User, creator: &User, req: Cr
     let ctx = RepoCtx { repo, owner: owner.clone(), perm: Perm::Admin };
     // advsec: default code security configuration for new org repositories.
     crate::advsec::code_security::on_repo_created(state, &ctx).await;
+    // GitHub records a CreateEvent (ref_type "repository") in the creator's activity.
+    let _ = crate::activity::record(state, "CreateEvent", Some(creator.id), Some(&ctx), serde_json::json!({
+        "ref": null, "ref_type": "repository", "master_branch": ctx.repo.default_branch,
+        "description": ctx.repo.description, "pusher_type": "user",
+    }))
+    .await;
     Ok(ctx)
 }
 

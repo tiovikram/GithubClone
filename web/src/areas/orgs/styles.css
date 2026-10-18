@@ -1,0 +1,67 @@
+/* orgs area — organization header, profile, people, teams, settings. Uses the core tokens. */
+.org-header { border-bottom: 1px solid var(--border); background: var(--bg); }
+.org-header-inner { padding-top: 24px; }
+.org-title { display: flex; gap: 16px; align-items: flex-start; min-width: 0; }
+.org-title .avatar { border-radius: var(--radius); flex: none; }
+.org-title-text { min-width: 0; }
+.org-name { margin: 0 0 4px; overflow-wrap: anywhere; }
+.org-desc { margin: 0 0 6px; overflow-wrap: anywhere; }
+.org-details { display: flex; flex-wrap: wrap; gap: 4px 16px; list-style: none; margin: 0; padding: 0; }
+.org-details li { overflow-wrap: anywhere; }
+.org-tabs { margin: 16px 0 0; border-bottom: 0; overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; }
+.org-tabs .tabnav-tab { white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }
+.org-body { padding-top: 24px; padding-bottom: 40px; }
+.org-body > .settings-layout, .org-header + .settings-layout { padding-top: 24px; }
+
+.org-overview { display: grid; gap: 24px; }
+@media (min-width: 768px) { .org-overview { grid-template-columns: minmax(0, 1fr) 280px; } }
+.org-overview-main { min-width: 0; }
+.org-pinned { list-style: none; margin: 0 0 24px; padding: 0; display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 544px) { .org-pinned { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.org-pinned-card { margin: 0; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.org-pinned-title { display: flex; align-items: center; gap: 6px; font-weight: 600; min-width: 0; }
+.org-pinned-title a { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.org-pinned-card p { margin: 0; flex: 1; overflow-wrap: anywhere; }
+.org-overview-repos-head { margin-bottom: 8px; }
+.org-overview-repos-head h2 { margin: 0; }
+.org-avatars { display: flex; flex-wrap: wrap; gap: 6px; }
+.org-avatars .avatar { border-radius: 50%; }
+.org-langs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.org-repo-filters .input.grow { min-width: 160px; flex: 1; }
+
+.org-people { display: grid; gap: 24px; }
+@media (min-width: 768px) { .org-people { grid-template-columns: 220px minmax(0, 1fr); } }
+.org-people-main { min-width: 0; }
+.org-person { align-items: center; flex-wrap: wrap; }
+.org-person .grow { min-width: 0; overflow-wrap: anywhere; }
+.org-person-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.org-invite { margin-bottom: 16px; }
+
+.org-team-head h2 { margin: 4px 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.org-narrow { max-width: 780px; }
+
+.org-settings-title { margin-top: 0; padding-bottom: 8px; border-bottom: 1px solid var(--border-muted); }
+.org-settings-section h3.h5 { margin: 16px 0 4px; }
+.org-settings-section h3.h5:first-child { margin-top: 0; }
+.org-settings-profile { display: flex; gap: 24px; flex-wrap: wrap-reverse; }
+.org-settings-profile > .grow { flex: 1 1 280px; min-width: 0; }
+.org-settings-avatar .avatar { border-radius: var(--radius); }
+.danger-zone > .box-body + .box-body { border-top: 1px solid var(--border-muted); }
+.org-perm-list { max-height: 260px; overflow: auto; border: 1px solid var(--border-muted); border-radius: var(--radius); padding: 8px; margin-top: 8px;
+  display: flex; flex-direction: column; gap: 4px; }
+.org-perm-list code { overflow-wrap: anywhere; }
+.org-role-row { flex-wrap: wrap; }
+.org-assignments { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 16px; }
+.org-assignments li { display: inline-flex; align-items: center; gap: 4px; }
+.org-audit-row { flex-wrap: wrap; }
+.org-audit-row .grow { min-width: 0; overflow-wrap: anywhere; }
+.org-audit-action { background: var(--neutral-muted); border-radius: var(--radius); padding: 0 4px; font-size: 12px; }
+
+.org-invitation-box { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.org-invitation-box .avatar { border-radius: var(--radius); }
+.org-invitation-actions { justify-content: center; display: flex; gap: 8px; flex-wrap: wrap; }
+
+@media (max-width: 543px) {
+  .org-title .avatar { width: 48px; height: 48px; }
+  .org-person-actions { width: 100%; }
+}

@@ -38,8 +38,28 @@ pub async fn repo_counts(state: &AppState, user_id: i64) -> ApiResult<(i64, i64)
 }
 
 async fn get_me(State(s): State<AppState>, AuthUser(u): AuthUser) -> ApiResult<Json<Value>> {
-    let (public, private) = repo_counts(&s, u.id).await?;
-    Ok(Json(json::user::private(&s.api_url(), s.base_url(), &u, public, private)))
+    Ok(Json(me_json(&s, &u).await?))
+}
+
+/// `private-user` JSON with the counters and fields that need extra queries (followers,
+/// following, gists, hireable).
+pub async fn me_json(s: &AppState, u: &User) -> ApiResult<Value> {
+    let (public, private) = repo_counts(s, u.id).await?;
+    let mut v = json::user::private(&s.api_url(), s.base_url(), u, public, private);
+    let (followers, following) = super::social::follow_counts(&s.db, u.id).await?;
+    let (pub_gists, priv_gists, hireable): (i64, i64, Option<bool>) = sqlx::query_as(
+        "SELECT (SELECT count(*) FROM gists WHERE owner_id = $1 AND public), (SELECT count(*) FROM gists WHERE owner_id = $1 AND NOT public),
+                (SELECT hireable FROM users WHERE id = $1)",
+    )
+    .bind(u.id)
+    .fetch_one(&s.db)
+    .await?;
+    v["followers"] = json!(followers);
+    v["following"] = json!(following);
+    v["public_gists"] = json!(pub_gists);
+    v["private_gists"] = json!(priv_gists);
+    v["hireable"] = json!(hireable);
+    Ok(v)
 }
 
 #[derive(Deserialize)]
@@ -51,9 +71,20 @@ struct PatchMe {
     company: Option<String>,
     location: Option<String>,
     bio: Option<String>,
+    hireable: Option<bool>,
 }
 
 async fn patch_me(State(s): State<AppState>, AuthUser(u): AuthUser, Json(p): Json<PatchMe>) -> ApiResult<Json<Value>> {
+    // Changing the primary address keeps the old one as an additional address.
+    if let Some(new) = p.email.as_deref().filter(|e| !e.is_empty()) {
+        if let Some(old) = u.email.as_deref().filter(|o| !o.is_empty() && !o.eq_ignore_ascii_case(new)) {
+            sqlx::query("INSERT INTO user_emails (user_id, email) VALUES ($1, $2) ON CONFLICT DO NOTHING").bind(u.id).bind(old).execute(&s.db).await?;
+        }
+        sqlx::query("DELETE FROM user_emails WHERE user_id = $1 AND lower(email) = lower($2)").bind(u.id).bind(new).execute(&s.db).await?;
+    }
+    if let Some(h) = p.hireable {
+        sqlx::query("UPDATE users SET hireable = $2 WHERE id = $1").bind(u.id).bind(h).execute(&s.db).await?;
+    }
     let u: User = sqlx::query_as(
         "UPDATE users SET name = COALESCE($2, name), email = COALESCE($3, email), blog = COALESCE($4, blog),
             twitter_username = COALESCE($5, twitter_username), company = COALESCE($6, company),
@@ -70,8 +101,7 @@ async fn patch_me(State(s): State<AppState>, AuthUser(u): AuthUser, Json(p): Jso
     .bind(p.bio)
     .fetch_one(&s.db)
     .await?;
-    let (public, private) = repo_counts(&s, u.id).await?;
-    Ok(Json(json::user::private(&s.api_url(), s.base_url(), &u, public, private)))
+    Ok(Json(me_json(&s, &u).await?))
 }
 
 #[allow(dead_code)]
@@ -138,7 +168,15 @@ async fn get_user(State(s): State<AppState>, Path(login): Path<String>) -> ApiRe
     }
     let (public, _) = repo_counts(&s, u.id).await?;
     let (followers, following) = super::social::follow_counts(&s.db, u.id).await?;
-    Ok(Json(json::user::public(&s.api_url(), s.base_url(), &u, public, followers, following)))
+    let mut v = json::user::public(&s.api_url(), s.base_url(), &u, public, followers, following);
+    let (gists, hireable): (i64, Option<bool>) =
+        sqlx::query_as("SELECT (SELECT count(*) FROM gists WHERE owner_id = $1 AND public), (SELECT hireable FROM users WHERE id = $1)")
+            .bind(u.id)
+            .fetch_one(&s.db)
+            .await?;
+    v["public_gists"] = json!(gists);
+    v["hireable"] = json!(hireable);
+    Ok(Json(v))
 }
 
 pub async fn org_json(s: &AppState, o: &User) -> ApiResult<Value> {
@@ -183,15 +221,42 @@ async fn get_org(State(s): State<AppState>, MaybeUser(viewer): MaybeUser, Path(o
     crate::orgs::org_full_json(&s, &o, viewer.as_ref()).await.map(Json)
 }
 
-async fn org_members(State(s): State<AppState>, uri: OriginalUri, Path(org): Path<String>, Query(p): Query<PageParams>) -> ApiResult<Paged> {
+#[derive(Deserialize, Default)]
+struct MembersQuery {
+    role: Option<String>,
+    filter: Option<String>,
+}
+
+/// Members of an organization. `role` = all | admin | member. Like GitHub, only members (and
+/// site admins) see concealed members; everyone else gets the public members.
+async fn org_members(State(s): State<AppState>, uri: OriginalUri, viewer: MaybeUser, Path(org): Path<String>, Query(p): Query<PageParams>, Query(q): Query<MembersQuery>) -> ApiResult<Paged> {
     let o = db::user_by_login(&s.db, &org).await?;
+    let role = match q.role.as_deref() {
+        None | Some("all") => None,
+        Some("admin") => Some("admin"),
+        Some("member") => Some("member"),
+        Some(_) => return Err(ApiError::validation("Member", "role", "invalid")),
+    };
+    if !matches!(q.filter.as_deref(), None | Some("all") | Some("2fa_disabled") | Some("2fa_insecure")) {
+        return Err(ApiError::validation("Member", "filter", "invalid"));
+    }
+    let insider = match &viewer.0 {
+        Some(v) => crate::orgs::is_member(&s.db, &o, v).await?,
+        None => false,
+    };
+    // forge has no 2FA, so the 2FA filters match nobody
+    let none = q.filter.as_deref().is_some_and(|f| f != "all");
     let users: Vec<User> = sqlx::query_as(
         "SELECT u.* FROM org_members m JOIN users u ON u.id = m.user_id WHERE m.org_id = $1
+            AND ($4::text IS NULL OR m.role = $4) AND ($5 OR m.public) AND NOT $6
           ORDER BY u.id LIMIT $2 OFFSET $3",
     )
     .bind(o.id)
     .bind(p.limit())
     .bind(p.offset())
+    .bind(role)
+    .bind(insider)
+    .bind(none)
     .fetch_all(&s.db)
     .await?;
     let items = users.iter().map(|u| json::user::simple(&s.api_url(), s.base_url(), u)).collect();

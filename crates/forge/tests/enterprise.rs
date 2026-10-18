@@ -588,3 +588,118 @@ async fn repository_invitations_site_setting() {
     let (_, v) = s.call(Some(&a), "GET", "/manage/v1/config/settings", None).await;
     assert_eq!(v["repository_invitations"]["enabled"], false);
 }
+
+/// Request against the forge-only API (`/api/forge`), with the CSRF header a browser sends.
+async fn forge_call(s: &TestServer, u: Option<&TestUser>, method: &str, path: &str, body: Option<Value>) -> (u16, Value) {
+    let mut req = s.client().request(method.parse().unwrap(), format!("{}/api/forge{path}", s.base)).header("X-Forge-CSRF", "1");
+    if let Some(u) = u {
+        req = req.header("Authorization", format!("token {}", u.token));
+    }
+    if let Some(b) = body {
+        req = req.json(&b);
+    }
+    let res = req.send().await.unwrap();
+    let st = res.status().as_u16();
+    let text = res.text().await.unwrap();
+    (st, serde_json::from_str(&text).unwrap_or(Value::String(text)))
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn web_admin_listings_details_and_password_reset() {
+    let _g = MAINT.read().await;
+    let s = TestServer::start().await;
+    let a = admin(&s).await;
+    let u = s.user().await;
+    let repo = s.create_repo(&u, true).await;
+    for p in ["/admin/users".to_string(), format!("/admin/users/{}", u.login), "/admin/orgs".into(), "/admin/repos".into(), "/admin/info".into()] {
+        let (st, _) = forge_call(&s, Some(&u), "GET", &p, None).await;
+        assert_eq!(st, 403, "GET {p} as non-admin");
+    }
+    // search + filters
+    let (st, v) = forge_call(&s, Some(&a), "GET", &format!("/admin/users?q={}", u.login), None).await;
+    assert_eq!(st, 200, "{v}");
+    assert_eq!(v["total_count"], 1, "{v}");
+    assert_eq!(v["items"][0]["login"], u.login.as_str());
+    assert_eq!(v["items"][0]["suspended_at"], Value::Null);
+    let (st, _) = s.call(Some(&a), "PUT", &format!("/users/{}/suspended", u.login), Some(json!({"reason": "spam"}))).await;
+    assert_eq!(st, 204);
+    let (_, v) = forge_call(&s, Some(&a), "GET", &format!("/admin/users?filter=suspended&q={}", u.login), None).await;
+    assert_eq!(v["total_count"], 1, "{v}");
+    assert_eq!(v["items"][0]["suspension_reason"], "spam");
+    let (_, v) = forge_call(&s, Some(&a), "GET", &format!("/admin/users?filter=active&q={}", u.login), None).await;
+    assert_eq!(v["total_count"], 0, "{v}");
+    let (st, _) = s.call(Some(&a), "DELETE", &format!("/users/{}/suspended", u.login), Some(json!({}))).await;
+    assert_eq!(st, 204);
+    let (st, _) = forge_call(&s, Some(&a), "GET", "/admin/users?filter=bogus", None).await;
+    assert_eq!(st, 422);
+    // details
+    let (st, d) = forge_call(&s, Some(&a), "GET", &format!("/admin/users/{}", u.login), None).await;
+    assert_eq!(st, 200, "{d}");
+    assert!(d["repositories"].as_array().unwrap().iter().any(|r| r["name"] == repo.as_str()), "{d}");
+    assert_eq!(d["tokens"].as_array().unwrap().len(), 1, "{d}");
+    assert!(d["emails"].as_array().unwrap().iter().any(|e| e == &json!(format!("{}@example.com", u.login))), "{d}");
+    // repos and orgs
+    let (_, v) = forge_call(&s, Some(&a), "GET", &format!("/admin/repos?q={}/{repo}", u.login), None).await;
+    assert_eq!(v["total_count"], 1, "{v}");
+    assert_eq!(v["items"][0]["full_name"], format!("{}/{repo}", u.login));
+    let org = unique("o");
+    let (st, _) = s.call(Some(&a), "POST", "/admin/organizations", Some(json!({"login": org, "admin": u.login}))).await;
+    assert_eq!(st, 201);
+    let (_, v) = forge_call(&s, Some(&a), "GET", &format!("/admin/orgs?q={org}"), None).await;
+    assert_eq!(v["items"][0]["owners"], 1, "{v}");
+    // a password set by an admin lets an admin-created (passwordless) user sign in
+    let newbie = unique("n");
+    let (st, _) = s.call(Some(&a), "POST", "/admin/users", Some(json!({"login": newbie, "email": format!("{newbie}@example.com")}))).await;
+    assert_eq!(st, 201);
+    let (_, d) = forge_call(&s, Some(&a), "GET", &format!("/admin/users/{newbie}"), None).await;
+    assert_eq!(d["has_password"], false, "{d}");
+    let (st, _) = forge_call(&s, Some(&a), "PUT", &format!("/admin/users/{newbie}/password"), Some(json!({"password": "short"}))).await;
+    assert_eq!(st, 422);
+    let (st, _) = forge_call(&s, Some(&u), "PUT", &format!("/admin/users/{newbie}/password"), Some(json!({"password": "brand-new-pass"}))).await;
+    assert_eq!(st, 403);
+    let (st, _) = forge_call(&s, Some(&a), "PUT", &format!("/admin/users/{newbie}/password"), Some(json!({"password": "brand-new-pass"}))).await;
+    assert_eq!(st, 204);
+    let (st, v) = forge_call(&s, None, "POST", "/session", Some(json!({"login": newbie, "password": "brand-new-pass"}))).await;
+    assert_eq!(st, 200, "{v}");
+    let (_, log) = s.call(Some(&a), "GET", &format!("/enterprises/forge/audit-log?phrase=action:user.reset_password+user:{newbie}"), None).await;
+    assert_eq!(log.as_array().map(Vec::len), Some(1), "{log}");
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn maintenance_status_endpoint_and_spa_shell() {
+    let _g = MAINT.write().await;
+    let s = TestServer::start().await;
+    let a = admin(&s).await;
+    let u = s.user().await;
+    let (st, v) = forge_call(&s, Some(&u), "GET", "/maintenance", None).await;
+    assert_eq!(st, 200, "{v}");
+    assert_eq!(v["status"], "off");
+    let (st, _) = s.call(Some(&a), "POST", "/manage/v1/maintenance", Some(json!({"enabled": true, "maintenance_mode_message": "upgrading"}))).await;
+    assert_eq!(st, 200);
+    // the status endpoint stays reachable and tells the SPA what to show
+    let (st, v) = forge_call(&s, Some(&u), "GET", "/maintenance", None).await;
+    assert_eq!(st, 200, "{v}");
+    assert_eq!(v["status"], "on");
+    assert_eq!(v["active"], true);
+    assert_eq!(v["message"], "upgrading");
+    assert_eq!(v["bypass"], false);
+    let (_, v) = forge_call(&s, Some(&a), "GET", "/maintenance", None).await;
+    assert_eq!(v["bypass"], true);
+    // browser navigations get the web UI shell (with 503); API and git clients the JSON 503
+    let res = s.client().get(format!("{}/{}", s.base, u.login)).header("Accept", "text/html,application/xhtml+xml").send().await.unwrap();
+    assert_eq!(res.status(), 503);
+    let ct = res.headers().get("content-type").and_then(|h| h.to_str().ok()).unwrap_or("").to_string();
+    assert!(!ct.starts_with("application/json"), "{ct}");
+    let res = s.client().get(format!("{}/api/v3/user", s.base)).header("Accept", "text/html").header("Authorization", format!("token {}", u.token)).send().await.unwrap();
+    assert_eq!(res.status(), 503);
+    let body: Value = res.json().await.unwrap();
+    assert_eq!(body["message"], "upgrading");
+    let res = s.client().get(format!("{}/{}/x.git/info/refs?service=git-upload-pack", s.base, u.login)).header("Accept", "text/html").send().await.unwrap();
+    assert_eq!(res.status(), 503);
+    let ct = res.headers().get("content-type").and_then(|h| h.to_str().ok()).unwrap_or("").to_string();
+    assert!(ct.starts_with("application/json"), "{ct}");
+    let (st, _) = s.call(Some(&a), "POST", "/manage/v1/maintenance", Some(json!({"enabled": false}))).await;
+    assert_eq!(st, 200);
+    let (_, v) = forge_call(&s, Some(&u), "GET", "/maintenance", None).await;
+    assert_eq!(v["status"], "off");
+}

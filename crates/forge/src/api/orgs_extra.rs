@@ -82,10 +82,37 @@ struct MembershipsQuery {
     per_page: Option<i64>,
 }
 
+/// A pending membership (an invitation not yet accepted), as GitHub reports it.
+fn pending_json(s: &AppState, org: &User, user: &User, role: &str) -> Value {
+    let mut v = membership_json(s, org, user, role);
+    v["state"] = json!("pending");
+    v["permissions"] = json!({ "can_create_repository": false });
+    v
+}
+
 async fn my_memberships(State(s): State<AppState>, uri: OriginalUri, AuthUser(u): AuthUser, Query(q): Query<MembershipsQuery>) -> ApiResult<Paged> {
     let p = PageParams { page: q.page, per_page: q.per_page };
-    if q.state.as_deref() == Some("pending") {
-        return Ok(Paged::new(&uri, &s, p, Some(0), vec![]));
+    match q.state.as_deref() {
+        None | Some("active") | Some("pending") => {}
+        Some(_) => return Err(ApiError::validation("Membership", "state", "invalid")),
+    }
+    let mut items = Vec::new();
+    if q.state.as_deref() != Some("active") {
+        // pending invitations first, like github.com
+        let invs = super::orgs_invitations::pending_for(&s, &u, None).await?;
+        let ids: Vec<i64> = invs.iter().map(|i| i.org_id).collect();
+        let orgs = crate::json::issue::users_by_ids(&s.db, &ids).await?;
+        let mut seen = std::collections::HashSet::new();
+        for inv in &invs {
+            if let Some(o) = orgs.get(&inv.org_id) {
+                if seen.insert(o.id) {
+                    items.push(pending_json(&s, o, &u, super::orgs_invitations::membership_role(inv)));
+                }
+            }
+        }
+        if q.state.as_deref() == Some("pending") {
+            return Ok(Paged::new(&uri, &s, p, Some(items.len() as i64), items));
+        }
     }
     let rows: Vec<(i64, String)> = sqlx::query_as("SELECT org_id, role FROM org_members WHERE user_id = $1 ORDER BY org_id LIMIT $2 OFFSET $3")
         .bind(u.id)
@@ -95,7 +122,6 @@ async fn my_memberships(State(s): State<AppState>, uri: OriginalUri, AuthUser(u)
         .await?;
     let ids: Vec<i64> = rows.iter().map(|r| r.0).collect();
     let orgs = crate::json::issue::users_by_ids(&s.db, &ids).await?;
-    let mut items = Vec::new();
     for (id, role) in &rows {
         if let Some(o) = orgs.get(id) {
             items.push(membership_json_for(&s, o, &u, role).await?);
@@ -104,10 +130,19 @@ async fn my_memberships(State(s): State<AppState>, uri: OriginalUri, AuthUser(u)
     Ok(Paged::new(&uri, &s, p, None, items))
 }
 
+/// The membership of `user` in `o`, active or pending (invited).
+async fn membership_or_pending(s: &AppState, o: &User, user: &User) -> ApiResult<Value> {
+    if let Some(role) = org_role(&s.db, o.id, user.id).await? {
+        return membership_json_for(s, o, user, &role).await;
+    }
+    let invs = super::orgs_invitations::pending_for(s, user, Some(o.id)).await?;
+    let inv = invs.first().ok_or_else(ApiError::not_found)?;
+    Ok(pending_json(s, o, user, super::orgs_invitations::membership_role(inv)))
+}
+
 async fn my_membership(State(s): State<AppState>, AuthUser(u): AuthUser, Path(org): Path<String>) -> ApiResult<Json<Value>> {
     let o = org_by_login(&s, &org).await?;
-    let role = org_role(&s.db, o.id, u.id).await?.ok_or_else(ApiError::not_found)?;
-    Ok(Json(membership_json_for(&s, &o, &u, &role).await?))
+    Ok(Json(membership_or_pending(&s, &o, &u).await?))
 }
 
 #[derive(Deserialize)]
@@ -115,16 +150,19 @@ struct StateBody {
     state: Option<String>,
 }
 
-/// Memberships are always active in forge (GHES adds members directly), so the only valid
-/// transition is to `active`.
+/// Accepts a pending invitation (`state: active`); an active membership stays active.
 async fn update_my_membership(State(s): State<AppState>, AuthUser(u): AuthUser, Path(org): Path<String>, Json(b): Json<StateBody>) -> ApiResult<Json<Value>> {
     let o = org_by_login(&s, &org).await?;
-    let role = org_role(&s.db, o.id, u.id).await?.ok_or_else(ApiError::not_found)?;
+    let current = membership_or_pending(&s, &o, &u).await?;
     match b.state.as_deref() {
         Some("active") => {}
         None => return Err(ApiError::validation("Membership", "state", "missing_field")),
         Some(_) => return Err(ApiError::validation("Membership", "state", "invalid")),
     }
+    if current["state"] == "pending" {
+        super::orgs_invitations::accept(&s, &o, &u).await?;
+    }
+    let role = org_role(&s.db, o.id, u.id).await?.ok_or_else(ApiError::not_found)?;
     Ok(Json(membership_json_for(&s, &o, &u, &role).await?))
 }
 
@@ -134,8 +172,7 @@ async fn get_membership(State(s): State<AppState>, AuthUser(u): AuthUser, Path((
         return Err(ApiError::not_found());
     }
     let target = db::user_by_login(&s.db, &login).await?;
-    let role = org_role(&s.db, o.id, target.id).await?.ok_or_else(ApiError::not_found)?;
-    Ok(Json(membership_json_for(&s, &o, &target, &role).await?))
+    Ok(Json(membership_or_pending(&s, &o, &target).await?))
 }
 
 #[derive(Deserialize)]
@@ -158,6 +195,9 @@ pub async fn set_org_membership(s: &AppState, org: &User, actor: &User, user: &U
         return Err(ApiError::validation("Membership", "role", "invalid"));
     }
     let prev = org_role(&s.db, org.id, user.id).await?;
+    if prev.is_none() && super::orgs_invitations::is_blocked(&s.db, org.id, user.id).await? {
+        return Err(ApiError::unprocessable("This user is blocked by the organization."));
+    }
     if prev.as_deref() == Some("admin") && role == "member" && other_owners(s, org, user.id).await? == 0 {
         return Err(ApiError::forbidden("Cannot demote the last owner of an organization."));
     }
@@ -165,6 +205,12 @@ pub async fn set_org_membership(s: &AppState, org: &User, actor: &User, user: &U
         .bind(org.id)
         .bind(user.id)
         .bind(role)
+        .execute(&s.db)
+        .await?;
+    // a direct add supersedes pending invitations
+    sqlx::query("DELETE FROM org_invitations WHERE org_id = $1 AND invitee_id = $2 AND failed_at IS NULL")
+        .bind(org.id)
+        .bind(user.id)
         .execute(&s.db)
         .await?;
     if prev.as_deref() == Some(role) {

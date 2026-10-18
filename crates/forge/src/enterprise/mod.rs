@@ -479,7 +479,26 @@ fn ip_in_list(ip: std::net::IpAddr, list: &[String]) -> bool {
 /// Paths that stay reachable during maintenance: health checks, the management API (so admins
 /// can turn maintenance off) and the session endpoint (so admins can sign in).
 fn maintenance_exempt(path: &str) -> bool {
-    matches!(path, "/healthz" | "/readyz" | "/api/forge/session" | "/api/forge/healthz") || path.starts_with("/api/v3/manage/")
+    matches!(path, "/healthz" | "/readyz" | "/api/forge/session" | "/api/forge/healthz" | crate::forge_admin::MAINTENANCE_STATUS_PATH)
+        || path.starts_with("/api/v3/manage/")
+}
+
+/// A browser navigation or a web UI asset (not the API, git or downloads): during maintenance
+/// it gets the SPA (with status 503 for pages), which shows the maintenance page.
+fn spa_request(req: &Parts) -> bool {
+    if !matches!(req.method, axum::http::Method::GET | axum::http::Method::HEAD) {
+        return false;
+    }
+    let path = req.uri.path();
+    if path.starts_with("/assets/") {
+        return true;
+    }
+    let html = req
+        .headers
+        .get(axum::http::header::ACCEPT)
+        .and_then(|v| v.to_str().ok())
+        .is_some_and(|a| a.split(',').any(|t| t.trim().starts_with("text/html")));
+    html && !path.starts_with("/api/") && !path.contains(".git/") && !path.ends_with(".git")
 }
 
 /// Middleware (outermost): records this pod's heartbeat and, while maintenance mode is on,
@@ -496,6 +515,15 @@ pub async fn maintenance_guard(State(state): State<AppState>, req: Request, next
     let admin = matches!(crate::auth::authenticate(&mut parts, &state).await, Ok(AuthResult::User(ref u)) if u.site_admin);
     if allowed_ip || admin {
         return next.run(Request::from_parts(parts, body)).await;
+    }
+    if spa_request(&parts) {
+        let asset = parts.uri.path().starts_with("/assets/");
+        let mut res = crate::web::spa(parts.uri.clone()).await;
+        if !asset {
+            *res.status_mut() = StatusCode::SERVICE_UNAVAILABLE;
+            res.headers_mut().insert(axum::http::header::RETRY_AFTER, axum::http::HeaderValue::from_static("60"));
+        }
+        return res;
     }
     let msg = if m.message.is_empty() { "This instance is undergoing maintenance. Please try again later.".to_string() } else { m.message };
     let mut res = (StatusCode::SERVICE_UNAVAILABLE, axum::Json(json!({ "message": msg, "documentation_url": crate::error::DOCS_URL })))

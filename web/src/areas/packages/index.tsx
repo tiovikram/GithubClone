@@ -1,6 +1,4 @@
-import { lazy, Suspense } from "react";
 import { Route } from "react-router-dom";
-import { Spinner } from "../../components/common";
 import type { Area } from "../types";
 import { AppInstallPage, AppPublicPage, AppsSection } from "./apps";
 import { PackageIcon } from "./icons";
@@ -12,10 +10,6 @@ import {
 import { PrivateRegistriesSection } from "./registries";
 import "./styles.css";
 
-// `/settings/apps` etc. would otherwise match `/:owner/:repo` (it outranks `settings/*`).
-// Loaded lazily: the core settings page imports the area registry, which imports this file.
-const LazySettings = lazy(() => import("../../pages/UserSettings").then((m) => ({ default: m.UserSettingsPage })));
-const Settings = () => <Suspense fallback={<Spinner />}><LazySettings /></Suspense>;
 
 const userRoot = { root: "/settings", isOrg: false };
 const orgOwner = (login: string) => ({ login, isOrg: true, root: `/organizations/${login}/settings` });
@@ -34,7 +28,6 @@ export const area: Area = {
       <Route path="apps/:slug/installations/new" element={<AppInstallPage step="account" />} />
       <Route path="apps/:slug/installations/new/permissions" element={<AppInstallPage step="permissions" />} />
       <Route path="login/device" element={<DevicePage />} />
-      {["packages", "installations", "apps", "applications"].map((p) => <Route key={p} path={`settings/${p}`} element={<Settings />} />)}
     </>
   ),
   repoRoutes: <Route path="packages" element={<RepoPackagesPage />} />,

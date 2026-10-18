@@ -50,6 +50,8 @@ export interface OrgCtx {
 /** Context passed to site admin sections (the admin area renders the shell). */
 export interface AdminCtx {
   user: User;
+  /** The enterprise slug for `/enterprises/{enterprise}/…` endpoints (forge models one enterprise). */
+  enterprise: string;
 }
 
 export interface MenuLink {

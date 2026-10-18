@@ -256,7 +256,7 @@ pub fn normalize_package(ecosystem: &str, name: &str) -> String {
     }
 }
 
-fn cwe_name(id: &str) -> String {
+pub(crate) fn cwe_name(id: &str) -> String {
     let known = [
         ("CWE-20", "Improper Input Validation"),
         ("CWE-22", "Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')"),
@@ -310,7 +310,7 @@ pub fn cvss3_score(vector: &str) -> Option<f64> {
     Some((raw * 10.0).ceil() / 10.0)
 }
 
-fn severity_from_score(s: f64) -> &'static str {
+pub(crate) fn severity_from_score(s: f64) -> &'static str {
     match s {
         x if x >= 9.0 => "critical",
         x if x >= 7.0 => "high",
@@ -718,6 +718,50 @@ pub fn global_json(s: &AppState, a: &AdvisoryRow, vulns: &[VulnRow]) -> Value {
         "cwes": a.cwes,
         "credits": [],
     })
+}
+
+/// Known vulnerabilities of dependency versions (`(dependency-graph ecosystem, name, version)`),
+/// as dependency review's `vulnerabilities` (`severity`, `advisory_ghsa_id`, `advisory_summary`,
+/// `advisory_url`), one list per input.
+pub async fn vulnerabilities_of(s: &AppState, deps: &[(&str, &str, &str)]) -> ApiResult<Vec<Vec<Value>>> {
+    let ecos: Vec<String> = deps.iter().map(|d| dep_ecosystem(d.0).to_string()).collect();
+    let names: Vec<String> = deps.iter().map(|d| normalize_package(dep_ecosystem(d.0), d.1)).collect();
+    let rows: Vec<VulnRow> = sqlx::query_as(
+        "SELECT v.* FROM advisory_vulnerabilities v JOIN advisories a ON a.id = v.advisory_id
+          WHERE a.withdrawn_at IS NULL AND v.ecosystem = ANY($1)
+            AND (lower(v.package) = ANY($2) OR lower(replace(replace(v.package, '_', '-'), '.', '-')) = ANY($2))",
+    )
+    .bind(&ecos)
+    .bind(&names)
+    .fetch_all(&s.db)
+    .await?;
+    let ids: Vec<i64> = rows.iter().map(|v| v.advisory_id).collect();
+    let advs: Vec<AdvisoryRow> = sqlx::query_as(sqlx::AssertSqlSafe(format!("SELECT {ADV_COLS} FROM advisories a WHERE a.id = ANY($1)")))
+        .bind(&ids)
+        .fetch_all(&s.db)
+        .await?;
+    Ok(deps
+        .iter()
+        .enumerate()
+        .map(|(i, d)| {
+            let version = d.2.trim().trim_start_matches(|c: char| "^~=<>! v".contains(c)).split([',', ' ']).next().unwrap_or("");
+            let mut seen = std::collections::HashSet::new();
+            rows.iter()
+                .filter(|v| v.ecosystem == ecos[i] && normalize_package(&ecos[i], &v.package) == names[i])
+                .filter(|v| !version.is_empty() && v.affects(version))
+                .filter_map(|v| advs.iter().find(|a| a.id == v.advisory_id))
+                .filter(|a| seen.insert(a.id))
+                .map(|a| {
+                    json!({
+                        "severity": alert_severity(&a.severity),
+                        "advisory_ghsa_id": a.ghsa_id,
+                        "advisory_summary": a.summary,
+                        "advisory_url": format!("{}/advisories/{}", s.base_url(), a.ghsa_id),
+                    })
+                })
+                .collect()
+        })
+        .collect())
 }
 
 /// Dependabot alert severity (no `unknown`).

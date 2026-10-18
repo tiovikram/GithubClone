@@ -565,3 +565,65 @@ async fn dependabot_secrets_are_sealed_and_decryptable() {
     assert_eq!(s.call(Some(&u), "DELETE", &format!("{rp}/dependabot/secrets/NPM_TOKEN"), None).await.0, 204);
     assert_eq!(s.call(Some(&u), "DELETE", &format!("{rp}/dependabot/secrets/NPM_TOKEN"), None).await.0, 404);
 }
+
+/// Dependency review (`dependency-graph/compare`) reports the known vulnerabilities of added
+/// versions; the web UI shows them on pull requests.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn dependency_review_reports_vulnerabilities() {
+    let s = TestServer::start().await;
+    let admin = site_admin(&s).await;
+    import_fixture(&s, &admin).await;
+    let u = s.user().await;
+    let repo = s.create_repo(&u, true).await;
+    let rp = format!("/repos/{}/{repo}", u.login);
+    let (_, main) = s.call(Some(&u), "GET", &format!("{rp}/branches/main"), None).await;
+    let base_sha = main["commit"]["sha"].as_str().unwrap().to_string();
+    let (st, _) = s.call(Some(&u), "POST", &format!("{rp}/git/refs"), Some(json!({"ref": "refs/heads/deps", "sha": base_sha}))).await;
+    assert_eq!(st, 201);
+    let pkg = json!({"dependencies": {"lodash": "4.17.15", "left-pad": "1.3.0"}});
+    let (st, _) = s
+        .call(Some(&u), "PUT", &format!("{rp}/contents/package.json"), Some(json!({"message": "deps", "branch": "deps", "content": base64_encode(&pkg.to_string())})))
+        .await;
+    assert_eq!(st, 201);
+    let (st, changes) = s.call(Some(&u), "GET", &format!("{rp}/dependency-graph/compare/main...deps"), None).await;
+    assert_eq!(st, 200, "{changes}");
+    let list = changes.as_array().unwrap();
+    let lodash = list.iter().find(|c| c["name"] == "lodash").expect("lodash added");
+    assert_eq!(lodash["change_type"], "added");
+    let v = lodash["vulnerabilities"].as_array().unwrap();
+    assert!(v.iter().any(|x| x["advisory_ghsa_id"] == "GHSA-p6mc-m468-83gw" && x["severity"] == "high"), "{lodash}");
+    let pad = list.iter().find(|c| c["name"] == "left-pad").unwrap();
+    assert_eq!(pad["vulnerabilities"].as_array().unwrap().len(), 0);
+}
+
+/// `security_and_analysis` takes GHES's delegated keys (`secret_scanning_delegated_bypass` with
+/// its reviewers, `secret_scanning_delegated_alert_dismissal`) and shows them back.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn security_and_analysis_accepts_delegated_settings() {
+    let s = TestServer::start().await;
+    let u = s.user().await;
+    let repo = s.create_repo(&u, true).await;
+    let rp = format!("/repos/{}/{repo}", u.login);
+    let (st, r) = s
+        .call(
+            Some(&u),
+            "PATCH",
+            &rp,
+            Some(json!({"security_and_analysis": {
+                "secret_scanning": {"status": "enabled"},
+                "secret_scanning_delegated_bypass": {"status": "enabled"},
+                "secret_scanning_delegated_bypass_options": {"reviewers": [{"reviewer_id": 7, "reviewer_type": "TEAM"}, {"reviewer_id": 1, "reviewer_type": "BOGUS"}]},
+                "secret_scanning_delegated_alert_dismissal": {"status": "enabled"},
+            }})),
+        )
+        .await;
+    assert_eq!(st, 200, "{r}");
+    let sa = &r["security_and_analysis"];
+    assert_eq!(sa["secret_scanning_delegated_bypass"]["status"], "enabled");
+    assert_eq!(sa["secret_scanning_delegated_alert_dismissal"]["status"], "enabled");
+    let reviewers = sa["secret_scanning_delegated_bypass_options"]["reviewers"].as_array().unwrap();
+    assert_eq!(reviewers.len(), 1);
+    assert_eq!(reviewers[0]["reviewer_id"], 7);
+    let (_, r) = s.call(Some(&u), "PATCH", &rp, Some(json!({"security_and_analysis": {"secret_scanning_delegated_bypass": {"status": "disabled"}}}))).await;
+    assert_eq!(r["security_and_analysis"]["secret_scanning_delegated_bypass"]["status"], "disabled");
+}

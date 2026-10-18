@@ -13,6 +13,7 @@ pub mod code_security;
 pub mod dependabot;
 pub mod dependabot_secrets;
 pub mod patterns;
+pub mod repo_advisories;
 pub mod requests;
 pub mod secret_scanning;
 pub mod secret_scanning_api;
@@ -37,6 +38,7 @@ pub fn routes() -> Router<AppState> {
         .merge(code_scanning::routes())
         .merge(code_security::routes())
         .merge(requests::routes())
+        .merge(repo_advisories::routes())
 }
 
 /// forge-only endpoints, mounted under `/api/forge`.
@@ -203,15 +205,30 @@ pub async fn apply_security_and_analysis(state: &AppState, ctx: &RepoCtx, v: &Va
         let product = match k.as_str() {
             "advanced_security" | "code_security" | "secret_protection" => "advanced_security",
             "secret_scanning" | "secret_scanning_push_protection" | "secret_scanning_non_provider_patterns" | "secret_scanning_validity_checks"
-            | "dependabot_security_updates" | "secret_scanning_ai_detection" => k.as_str(),
+            | "dependabot_security_updates" | "secret_scanning_ai_detection" | "secret_scanning_delegated_alert_dismissal"
+            | "secret_scanning_delegated_bypass" => k.as_str(),
             _ => continue,
+        };
+        // Reviewers of delegated bypass: `secret_scanning_delegated_bypass_options.reviewers`
+        // ([{reviewer_id, reviewer_type: TEAM|ROLE}]), stored with the product.
+        let options = if product == "secret_scanning_delegated_bypass" {
+            obj.get("secret_scanning_delegated_bypass_options").and_then(|o| o.get("reviewers")).and_then(Value::as_array).map(|rs| {
+                let list: Vec<Value> = rs
+                    .iter()
+                    .filter(|r| r.get("reviewer_id").and_then(Value::as_i64).is_some() && matches!(r.get("reviewer_type").and_then(Value::as_str), Some("TEAM" | "ROLE")))
+                    .map(|r| json!({ "reviewer_id": r["reviewer_id"], "reviewer_type": r["reviewer_type"], "mode": r.get("mode").cloned().unwrap_or(json!("ALWAYS")) }))
+                    .collect();
+                json!({ "reviewers": list })
+            })
+        } else {
+            None
         };
         let on = match setting.get("status").and_then(Value::as_str) {
             Some("enabled") => true,
             Some("disabled") => false,
             _ => return Err(ApiError::validation("Repository", "security_and_analysis", "invalid")),
         };
-        set_enabled(state, ctx.repo.id, product, on, None).await?;
+        set_enabled(state, ctx.repo.id, product, on, options).await?;
     }
     Ok(())
 }
@@ -235,6 +252,9 @@ pub async fn security_and_analysis_json(db: &PgPool, repo_id: i64) -> Value {
         "secret_scanning_validity_checks": st(get("secret_scanning_validity_checks")),
         "secret_scanning_delegated_alert_dismissal": st(get("secret_scanning_delegated_alert_dismissal")),
         "secret_scanning_delegated_bypass": st(get("secret_scanning_delegated_bypass")),
+        "secret_scanning_delegated_bypass_options": {
+            "reviewers": product_options(db, repo_id, "secret_scanning_delegated_bypass").await.get("reviewers").cloned().unwrap_or(json!([])),
+        },
     })
 }
 
