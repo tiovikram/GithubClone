@@ -75,6 +75,16 @@ pub async fn immutable_releases(s: &AppState, repo_id: i64) -> bool {
     settings(s, repo_id).await.map(|x| x.immutable_releases).unwrap_or(false)
 }
 
+/// 422 when the assets of a published release may not change (immutable releases on).
+pub async fn check_release_mutable(s: &AppState, repo_id: i64, draft: bool) -> ApiResult<()> {
+    if !draft && immutable_releases(s, repo_id).await {
+        let mut e = ApiError::unprocessable("Cannot modify assets of an immutable release.");
+        e.errors = None;
+        return Err(e);
+    }
+    Ok(())
+}
+
 async fn admin_ctx(s: &AppState, u: &User, owner: &str, repo: &str) -> ApiResult<RepoCtx> {
     let ctx = db::load_repo(&s.db, Some(u), owner, repo).await?;
     ctx.require(Perm::Admin)?;
@@ -170,14 +180,14 @@ async fn disable_lfs(State(s): State<AppState>, AuthUser(u): AuthUser, Path((o, 
 // ---------------------------------------------------------------------------------------------
 // Custom property values
 
-/// `custom-property-value` list of a repository.
-pub async fn property_values(s: &AppState, repo_id: i64) -> ApiResult<Vec<Value>> {
-    let rows: Vec<(String, Value)> =
-        sqlx::query_as("SELECT property_name, value FROM repo_custom_property_values WHERE repo_id = $1 ORDER BY property_name")
-            .bind(repo_id)
-            .fetch_all(&s.db)
-            .await?;
-    Ok(rows.into_iter().map(|(n, v)| json!({"property_name": n, "value": v})).collect())
+/// `custom-property-value` list of a repository (effective values: explicit or default).
+/// Definitions and storage belong to the orgs area (`api::orgs_props`).
+pub async fn property_values(s: &AppState, ctx: &RepoCtx) -> ApiResult<Vec<Value>> {
+    if ctx.owner.kind != "Organization" {
+        return Ok(vec![]);
+    }
+    let vals = super::orgs_props::repo_property_values(&s.db, ctx.owner.id, ctx.repo.id).await?;
+    Ok(vals.into_iter().map(|(n, v)| json!({"property_name": n, "value": v})).collect())
 }
 
 #[derive(Deserialize)]
@@ -187,54 +197,23 @@ pub struct PropertyValue {
 }
 
 /// Sets (or, with a null value, unsets) custom property values of a repository (admin).
-/// Property definitions belong to the owning organization.
-pub async fn set_property_values(s: &AppState, ctx: &RepoCtx, values: Vec<PropertyValue>) -> ApiResult<()> {
+/// Values are validated against the organization's property definitions.
+pub async fn set_property_values(s: &AppState, ctx: &RepoCtx, actor: &User, values: Vec<PropertyValue>) -> ApiResult<()> {
     ctx.require(Perm::Admin)?;
     if ctx.owner.kind != "Organization" {
         return Err(ApiError::not_found());
     }
-    let mut tx = s.db.begin().await?;
-    for (i, pv) in values.into_iter().enumerate() {
-        let name = pv.property_name.unwrap_or_default();
-        if name.is_empty() || name.len() > 75 || !name.chars().all(|c| c.is_ascii_alphanumeric() || "_-$#".contains(c)) {
-            let mut e = ApiError::validation("CustomPropertyValue", "property_name", "invalid");
-            e.errors = Some(json!([{"resource": "CustomPropertyValue", "field": "property_name", "code": "invalid", "index": i}]));
-            return Err(e);
-        }
-        match pv.value {
-            None | Some(Value::Null) => {
-                sqlx::query("DELETE FROM repo_custom_property_values WHERE repo_id = $1 AND property_name = $2")
-                    .bind(ctx.repo.id)
-                    .bind(&name)
-                    .execute(&mut *tx)
-                    .await?;
-            }
-            Some(v @ (Value::String(_) | Value::Array(_))) => {
-                if let Value::Array(a) = &v {
-                    if !a.iter().all(Value::is_string) {
-                        return Err(ApiError::validation("CustomPropertyValue", "value", "invalid"));
-                    }
-                }
-                sqlx::query(
-                    "INSERT INTO repo_custom_property_values (repo_id, property_name, value) VALUES ($1,$2,$3)
-                     ON CONFLICT (repo_id, property_name) DO UPDATE SET value = $3, updated_at = now()",
-                )
-                .bind(ctx.repo.id)
-                .bind(&name)
-                .bind(&v)
-                .execute(&mut *tx)
-                .await?;
-            }
-            Some(_) => return Err(ApiError::validation("CustomPropertyValue", "value", "invalid")),
-        }
+    let mut props = Vec::new();
+    for pv in values {
+        let name = pv.property_name.filter(|n| !n.is_empty()).ok_or_else(|| ApiError::validation("CustomPropertyValue", "property_name", "missing_field"))?;
+        props.push((name, pv.value.unwrap_or(Value::Null)));
     }
-    tx.commit().await?;
-    Ok(())
+    super::orgs_props::set_repo_property_values(s, &ctx.owner, actor, &[(ctx.repo.id, ctx.full_name())], &props).await
 }
 
 async fn get_properties(State(s): State<AppState>, MaybeUser(u): MaybeUser, Path((o, r)): Path<(String, String)>) -> ApiResult<Json<Value>> {
     let ctx = db::load_repo(&s.db, u.as_ref(), &o, &r).await?;
-    Ok(Json(Value::Array(property_values(&s, ctx.repo.id).await?)))
+    Ok(Json(Value::Array(property_values(&s, &ctx).await?)))
 }
 
 #[derive(Deserialize)]
@@ -250,7 +229,7 @@ async fn patch_properties(
 ) -> ApiResult<Response> {
     let ctx = db::load_repo(&s.db, Some(&u), &o, &r).await?;
     let props = b.properties.ok_or_else(|| ApiError::validation("Repository", "properties", "missing_field"))?;
-    set_property_values(&s, &ctx, props).await?;
+    set_property_values(&s, &ctx, &u, props).await?;
     Ok(no_content())
 }
 

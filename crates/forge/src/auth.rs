@@ -88,7 +88,7 @@ pub fn too_many_attempts() -> ApiError {
 /// Checks `login` (or email) and `password`. Failed attempts are counted per login and client
 /// address; once throttled, this returns a 429 error without checking the password.
 pub async fn user_for_password(state: &AppState, login: &str, password: &str, client: Option<std::net::IpAddr>) -> Result<Option<User>, ApiError> {
-    if crate::security::login_throttled(login, client) {
+    if crate::security::login_throttled(&state.db, login, client).await? {
         return Err(too_many_attempts());
     }
     // An exact login match wins over another account that uses the same string as its email.
@@ -106,7 +106,7 @@ pub async fn user_for_password(state: &AppState, login: &str, password: &str, cl
         .await
         .unwrap_or(false);
     let u = u.filter(|u| ok && u.password_hash.is_some());
-    crate::security::record_login(login, client, u.is_some());
+    crate::security::record_login(&state.db, login, client, u.is_some()).await?;
     Ok(u)
 }
 

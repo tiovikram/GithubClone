@@ -199,13 +199,8 @@ pub(crate) fn push_visible(qb: &mut QueryBuilder<Postgres>, viewer: Option<&User
             qb.push("TRUE");
         }
         Some(u) => {
-            qb.push("(NOT r.private OR r.owner_id = ")
-                .push_bind(u.id)
-                .push(" OR EXISTS(SELECT 1 FROM repo_collaborators vc WHERE vc.repo_id = r.id AND vc.user_id = ")
-                .push_bind(u.id)
-                .push(") OR EXISTS(SELECT 1 FROM org_members vm WHERE vm.org_id = r.owner_id AND vm.user_id = ")
-                .push_bind(u.id)
-                .push("))");
+            // The shared visibility rule (`db::readable_sql`).
+            qb.push("forge_repo_readable(r.id, ").push_bind(u.id).push(")");
         }
         None => {
             qb.push("NOT r.private");
@@ -285,6 +280,9 @@ fn push_issue_terms(qb: &mut QueryBuilder<Postgres>, terms: &[Term], viewer: Opt
 
     // Qualifiers of the same kind that GitHub ORs together.
     let repos: Vec<&Term> = terms.iter().filter(|t| t.key.as_deref() == Some("repo") && !t.negated).collect();
+    // Without a repo/owner qualifier the free text has to find its issues across the instance:
+    // see the index-driven form below.
+    let scoped = !repos.is_empty() || terms.iter().any(|t| matches!(t.key.as_deref(), Some("user" | "org" | "owner")) && !t.negated);
     if !repos.is_empty() {
         qb.push(" AND (FALSE");
         for t in repos {
@@ -461,6 +459,31 @@ fn push_issue_terms(qb: &mut QueryBuilder<Postgres>, terms: &[Term], viewer: Opt
     for word in text {
         let word = word.trim_start_matches('#');
         let pat = like_pattern(word);
+        if !scoped {
+            // Same matches as below, but each arm is answered by an index (trigram GIN on
+            // title/body/comment body, the full-text index, issues(number); migration 0970)
+            // instead of testing every visible issue.
+            qb.push(" AND i.id IN (SELECT NULL::bigint WHERE FALSE");
+            if in_title {
+                qb.push(" UNION SELECT id FROM issues WHERE title ILIKE ").push_bind(pat.clone());
+            }
+            if in_body {
+                qb.push(" UNION SELECT id FROM issues WHERE body ILIKE ").push_bind(pat.clone());
+            }
+            if in_title && in_body {
+                qb.push(" UNION SELECT id FROM issues WHERE to_tsvector('simple', title || ' ' || coalesce(body, '')) @@ plainto_tsquery('simple', ")
+                    .push_bind(word.to_string())
+                    .push(")");
+            }
+            if in_comments {
+                qb.push(" UNION SELECT issue_id FROM issue_comments WHERE body ILIKE ").push_bind(pat.clone());
+            }
+            if let Ok(n) = word.parse::<i64>() {
+                qb.push(" UNION SELECT id FROM issues WHERE number = ").push_bind(n);
+            }
+            qb.push(")");
+            continue;
+        }
         qb.push(" AND (FALSE");
         if in_title {
             qb.push(" OR i.title ILIKE ").push_bind(pat.clone());

@@ -3,13 +3,12 @@
 // scenarios (write.mjs) and before `cleanup`, using its shared state (s.rp, s.login, s.def,
 // s.org, s.collaborator, s.me). Everything created here is deleted here.
 //
-// Optional: CONF_COLLAB_TOKEN = a token of the --collaborator user. With it the scenarios also
-// act as that user (notifications need someone else's activity; gist forks need a non-owner).
+// Optional: --collaborator-token (s.collaboratorToken). With it the scenarios also act as the
+// collaborator (notifications need someone else's activity; gist forks need a non-owner).
 import { generateKeyPairSync } from 'node:crypto';
 
 const b64 = (str) => Buffer.from(str, 'utf8').toString('base64');
 const P = (s, extra = {}) => ({ ...s.rp, ...extra });
-const collabToken = process.env.CONF_COLLAB_TOKEN || '';
 
 function sshPublicKey(comment = 'conformance') {
   const { publicKey } = generateKeyPairSync('ed25519');
@@ -43,6 +42,7 @@ async function as(t, token, fn) {
   t.token = token;
   try { return await fn(); } finally { t.token = saved; }
 }
+const collabToken = (s) => s.collaboratorToken || '';
 
 async function putFile(t, s, path, content, branch, rp = s.rp) {
   const cur = await t.probe('repos/get-content', { params: { ...rp, path }, query: branch ? { ref: branch } : {} });
@@ -120,8 +120,12 @@ export const scenarios = [
       const or = await orgRepo(t, s);
       if (or) {
         const rp = { owner: or.owner, repo: or.repo };
-        await t.call('repos/custom-properties-for-repos-create-or-update-repository-values', { params: rp, body: { properties: [{ property_name: 'team', value: 'forge' }] } });
+        // Values must match an organization property definition (orgs area).
+        const prop = `conf_${s.runId}`;
+        await t.probe('orgs/custom-properties-for-repos-create-or-update-organization-definition', { params: { org: s.org, custom_property_name: prop }, body: { value_type: 'string' } });
+        await t.call('repos/custom-properties-for-repos-create-or-update-repository-values', { params: rp, body: { properties: [{ property_name: prop, value: 'forge' }] } });
         await t.call('repos/custom-properties-for-repos-get-repository-values', { params: rp, minItems: 1 });
+        await t.probe('orgs/custom-properties-for-repos-delete-organization-definition', { params: { org: s.org, custom_property_name: prop } });
         await t.call('repos/list-teams', { params: rp });
       }
       await t.call('repos/create-dispatch-event', { params: s.rp, body: { event_type: 'conformance', client_payload: { run: s.runId } } });
@@ -213,8 +217,9 @@ export const scenarios = [
         const id = { ...s.rp, ruleset_id: rs.body.id };
         await t.call('repos/get-repo-ruleset', { params: id });
         await t.call('repos/update-repo-ruleset', { params: id, body: { rules: [{ type: 'deletion' }, { type: 'non_fast_forward' }, { type: 'creation' }] } });
-        await t.call('repos/get-repo-ruleset-history', { params: id, minItems: 2 });
-        await t.call('repos/get-repo-ruleset-version', { params: { ...id, version_id: 1 } });
+        const hist = await t.call('repos/get-repo-ruleset-history', { params: id, minItems: 2 });
+        const vid = hist?.body?.[hist.body.length - 1]?.version_id;
+        if (vid) await t.call('repos/get-repo-ruleset-version', { params: { ...id, version_id: vid } });
         await putFile(t, s, `rules-${s.runId}.txt`, 'evaluated by a ruleset\n');
         const suites = await t.call('repos/get-repo-rule-suites', { params: s.rp, minItems: 1 });
         const sid = suites?.body?.[0]?.id;
@@ -411,10 +416,10 @@ export const scenarios = [
       await t.call('gists/unstar', { params: gid });
       await t.call('gists/list-public', { query: { per_page: 5 } });
       await t.call('gists/list-for-user', { params: { username: s.login }, minItems: 1 });
-      if (collabToken) {
-        const f = await as(t, collabToken, () => t.call('gists/fork', { params: gid, expect: [201] }));
+      if (collabToken(s)) {
+        const f = await as(t, collabToken(s), () => t.call('gists/fork', { params: gid, expect: [201] }));
         await t.call('gists/list-forks', { params: gid, minItems: f?.body?.id ? 1 : 0 });
-        if (f?.body?.id) await as(t, collabToken, () => t.call('gists/delete', { params: { gist_id: f.body.id } }));
+        if (f?.body?.id) await as(t, collabToken(s), () => t.call('gists/delete', { params: { gist_id: f.body.id } }));
       } else {
         await t.call('gists/list-forks', { params: gid });
       }
@@ -425,11 +430,11 @@ export const scenarios = [
     name: 'activity: notifications, feeds, events, codes of conduct',
     requires: ['rp', 'login'],
     run: async (t, s) => {
-      if (collabToken && s.collaborator) {
+      if (collabToken(s) && s.collaborator) {
         await t.call('repos/add-collaborator', { params: P(s, { username: s.collaborator }), body: { permission: 'push' } });
         const i = await t.call('issues/create', { params: s.rp, body: { title: 'conformance: notify me' }, expect: [201] });
         if (i?.body?.number) {
-          await as(t, collabToken, () => t.call('issues/create-comment', { params: P(s, { issue_number: i.body.number }), body: { body: `ping @${s.login}` }, expect: [201] }));
+          await as(t, collabToken(s), () => t.call('issues/create-comment', { params: P(s, { issue_number: i.body.number }), body: { body: `ping @${s.login}` }, expect: [201] }));
           const n = await t.call('activity/list-notifications-for-authenticated-user', { minItems: 1 });
           await t.call('activity/list-repo-notifications-for-authenticated-user', { params: s.rp, minItems: 1 });
           const th = n?.body?.find((x) => x.repository?.full_name === `${s.rp.owner}/${s.rp.repo}`) || n?.body?.[0];

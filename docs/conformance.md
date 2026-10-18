@@ -41,6 +41,7 @@ Useful options (`node run.mjs --help` lists all):
 | `--tier N` | only exercise operations of tier ≤ N. Fixture setup calls (create repo, refs, …) always run |
 | `--org ORG` | an org the token user owns; enables org scenarios (`orgs/*`, `repos/create-in-org`, fork + `merge-upstream`) |
 | `--collaborator LOGIN` | a second user; enables `add/remove-collaborator`, `request/remove-requested-reviewers` |
+| `--collaborator-token T` | that user's token (or env `CONFORMANCE_COLLABORATOR_TOKEN`); scenarios act as them with `t.call(op, {token: s.collaboratorToken})`, e.g. an approving review for `pulls/dismiss-review` |
 | `--only REGEX` | run only matching scenarios (identity, repo setup and cleanup always run) |
 | `--keep` | don't delete the fixture repo `conf-<runId>` at the end |
 | `--auth-scheme Bearer` | default is `Authorization: token …` (accepted by GitHub, Gitea, Forgejo and us) |
@@ -127,11 +128,12 @@ tag, tier, summary).
 - **Tier 3 — everything else** (enterprise admin, Actions write/secrets, apps, code scanning,
   packages, projects, codespaces, copilot, …).
 
-Scenario coverage today: 102/104 tier 1 operations and 125/129 tier 2 operations are exercised
-by some scenario (some need `--org` / `--collaborator`). No scenario yet: `users/create-gpg-key-…`
-and `users/delete-gpg-key-…` (needs an OpenPGP key generator), `checks/get`, `checks/get-suite`,
-`checks/list-annotations` (need a GitHub App to create check runs) and `pulls/dismiss-review`
-(needs a second user's approving review).
+Scenario coverage today: all 104 tier 1 and 129 tier 2 operations are exercised by some scenario
+(some need `--org`, `--collaborator` and `--collaborator-token`). Since there is no GitHub App in
+forge, the Checks scenarios (`scenarios/write-checks.mjs`) create check runs with the user's
+token (forge's built-in "forge" app; GitHub would answer 403 to a PAT). GPG keys are generated
+offline (`gpgPublicKey()` in `write-checks.mjs`: Ed25519 key + self-signature via `node:crypto`).
+Area scenario files `scenarios/write-<area>.mjs` run after the core scenarios and before cleanup.
 
 ## Spec source and pinning
 

@@ -95,9 +95,7 @@ struct TokenQ {
 
 const PUBLIC_NOW: &str = "(public AND (repo_id IS NULL OR EXISTS(SELECT 1 FROM repositories vr WHERE vr.id = activity_events.repo_id AND NOT vr.private)))";
 /// Events in repositories user $1 can read.
-const READABLE: &str = "(repo_id IS NULL OR EXISTS(SELECT 1 FROM repositories vr WHERE vr.id = activity_events.repo_id AND (NOT vr.private OR vr.owner_id = $1
-    OR EXISTS(SELECT 1 FROM repo_collaborators c WHERE c.repo_id = vr.id AND c.user_id = $1)
-    OR EXISTS(SELECT 1 FROM org_members m WHERE m.org_id = vr.owner_id AND m.user_id = $1))))";
+const READABLE: &str = "(repo_id IS NULL OR forge_repo_readable(activity_events.repo_id, $1))";
 
 fn esc(x: &str) -> String {
     x.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;").replace('"', "&quot;")

@@ -195,7 +195,8 @@ pub async fn create_ruleset(s: &AppState, level: &Level, actor: &User, input: Ru
     .bind(input.bypass_actors.unwrap_or_else(|| json!([])))
     .fetch_one(&s.db)
     .await?;
-    super::repos_rules::record_version(s, &row, level, actor).await?;
+    // ruleset history (orgs area)
+    super::orgs_settings::record_ruleset_version(&s.db, row.id, actor, ruleset_json(s, &row, level, true)).await;
     Ok(row)
 }
 
@@ -246,7 +247,7 @@ pub async fn update_ruleset(s: &AppState, level: &Level, actor: &User, id: i64, 
     .bind(input.bypass_actors.unwrap_or(cur.bypass_actors))
     .fetch_one(&s.db)
     .await?;
-    super::repos_rules::record_version(s, &row, level, actor).await?;
+    super::orgs_settings::record_ruleset_version(&s.db, row.id, actor, ruleset_json(s, &row, level, true)).await;
     Ok(row)
 }
 

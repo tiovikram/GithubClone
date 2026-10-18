@@ -625,6 +625,7 @@ pub async fn create_issue(state: &AppState, ctx: &RepoCtx, actor: &User, input: 
     if let Some(b) = &row.body {
         record_cross_references(state, ctx, actor, &row, b).await;
     }
+    super::events_emit::issue_event(state, ctx, actor, "opened", &row, json!({})).await;
     Ok(row)
 }
 
@@ -646,6 +647,7 @@ pub struct UpdateIssue {
 /// labels/assignees/milestone for triagers only (silently ignored otherwise, like GitHub).
 pub async fn update_issue(state: &AppState, ctx: &RepoCtx, actor: &User, number: i64, input: UpdateIssue) -> ApiResult<IssueRow> {
     let triage = ctx.perm >= Perm::Triage;
+    let input = pull_request_rules(state, ctx, actor, number, input).await?;
     let mut tx = state.db.begin().await?;
     let cur: IssueRow = sqlx::query_as("SELECT * FROM issues WHERE repo_id = $1 AND number = $2 FOR UPDATE")
         .bind(ctx.repo.id)
@@ -744,6 +746,21 @@ pub async fn update_issue(state: &AppState, ctx: &RepoCtx, actor: &User, number:
     tx.commit().await?;
     if let Some(Some(b)) = &input.body {
         record_cross_references(state, ctx, actor, &row, b).await;
+    }
+    let mut changes = serde_json::Map::new();
+    if row.title != cur.title {
+        changes.insert("title".into(), json!({"from": cur.title}));
+    }
+    if row.body != cur.body {
+        changes.insert("body".into(), json!({"from": cur.body}));
+    }
+    if !changes.is_empty() {
+        super::events_emit::issue_event(state, ctx, actor, "edited", &row, json!({"changes": changes})).await;
+    }
+    match (cur.state.as_str(), row.state.as_str()) {
+        ("open", "closed") => super::events_emit::issue_event(state, ctx, actor, "closed", &row, json!({})).await,
+        ("closed", "open") => super::events_emit::issue_event(state, ctx, actor, "reopened", &row, json!({})).await,
+        _ => {}
     }
     Ok(row)
 }
@@ -915,6 +932,46 @@ async fn get_handler(
     let ctx = load_ctx(&s, u.as_ref(), &owner, &repo).await?;
     let row = get_issue(&s, &ctx, number).await?;
     Ok(Json(issue_json(&s, &ctx, row).await?))
+}
+
+/// The issues endpoint also edits pull requests (GitHub allows it), but with the pull request
+/// rules: title/body need the author or Write, and a state change goes through
+/// `pulls::close_pull` / `pulls::reopen_pull` (a merged PR can't be reopened, nor one whose head
+/// branch is gone; PR events/webhooks fire). Returns the input left for the issue update.
+async fn pull_request_rules(state: &AppState, ctx: &RepoCtx, actor: &User, number: i64, mut input: UpdateIssue) -> ApiResult<UpdateIssue> {
+    let cur: Option<IssueRow> = sqlx::query_as("SELECT * FROM issues WHERE repo_id = $1 AND number = $2 AND is_pull")
+        .bind(ctx.repo.id)
+        .bind(number)
+        .fetch_optional(&state.db)
+        .await?;
+    let Some(cur) = cur else { return Ok(input) };
+    if ctx.perm < Perm::Triage && cur.user_id != Some(actor.id) {
+        return Err(ApiError::forbidden("Must have triage access or be the author to update this issue."));
+    }
+    let content_change = input.title.as_ref().is_some_and(|t| *t != cur.title) || input.body.as_ref().is_some_and(|b| *b != cur.body);
+    if content_change && cur.user_id != Some(actor.id) {
+        ctx.require(Perm::Write)?;
+    }
+    if let Some(s) = &input.state {
+        if s != "open" && s != "closed" {
+            return Err(invalid("Issue", "state", s.as_str()));
+        }
+    }
+    let reopen_by_reason = matches!(input.state_reason, Some(Some(ref r)) if r == "reopened");
+    let target = input.state.clone().or_else(|| reopen_by_reason.then(|| "open".to_string()));
+    match (cur.state.as_str(), target.as_deref()) {
+        ("open", Some("closed")) => {
+            crate::pulls::close_pull(state, ctx, actor, number).await?;
+        }
+        ("closed", Some("open")) => {
+            crate::pulls::reopen_pull(state, ctx, actor, number).await?;
+        }
+        _ => {}
+    }
+    // Pull requests have no state_reason; the state change (if any) is done.
+    input.state = None;
+    input.state_reason = None;
+    Ok(input)
 }
 
 #[derive(Deserialize)]
@@ -1307,13 +1364,16 @@ async fn list_cross_repo(s: &AppState, uri: &OriginalUri, u: &User, q: ListIssue
     match scope {
         Scope::All => {
             push_member(&mut qb);
-            qb.push(" OR EXISTS(SELECT 1 FROM org_members m WHERE m.org_id = r.owner_id AND m.user_id = ").push_bind(uid).push(")");
+            // Org repositories the user can read (base permission, teams, roles).
+            qb.push(" OR (EXISTS(SELECT 1 FROM org_members m WHERE m.org_id = r.owner_id AND m.user_id = ")
+                .push_bind(uid)
+                .push(") AND forge_repo_readable(r.id, ")
+                .push_bind(uid)
+                .push("))");
         }
         Scope::OwnedAndMember => push_member(&mut qb),
         Scope::Org(org_id) => {
-            qb.push("r.owner_id = ").push_bind(org_id).push(" AND (NOT r.private OR ");
-            push_member(&mut qb);
-            qb.push(" OR EXISTS(SELECT 1 FROM org_members m WHERE m.org_id = r.owner_id AND m.user_id = ").push_bind(uid).push("))");
+            qb.push("r.owner_id = ").push_bind(org_id).push(" AND forge_repo_readable(r.id, ").push_bind(uid).push(")");
         }
     }
     qb.push(")");

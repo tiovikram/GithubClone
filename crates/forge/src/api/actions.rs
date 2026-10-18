@@ -205,7 +205,7 @@ async fn resolve_ref(s: &AppState, ctx: &RepoCtx, r: &str) -> ApiResult<Option<(
 }
 
 /// `simple-commit` JSON for a commit.
-async fn simple_commit(s: &AppState, ctx: &RepoCtx, sha: &str) -> ApiResult<Option<Value>> {
+pub async fn simple_commit(s: &AppState, ctx: &RepoCtx, sha: &str) -> ApiResult<Option<Value>> {
     let Some(out) = super::plat::git_read(s, ctx.repo.id, &["log", "-1", "--format=%H%x00%T%x00%an%x00%ae%x00%cn%x00%ce%x00%cI%x00%B", sha]).await? else {
         return Ok(None);
     };

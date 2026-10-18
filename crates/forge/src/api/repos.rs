@@ -147,6 +147,7 @@ pub async fn create_repo(state: &AppState, owner: &User, creator: &User, req: Cr
         sqlx::query("UPDATE repositories SET pushed_at = now() WHERE id = $1").bind(repo.id).execute(&state.db).await?;
     }
     super::labels::on_repo_created(state, repo.id, creator).await?;
+    crate::orgs::grant_creator_admin(&state.db, owner, repo.id, creator).await?;
     let repo = db::repo_by_id(&state.db, repo.id).await?;
     Ok(RepoCtx { repo, owner: owner.clone(), perm: Perm::Admin })
 }
@@ -193,7 +194,13 @@ async fn create_for_org(
     if !member && !u.site_admin {
         return Err(ApiError::forbidden("You need admin access to the organization before adding a repository to it."));
     }
+    // members_can_create_{public,private}_repositories (crate::orgs)
+    let private = req.private.unwrap_or(false) || matches!(req.visibility.as_deref(), Some("private") | Some("internal"));
+    if !crate::orgs::may_create_repo(&s.db, &o, &u, private).await? {
+        return Err(ApiError::forbidden("You do not have permission to create repositories in this organization."));
+    }
     let ctx = create_repo(&s, &o, &u, req).await?;
+    crate::orgs::audit_quiet(&s.db, &o, Some(&u), "repo.create", serde_json::json!({ "repo": ctx.full_name(), "visibility": ctx.repo.visibility })).await;
     Ok(created(json::repo::full(&s.api_url(), s.base_url(), &ctx, None, None)))
 }
 
@@ -204,29 +211,41 @@ struct CreateOrg {
     profile_name: Option<String>,
 }
 
-/// GHES admin endpoint; forge lets any authenticated user create an org they administer.
+/// GHES admin endpoint (`enterprise-admin/create-org`): site administrators only, like GHES.
+/// Normal users create organizations through the forge-only `POST /api/forge/orgs`.
 async fn create_org(State(s): State<AppState>, AuthUser(u): AuthUser, Json(req): Json<CreateOrg>) -> ApiResult<Response> {
-    if !crate::forge_api::valid_login(&req.login) {
-        return Err(ApiError::validation("Organization", "login", "invalid"));
+    if !u.site_admin {
+        return Err(ApiError::forbidden("Must be a site administrator."));
     }
     let admin = match req.admin.as_deref() {
         Some(a) => db::user_by_login(&s.db, a).await?,
         None => u.clone(),
     };
+    let org = create_organization(&s, &req.login, req.profile_name.as_deref(), &admin).await?;
+    Ok(created(json::user::org_simple(&s.api_url(), s.base_url(), &org)))
+}
+
+/// Creates organization `login` with `admin` as its first (admin) member.
+pub async fn create_organization(s: &AppState, login: &str, profile_name: Option<&str>, admin: &User) -> ApiResult<User> {
+    if !crate::forge_api::valid_login(login) {
+        return Err(ApiError::validation("Organization", "login", "invalid"));
+    }
+    let mut tx = s.db.begin().await?;
     let org: Option<User> = sqlx::query_as(
         "INSERT INTO users (login, kind, name) VALUES ($1, 'Organization', $2) ON CONFLICT DO NOTHING RETURNING *",
     )
-    .bind(&req.login)
-    .bind(&req.profile_name)
-    .fetch_optional(&s.db)
+    .bind(login)
+    .bind(profile_name)
+    .fetch_optional(&mut *tx)
     .await?;
     let org = org.ok_or_else(|| ApiError::validation("Organization", "login", "already_exists"))?;
     sqlx::query("INSERT INTO org_members (org_id, user_id, role) VALUES ($1, $2, 'admin')")
         .bind(org.id)
         .bind(admin.id)
-        .execute(&s.db)
+        .execute(&mut *tx)
         .await?;
-    Ok(created(json::user::org_simple(&s.api_url(), s.base_url(), &org)))
+    tx.commit().await?;
+    Ok(org)
 }
 
 /// Builds full-repository JSON including parent/source for forks.
@@ -408,10 +427,8 @@ async fn list_rows(s: &AppState, where_sql: &str, binds: Vec<i64>, viewer: Optio
         Some("private") => " AND r.private",
         _ => "",
     };
-    // Repos visible to the viewer: public, or owner/collaborator/org member.
-    let visible = "(NOT r.private OR r.owner_id = $1 OR EXISTS(SELECT 1 FROM repo_collaborators c WHERE c.repo_id = r.id AND c.user_id = $1)
-                    OR EXISTS(SELECT 1 FROM org_members m WHERE m.org_id = r.owner_id AND m.user_id = $1)
-                    OR EXISTS(SELECT 1 FROM users a WHERE a.id = $1 AND a.site_admin))";
+    // Repos visible to the viewer (the shared rule, see `db::readable_sql`).
+    let visible = db::readable_sql("r.id", "$1");
     let sql_base = format!("FROM repositories r JOIN users o ON o.id = r.owner_id WHERE {visible} AND ({where_sql}){vis}");
     let sql = format!("SELECT r.id {sql_base} ORDER BY {} LIMIT {} OFFSET {}", q.order(), p.limit(), p.offset());
     let count_sql = format!("SELECT count(*) {sql_base}");

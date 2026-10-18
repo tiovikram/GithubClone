@@ -1069,6 +1069,17 @@ impl Mutation {
 
     async fn add_reaction(&self, ctx: &Context<'_>, input: ReactionInput) -> async_graphql::Result<Option<ReactionPayload>> {
         let (kind, sid) = reaction_subject(ctx, &input.subject_id).await?;
+        let repo_id: Option<i64> = match kind {
+            "issue" => sqlx::query_scalar("SELECT repo_id FROM issues WHERE id = $1"),
+            _ => sqlx::query_scalar("SELECT i.repo_id FROM issue_comments c JOIN issues i ON i.id = c.issue_id WHERE c.id = $1"),
+        }
+        .bind(sid)
+        .fetch_optional(&st(ctx).db)
+        .await?;
+        if let Some(rid) = repo_id {
+            let rc = repo_ctx(ctx, rid, input.subject_id.as_str()).await?;
+            crate::api::reactions::check_unlocked(st(ctx), &rc, kind, sid).await.map_err(api_err)?;
+        }
         let content = reaction_key(input.content);
         crate::api::reactions::create_reaction(st(ctx), kind, sid, actor(ctx), content).await.map_err(api_err)?;
         let subject = resolve_node(ctx, &input.subject_id).await?;

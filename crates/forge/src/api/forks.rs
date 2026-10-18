@@ -133,6 +133,7 @@ pub async fn create_fork(
         return Err(ApiError::internal(format!("fork storage copy failed: {e:#}")));
     }
     sqlx::query("UPDATE repositories SET forks_count = forks_count + 1 WHERE id = $1").bind(r.id).execute(&s.db).await?;
+    crate::orgs::grant_creator_admin(&s.db, owner, repo.id, actor).await?;
     let perm = db::permission(&s.db, Some(actor), &repo, owner).await?;
     Ok(RepoCtx { repo, owner: owner.clone(), perm })
 }
@@ -197,9 +198,7 @@ async fn list_forks(
         _ => "r.created_at DESC, r.id DESC",
     };
     let viewer = u.as_ref().map(|x| x.id).unwrap_or(-1);
-    let visible = "(NOT r.private OR r.owner_id = $2 OR EXISTS(SELECT 1 FROM repo_collaborators c WHERE c.repo_id = r.id AND c.user_id = $2)
-                    OR EXISTS(SELECT 1 FROM org_members m WHERE m.org_id = r.owner_id AND m.user_id = $2)
-                    OR EXISTS(SELECT 1 FROM users a WHERE a.id = $2 AND a.site_admin))";
+    let visible = crate::db::readable_sql("r.id", "$2");
     let sql = format!(
         "SELECT r.* FROM repositories r WHERE r.fork_parent_id = $1 AND {visible} ORDER BY {order} LIMIT {} OFFSET {}",
         pages.limit(),

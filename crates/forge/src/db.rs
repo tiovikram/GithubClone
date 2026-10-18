@@ -153,17 +153,8 @@ pub async fn permission(db: &PgPool, viewer: Option<&User>, repo: &Repo, owner: 
     }
     let mut best = base;
     if owner.kind == "Organization" {
-        let role: Option<String> =
-            sqlx::query_scalar("SELECT role FROM org_members WHERE org_id = $1 AND user_id = $2")
-                .bind(owner.id)
-                .bind(u.id)
-                .fetch_optional(db)
-                .await?;
-        match role.as_deref() {
-            Some("admin") => return Ok(Perm::Admin),
-            Some(_) => best = best.max(Perm::Write),
-            None => {}
-        }
+        // Owners, base permission, teams, org roles and collaborators (incl. custom repo roles).
+        return Ok(best.max(crate::orgs::perm::org_repo_permission(db, owner.id, repo.id, u.id).await?));
     }
     let collab: Option<String> =
         sqlx::query_scalar("SELECT permission FROM repo_collaborators WHERE repo_id = $1 AND user_id = $2")
@@ -175,6 +166,15 @@ pub async fn permission(db: &PgPool, viewer: Option<&User>, repo: &Repo, owner: 
         best = best.max(Perm::from_str(&p));
     }
     Ok(best)
+}
+
+/// SQL predicate "repository `repo` is readable by user `user`" (both SQL expressions; `user`
+/// may evaluate to NULL for anonymous callers). This is the only visibility rule list and
+/// search queries may use: it is the SQL twin of [`permission`] (`forge_repo_readable`,
+/// migration 1201), so org base permission `none`, teams, org roles and collaborators are
+/// honoured everywhere.
+pub fn readable_sql(repo: &str, user: &str) -> String {
+    format!("forge_repo_readable({repo}, {user})")
 }
 
 /// Resolve `owner/name` for `viewer`. Invisible repos are reported as 404.

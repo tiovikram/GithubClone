@@ -195,6 +195,9 @@ async fn login(s: &TestServer, login: &str, pw: &str, csrf: bool) -> u16 {
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn login_is_throttled_after_repeated_failures() {
     let s = TestServer::start().await;
+    // The throttle lives in the (shared) database: start from a clean per-client counter so
+    // earlier runs from 127.0.0.1 within the window don't count.
+    sqlx::query("DELETE FROM login_throttle WHERE key LIKE 'c:%'").execute(&s.state.db).await.unwrap();
     let u = s.user().await;
     assert_eq!(login(&s, &u.login, "password123", true).await, 200);
     for _ in 0..10 {
@@ -395,18 +398,29 @@ async fn misc_bounds() {
     assert_eq!(st, 422);
 }
 
+/// Creates an organization administered by `u` (forge-only endpoint for normal users).
+async fn create_org(s: &TestServer, u: &TestUser, login: &str) -> u16 {
+    let res = s
+        .client()
+        .post(format!("{}/api/forge/orgs", s.base))
+        .header("Authorization", format!("token {}", u.token))
+        .json(&json!({"login": login}))
+        .send()
+        .await
+        .unwrap();
+    res.status().as_u16()
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn team_parent_from_other_org_is_not_exposed() {
     let s = TestServer::start().await;
     let alice = s.user().await;
     let mallory = s.user().await;
     let (o1, o2) = (unique("org"), unique("org"));
-    let (st, _) = s.call(Some(&alice), "POST", "/admin/organizations", Some(json!({"login": o1}))).await;
-    assert_eq!(st, 201);
+    assert_eq!(create_org(&s, &alice, &o1).await, 201);
     let (st, t) = s.call(Some(&alice), "POST", &format!("/orgs/{o1}/teams"), Some(json!({"name": "secret-team-name", "privacy": "secret"}))).await;
     assert_eq!(st, 201, "{t}");
-    let (st, _) = s.call(Some(&mallory), "POST", "/admin/organizations", Some(json!({"login": o2}))).await;
-    assert_eq!(st, 201);
+    assert_eq!(create_org(&s, &mallory, &o2).await, 201);
     let (_, t2) = s.call(Some(&mallory), "POST", &format!("/orgs/{o2}/teams"), Some(json!({"name": "x", "parent_team_id": t["id"]}))).await;
     assert!(!t2.to_string().contains("secret-team-name"), "{t2}");
 }

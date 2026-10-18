@@ -27,8 +27,6 @@ pub fn routes() -> Router<AppState> {
         .route("/repos/{owner}/{repo}/rulesets/{id}/history/{version}", get(version))
         .route("/orgs/{org}/rulesets/rule-suites", get(org_suites))
         .route("/orgs/{org}/rulesets/rule-suites/{id}", get(org_suite))
-        .route("/orgs/{org}/rulesets/{id}/history", get(org_history))
-        .route("/orgs/{org}/rulesets/{id}/history/{version}", get(org_version))
         .route("/repos/{owner}/{repo}/bypass-requests/push-rules", get(list_bypass))
         .route("/repos/{owner}/{repo}/bypass-requests/push-rules/{number}", get(get_bypass))
 }
@@ -332,32 +330,16 @@ pub async fn push_restricted(s: &AppState, ctx: &RepoCtx, branch: &str, user: &U
 // ---------------------------------------------------------------------------------------------
 // Ruleset history
 
-/// Records a new version of a ruleset (called by `api::rulesets` on create/update).
-pub async fn record_version(s: &AppState, row: &RulesetRow, level: &Level, actor: &User) -> ApiResult<()> {
-    let state = rulesets::ruleset_json(s, row, level, true);
-    sqlx::query(
-        "INSERT INTO ruleset_versions (ruleset_id, version_id, actor_id, actor_type, state)
-         VALUES ($1, COALESCE((SELECT max(version_id) FROM ruleset_versions WHERE ruleset_id = $1), 0) + 1, $2, 'User', $3)",
-    )
-    .bind(row.id)
-    .bind(actor.id)
-    .bind(&state)
-    .execute(&s.db)
-    .await?;
-    Ok(())
-}
-
 #[derive(sqlx::FromRow)]
 struct VersionRow {
     version_id: i64,
     actor_id: Option<i64>,
-    actor_type: String,
     state: Value,
     updated_at: DateTime<Utc>,
 }
 
 fn version_json(v: &VersionRow, with_state: bool) -> Value {
-    let mut out = json!({"version_id": v.version_id, "actor": {"id": v.actor_id, "type": v.actor_type}, "updated_at": crate::json::ts(v.updated_at)});
+    let mut out = json!({"version_id": v.version_id, "actor": {"id": v.actor_id, "type": "User"}, "updated_at": crate::json::ts(v.updated_at)});
     if with_state {
         out["state"] = v.state.clone();
     }
@@ -367,7 +349,7 @@ fn version_json(v: &VersionRow, with_state: bool) -> Value {
 async fn versions_page(s: &AppState, uri: &OriginalUri, level: &Level, id: i64, p: PageParams) -> ApiResult<Paged> {
     let r = rulesets::get_ruleset(s, level, id).await?;
     let rows: Vec<VersionRow> = sqlx::query_as(
-        "SELECT version_id, actor_id, actor_type, state, updated_at FROM ruleset_versions WHERE ruleset_id = $1 ORDER BY version_id DESC LIMIT $2 OFFSET $3",
+        "SELECT id AS version_id, actor_id, state, created_at AS updated_at FROM ruleset_versions WHERE ruleset_id = $1 ORDER BY id DESC LIMIT $2 OFFSET $3",
     )
     .bind(r.id)
     .bind(p.limit())
@@ -380,7 +362,7 @@ async fn versions_page(s: &AppState, uri: &OriginalUri, level: &Level, id: i64, 
 
 async fn one_version(s: &AppState, level: &Level, id: i64, version: i64) -> ApiResult<Value> {
     let r = rulesets::get_ruleset(s, level, id).await?;
-    let v: VersionRow = sqlx::query_as("SELECT version_id, actor_id, actor_type, state, updated_at FROM ruleset_versions WHERE ruleset_id = $1 AND version_id = $2")
+    let v: VersionRow = sqlx::query_as("SELECT id AS version_id, actor_id, state, created_at AS updated_at FROM ruleset_versions WHERE ruleset_id = $1 AND id = $2")
         .bind(r.id)
         .bind(version)
         .fetch_optional(&s.db)
@@ -414,16 +396,6 @@ async fn history(State(s): State<AppState>, uri: OriginalUri, AuthUser(u): AuthU
 
 async fn version(State(s): State<AppState>, AuthUser(u): AuthUser, Path((o, r, id, v)): Path<(String, String, i64, i64)>) -> ApiResult<Json<Value>> {
     let level = repo_admin_level(&s, &u, &o, &r).await?;
-    Ok(Json(one_version(&s, &level, id, v).await?))
-}
-
-async fn org_history(State(s): State<AppState>, uri: OriginalUri, AuthUser(u): AuthUser, Path((org, id)): Path<(String, i64)>, Query(p): Query<PageParams>) -> ApiResult<Paged> {
-    let level = org_admin_level(&s, &u, &org).await?;
-    versions_page(&s, &uri, &level, id, p).await
-}
-
-async fn org_version(State(s): State<AppState>, AuthUser(u): AuthUser, Path((org, id, v)): Path<(String, i64, i64)>) -> ApiResult<Json<Value>> {
-    let level = org_admin_level(&s, &u, &org).await?;
     Ok(Json(one_version(&s, &level, id, v).await?))
 }
 
