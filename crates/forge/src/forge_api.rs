@@ -72,7 +72,9 @@ pub async fn create_user(state: &AppState, login: &str, email: Option<&str>, pas
     .bind(admin)
     .fetch_optional(&state.db)
     .await?;
-    u.ok_or_else(|| ApiError::validation("User", "login", "already_exists"))
+    let u = u.ok_or_else(|| ApiError::validation("User", "login", "already_exists"))?;
+    crate::enterprise::user_created(state, &u, None).await;
+    Ok(u)
 }
 
 pub async fn create_token_for(state: &AppState, user_id: i64, name: &str) -> ApiResult<(i64, String)> {
@@ -112,6 +114,9 @@ struct Signup {
 }
 
 async fn signup(State(s): State<AppState>, Json(req): Json<Signup>) -> ApiResult<Response> {
+    if !crate::enterprise::signup_enabled(&s).await {
+        return Err(ApiError::forbidden("Sign up is disabled on this instance. Ask a site administrator for an account."));
+    }
     let u = create_user(&s, &req.login, req.email.as_deref(), &req.password, false).await?;
     session_response(&s, &u, StatusCode::CREATED).await
 }
@@ -123,9 +128,14 @@ struct Login {
 }
 
 async fn login(State(s): State<AppState>, parts: axum::http::request::Parts, Json(req): Json<Login>) -> ApiResult<Response> {
-    let u = auth::user_for_password(&s, &req.login, &req.password, crate::security::client_ip(&parts))
-        .await?
-        .ok_or_else(|| ApiError::new(StatusCode::UNAUTHORIZED, "Incorrect username or password."))?;
+    let ip = crate::security::client_ip(&parts);
+    let found = auth::user_for_password(&s, &req.login, &req.password, ip).await?;
+    let ip_s = ip.map(|i| i.to_string());
+    let Some(u) = found else {
+        crate::enterprise::audit(&s, "user.failed_login", None, json!({"user": req.login, "actor_ip": ip_s})).await;
+        return Err(ApiError::new(StatusCode::UNAUTHORIZED, "Incorrect username or password."));
+    };
+    crate::enterprise::audit(&s, "user.login", Some(&u), json!({"user": u.login, "user_id": u.id, "actor_ip": ip_s})).await;
     session_response(&s, &u, StatusCode::OK).await
 }
 

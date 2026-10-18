@@ -510,3 +510,93 @@ async fn runners_api_labels_jit_and_schedules() {
     let (_, after) = s.call(Some(&u), "GET", &format!("{rp}/actions/runs?event=schedule"), None).await;
     assert_eq!(before["total_count"], after["total_count"]);
 }
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn enterprise_runner_environment_reviews_and_repository_dispatch() {
+    let s = TestServer::start().await;
+    // a site administrator, an org and an org repository
+    let login = common::unique("adm");
+    let adm = forge::forge_api::create_user(&s.state, &login, Some(&format!("{login}@example.com")), "password123", true).await.map_err(|e| e.message).unwrap();
+    let (_, token) = forge::forge_api::create_token_for(&s.state, adm.id, "t").await.map_err(|e| e.message).unwrap();
+    let u = TestUser { login, token };
+    let org = common::unique("org");
+    let res = s.client().post(format!("{}/api/forge/orgs", s.base)).header("Authorization", format!("token {}", u.token)).json(&json!({"login": org})).send().await.unwrap();
+    assert_eq!(res.status().as_u16(), 201);
+    let (_, o) = s.call(Some(&u), "GET", &format!("/orgs/{org}"), None).await;
+    let name = common::unique("r");
+    let (st, _) = s.call(Some(&u), "POST", &format!("/orgs/{org}/repos"), Some(json!({"name": name, "auto_init": true}))).await;
+    assert_eq!(st, 201);
+    let rp = format!("/repos/{org}/{name}");
+    // environment `prod` requires the admin's review
+    let (st, env) = s.call(Some(&u), "PUT", &format!("{rp}/environments/prod"), Some(json!({"reviewers": [{"type": "User", "id": adm.id}]}))).await;
+    assert_eq!(st, 200, "{env}");
+    let wf = "name: Deploy\non:\n  workflow_dispatch:\n  repository_dispatch:\n    types: [go]\njobs:\n  ship:\n    runs-on: ubuntu-latest\n    environment: prod\n    steps:\n      - run: echo shipped-${{ github.event_name }}\n";
+    put_file(&s, &u, &rp, ".github/workflows/deploy.yml", wf).await;
+    let (st, _) = s.call(Some(&u), "POST", &format!("{rp}/actions/workflows/deploy.yml/dispatches"), Some(json!({"ref": "main"}))).await;
+    assert_eq!(st, 204);
+    let run = latest_run(&s, &u, &rp, "workflow_dispatch").await;
+    let id = run["id"].as_i64().unwrap();
+    assert_eq!(run["status"], "waiting");
+    let (_, pend) = s.call(Some(&u), "GET", &format!("{rp}/actions/runs/{id}/pending_deployments"), None).await;
+    assert_eq!(pend[0]["environment"]["name"], "prod", "{pend}");
+    assert_eq!(pend[0]["current_user_can_approve"], true);
+    assert_eq!(pend[0]["reviewers"][0]["reviewer"]["login"], u.login.as_str());
+
+    // An enterprise runner (JIT) restricted by its runner group to this org takes the job.
+    let slug = forge::enterprise::slug();
+    let (st, g) = s
+        .call(Some(&u), "POST", &format!("/enterprises/{slug}/actions/runner-groups"), Some(json!({"name": common::unique("g"), "visibility": "selected", "selected_organization_ids": [o["id"]], "allows_public_repositories": true})))
+        .await;
+    assert_eq!(st, 201, "{g}");
+    let (st, jit) = s
+        .call(Some(&u), "POST", &format!("/enterprises/{slug}/actions/runners/generate-jitconfig"), Some(json!({"name": common::unique("ent-"), "runner_group_id": g["id"], "labels": ["self-hosted"]})))
+        .await;
+    assert_eq!(st, 201, "{jit}");
+    assert_eq!(jit["runner"]["runner_group_id"], g["id"]);
+    let (st, er) = s.call(Some(&u), "GET", &format!("/enterprises/{slug}/actions/runners/{}", jit["runner"]["id"]), None).await;
+    assert_eq!(st, 200, "enterprise API sees the runner: {er}");
+
+    let (st, deps) = s.call(Some(&u), "POST", &format!("{rp}/actions/runs/{id}/pending_deployments"), Some(json!({"environment_ids": [env["id"]], "state": "approved", "comment": "ok"}))).await;
+    assert_eq!(st, 200, "{deps}");
+    assert_eq!(deps[0]["environment"], "prod");
+    let (_, appr) = s.call(Some(&u), "GET", &format!("{rp}/actions/runs/{id}/approvals"), None).await;
+    assert_eq!(appr[0]["state"], "approved");
+    let args = forge::runner::agent::RunnerArgs {
+        url: Some(s.base.clone()),
+        token: None,
+        name: None,
+        labels: String::new(),
+        executor: "shell".into(),
+        work_dir: Some(s.dir.path().join("ent")),
+        config: None,
+        jitconfig: Some(jit["encoded_jit_config"].as_str().unwrap().to_string()),
+        ephemeral: false,
+        once: true,
+        slots: 1,
+        remove_token: None,
+        keep: false,
+    };
+    tokio::time::timeout(Duration::from_secs(120), forge::runner::agent::main(args)).await.expect("enterprise runner finishes").unwrap();
+    let run = wait_run(&s, &u, &rp, id, 1).await;
+    assert_eq!(run["conclusion"], "success");
+    let js = jobs(&s, &u, &rp, id).await;
+    assert!(job_log(&s, &u, &rp, &js[0]).await.contains("shipped-workflow_dispatch"));
+    let (_, pend) = s.call(Some(&u), "GET", &format!("{rp}/actions/runs/{id}/pending_deployments"), None).await;
+    assert_eq!(pend, json!([]));
+    let (st, _) = s.call(Some(&u), "POST", &format!("{rp}/actions/runs/{id}/pending_deployments"), Some(json!({"environment_ids": [env["id"]], "state": "approved", "comment": "again"}))).await;
+    assert_eq!(st, 422, "nothing pending any more");
+
+    // repository_dispatch with a matching type triggers the workflow (and waits for review).
+    let (st, _) = s.call(Some(&u), "POST", &format!("{rp}/dispatches"), Some(json!({"event_type": "go", "client_payload": {"x": 1}}))).await;
+    assert_eq!(st, 204);
+    let r = latest_run(&s, &u, &rp, "repository_dispatch").await;
+    assert_eq!(r["status"], "waiting");
+    let (st, _) = s.call(Some(&u), "POST", &format!("{rp}/actions/runs/{}/pending_deployments", r["id"]), Some(json!({"environment_ids": [env["id"]], "state": "rejected", "comment": "no"}))).await;
+    assert_eq!(st, 200);
+    let r = wait_run(&s, &u, &rp, r["id"].as_i64().unwrap(), 1).await;
+    assert_eq!(r["conclusion"], "failure");
+    let (st, _) = s.call(Some(&u), "POST", &format!("{rp}/dispatches"), Some(json!({"event_type": "other"}))).await;
+    assert_eq!(st, 204);
+    let (_, runs) = s.call(Some(&u), "GET", &format!("{rp}/actions/runs?event=repository_dispatch"), None).await;
+    assert_eq!(runs["total_count"], 1, "types filter");
+}

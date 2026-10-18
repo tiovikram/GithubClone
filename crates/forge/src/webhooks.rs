@@ -276,7 +276,13 @@ pub async fn deliver(state: &AppState, delivery_id: i64) -> anyhow::Result<()> {
     } else {
         json_body
     };
-    let target_type = if hook.org_id.is_some() { "organization" } else { "repository" };
+    let target_type = if hook.org_id.is_some() {
+        "organization"
+    } else if hook.repo_id.is_some() {
+        "repository"
+    } else {
+        "business" // global (enterprise) webhook
+    };
     let target_id = hook.org_id.or(hook.repo_id).unwrap_or(0);
     let mut headers: Vec<(String, String)> = vec![
         ("Accept".into(), "*/*".into()),

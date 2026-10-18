@@ -53,6 +53,13 @@ pub mod autolinks;
 pub mod rulesets;
 pub mod signing_keys;
 pub mod webhooks;
+pub mod ent_actions;
+pub mod ent_admin;
+pub mod ent_enterprise;
+pub mod ent_manage;
+pub mod ent_prereceive;
+pub mod ent_scim;
+pub mod ent_teams;
 // repos build-out area
 pub mod repos_env;
 pub mod repos_settings;
@@ -127,6 +134,13 @@ pub fn routes() -> Router<AppState> {
         .merge(runner_runners::routes())
         .merge(runner_misc::routes())
         .merge(ref_dispatch::routes())
+        .merge(ent_admin::routes())
+        .merge(ent_prereceive::routes())
+        .merge(ent_actions::routes())
+        .merge(ent_enterprise::routes())
+        .merge(ent_teams::routes())
+        .merge(ent_scim::routes())
+        .merge(ent_manage::routes())
         // repos build-out area
         .merge(repos_env::routes())
         .merge(repos_settings::routes())

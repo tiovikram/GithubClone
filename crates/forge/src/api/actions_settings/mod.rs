@@ -63,13 +63,11 @@ pub async fn org_admin(s: &AppState, u: &User, org: &str) -> ApiResult<User> {
     }
 }
 
-/// The enterprise: site administrators only (others get 404, as for an unknown enterprise).
+/// The enterprise: site administrators only (see `crate::enterprise`).
 pub fn enterprise_admin(u: &User, slug: &str) -> ApiResult<()> {
-    if u.site_admin && !slug.is_empty() {
-        Ok(())
-    } else {
-        Err(ApiError::not_found())
-    }
+    // The single enterprise (`FORGE_ENTERPRISE_SLUG`): 404 for other slugs, 403 for non-admins.
+    crate::enterprise::check_enterprise(slug)?;
+    crate::enterprise::require_site_admin(u)
 }
 
 /// `minimal-repository` objects for repositories owned by `org`, in `ids` order of id.

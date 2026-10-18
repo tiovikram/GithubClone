@@ -32,6 +32,8 @@ Configuration is environment only:
 | `FORGE_SSH_LISTEN` | start the git-over-SSH server on this address (e.g. `0.0.0.0:2222`) | unset (no SSH) |
 | `FORGE_SSH_HOST_KEY` | OpenSSH private host key file | unset = shared ed25519 key in Postgres |
 | `FORGE_SSH_URL_HOST`, `FORGE_SSH_URL_PORT` | host (`host` or `host:port`) / port used in `ssh_url` | base URL host, `FORGE_SSH_LISTEN` port |
+| `FORGE_ENTERPRISE_SLUG` | slug of the single enterprise (`/enterprises/{slug}`, SCIM); site admins are its owners | `forge` |
+| `FORGE_HOOK_EXEC_BIN` | binary that runs enterprise pre-receive hooks (`forge pre-receive-hooks`) | the running `forge` executable |
 | `FORGE_SECRET_KEY` | master key (any string; X25519 secret = sha256 of it) sealing the Actions secret private keys; same value on every pod | unset = random master key stored in `signing_secrets` |
 
 ## URL layout (mirrors GitHub Enterprise Server)

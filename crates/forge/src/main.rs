@@ -18,6 +18,9 @@ enum Cmd {
     Gc,
     /// Run a GitHub Actions runner (separate process; jobs never run in `serve`).
     Runner(forge::runner::agent::RunnerArgs),
+    /// Runs enterprise pre-receive hooks (invoked by git during receive-pack; internal).
+    #[command(hide = true)]
+    PreReceiveHooks { spec: String },
     /// Administrative commands.
     Admin {
         #[command(subcommand)]
@@ -111,6 +114,9 @@ async fn main() -> anyhow::Result<()> {
             axum::serve(listener, app.into_make_service_with_connect_info::<std::net::SocketAddr>())
                 .with_graceful_shutdown(shutdown())
                 .await?;
+        }
+        Cmd::PreReceiveHooks { spec } => {
+            std::process::exit(forge::enterprise::prereceive::run_hooks_main(&spec));
         }
         Cmd::Migrate => {
             let state = forge::build_state(cfg).await?;

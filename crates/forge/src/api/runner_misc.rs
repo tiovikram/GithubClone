@@ -226,13 +226,15 @@ async fn org_cache_usage_by_repo(State(s): State<AppState>, AuthUser(u): AuthUse
     Ok(res)
 }
 
-async fn enterprise_cache_usage(State(s): State<AppState>, AuthUser(u): AuthUser, Path(_e): Path<String>) -> ApiResult<Json<Value>> {
+async fn enterprise_cache_usage(State(s): State<AppState>, AuthUser(u): AuthUser, Path(e): Path<String>) -> ApiResult<Json<Value>> {
+    crate::enterprise::check_enterprise(&e)?;
     site_admin(&u)?;
     let (n, size) = usage_for(&s, None).await?;
     Ok(Json(json!({ "total_active_caches_count": n, "total_active_caches_size_in_bytes": size })))
 }
 
-async fn enterprise_cache_policy(State(s): State<AppState>, AuthUser(u): AuthUser, Path(_e): Path<String>) -> ApiResult<Json<Value>> {
+async fn enterprise_cache_policy(State(s): State<AppState>, AuthUser(u): AuthUser, Path(e): Path<String>) -> ApiResult<Json<Value>> {
+    crate::enterprise::check_enterprise(&e)?;
     site_admin(&u)?;
     let row: Option<(Option<i32>, Option<i32>)> =
         sqlx::query_as("SELECT repo_cache_size_limit_in_gb, max_repo_cache_size_limit_in_gb FROM actions_cache_policies WHERE scope_kind = 'enterprise' AND scope_id = 0")
@@ -251,7 +253,8 @@ struct EnterprisePolicyBody {
     max_repo_cache_size_limit_in_gb: Option<i64>,
 }
 
-async fn set_enterprise_cache_policy(State(s): State<AppState>, AuthUser(u): AuthUser, Path(_e): Path<String>, Json(b): Json<EnterprisePolicyBody>) -> ApiResult<Response> {
+async fn set_enterprise_cache_policy(State(s): State<AppState>, AuthUser(u): AuthUser, Path(e): Path<String>, Json(b): Json<EnterprisePolicyBody>) -> ApiResult<Response> {
+    crate::enterprise::check_enterprise(&e)?;
     site_admin(&u)?;
     for v in [b.repo_cache_size_limit_in_gb, b.max_repo_cache_size_limit_in_gb].into_iter().flatten() {
         if !(0..=10000).contains(&v) {

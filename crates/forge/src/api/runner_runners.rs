@@ -63,7 +63,8 @@ async fn scope(s: &AppState, u: &User, params: &std::collections::HashMap<String
             None => Err(ApiError::not_found()),
         };
     }
-    if params.contains_key("enterprise") {
+    if let Some(e) = params.get("enterprise") {
+        crate::enterprise::check_enterprise(e)?;
         if !u.site_admin {
             return Err(ApiError::forbidden("You must be a site administrator to manage enterprise runners."));
         }
