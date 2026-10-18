@@ -647,7 +647,7 @@ async fn list_jobs(s: &AppState, ctx: &RepoCtx, run: &RunRow, attempt: Option<i3
         .bind(attempt)
         .fetch_one(&s.db)
         .await?;
-    let rows: Vec<JobRow> = sqlx::query_as(sqlx::AssertSqlSafe(format!("SELECT * FROM actions_jobs WHERE {filter} ORDER BY run_attempt, id LIMIT $4 OFFSET $5")))
+    let rows: Vec<JobRow> = sqlx::query_as(sqlx::AssertSqlSafe(format!("SELECT * FROM actions_jobs WHERE {filter} ORDER BY run_attempt, {JOB_ORDER} LIMIT $4 OFFSET $5")))
         .bind(run.id)
         .bind(all)
         .bind(attempt)
@@ -725,8 +725,15 @@ async fn signed(s: &AppState, repo_id: i64, what: &str) -> ApiResult<String> {
 }
 
 async fn attempt_jobs_rows(s: &AppState, run_id: i64, attempt: i32) -> ApiResult<Vec<JobRow>> {
-    Ok(sqlx::query_as("SELECT * FROM actions_jobs WHERE run_id = $1 AND run_attempt = $2 ORDER BY id").bind(run_id).bind(attempt).fetch_all(&s.db).await?)
+    Ok(sqlx::query_as(sqlx::AssertSqlSafe(format!("SELECT * FROM actions_jobs WHERE run_id = $1 AND run_attempt = $2 ORDER BY {JOB_ORDER}")))
+        .bind(run_id)
+        .bind(attempt)
+        .fetch_all(&s.db)
+        .await?)
 }
+
+/// Jobs in workflow-file order: matrix instances (planned later) sort with their job.
+const JOB_ORDER: &str = "(SELECT min(o.id) FROM actions_jobs o WHERE o.run_id = actions_jobs.run_id AND o.run_attempt = actions_jobs.run_attempt AND o.job_key = actions_jobs.job_key), id";
 
 async fn logs_redirect(s: &AppState, ctx: &RepoCtx, r: &RunRow, attempt: i32) -> ApiResult<Response> {
     let jobs = attempt_jobs_rows(s, r.id, attempt).await?;
