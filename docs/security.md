@@ -72,13 +72,14 @@ Severity reflects impact on a multi-tenant instance where anyone can sign up.
     authorizations API, so they cannot be escalated into broader credentials. Manifest codes are
     single-use, hashed and expire after 1 hour.
 - **Migrations**: archive downloads use short-lived HMAC-signed URLs (`signing_secrets`
-  `migration`); locked repositories refuse REST writes and pushes (HTTP, SSH), answering 404
-  instead of the lock message to callers who can't see the repository.
+  `migration`); locked repositories refuse REST writes, pushes (HTTP, SSH) and GraphQL
+  mutations (the `graphql/archived.rs` extension maps node ids to repositories; `type:
+  FORBIDDEN`, "Repository has been locked for migration."), answering 404 / not found instead of
+  the lock message to callers who can't see the repository.
 
 ## Known gaps / accepted risks (not fixed)
 - **App tokens and GraphQL:** installation and user-to-server tokens get read-only GraphQL (forge
-  can't map arbitrary mutations to app permissions yet); GraphQL mutations also don't check
-  migration locks.
+  can't map arbitrary mutations to app permissions yet).
 - **Token scopes:** every token carries all scopes (documented in ARCHITECTURE). There are no fine-grained or read-only tokens.
 - ~~**Org members get Write on every org repo.**~~ Fixed by the orgs build-out: `PATCH /orgs/{org}`
   `default_repository_permission` (`read` default, `write`, `admin`, `none`) is honoured by
@@ -195,6 +196,14 @@ enforced, not just recorded. Tests: `crates/forge/tests/rulesets.rs`.
   web UI) except site admins, addresses on the IP exception list, `/healthz`, `/readyz`, the
   session endpoint (so admins can sign in) and `/api/v3/manage/*`. The state is read from Postgres
   by every pod (cached 2 s).
+- **Repository invitations** are a site setting (`PUT /manage/v1/config/settings`
+  `{"repository_invitations": {"enabled": true}}`, default `FORGE_REPO_INVITATIONS`): off, a repo
+  admin's `PUT /collaborators/{u}` adds the user directly (GHES); on, it creates an invitation the
+  invitee accepts or declines (`/user/repository_invitations`). Settings writes are a row-locked
+  read-modify-write, so concurrent changes to different keys don't overwrite each other.
+- **Announcement banner**: `GET /api/forge/announcement` (public, like the GHES banner shown on
+  every page) returns the current `/enterprise/announcement` with its markdown rendered through
+  the sanitizing renderer of `POST /markdown`; the web UI shows it above every page.
 - **Pre-receive hooks: trust model.** Hook scripts and environments are **site-admin code**: only
   site admins can create or change hooks, choose their script repository/path or create
   environments; org owners and repo admins can only change the enforcement of hooks that allow

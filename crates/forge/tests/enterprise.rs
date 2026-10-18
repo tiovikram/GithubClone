@@ -540,6 +540,51 @@ async fn settings_signup_and_announcement() {
     assert_eq!(st, 200, "{v}");
     let (_, v) = s.call(Some(&a), "GET", "/enterprise/announcement", None).await;
     assert!(v["announcement"].is_null(), "expired banners are hidden: {v}");
+    // The web UI banner endpoint (public) renders the markdown.
+    let (st, _) = s.call(Some(&a), "PATCH", "/enterprise/announcement", Some(json!({"announcement": "Maintenance **tonight**", "user_dismissible": true}))).await;
+    assert_eq!(st, 200);
+    let banner: Value = s.client().get(format!("{}/api/forge/announcement", s.base)).send().await.unwrap().json().await.unwrap();
+    assert_eq!(banner["announcement"], "Maintenance **tonight**");
+    assert!(banner["html"].as_str().unwrap().contains("<strong>tonight</strong>"), "{banner}");
+    assert_eq!(banner["user_dismissible"], true);
     let (st, _) = s.call(Some(&a), "DELETE", "/enterprise/announcement", None).await;
     assert_eq!(st, 204);
+    let banner: Value = s.client().get(format!("{}/api/forge/announcement", s.base)).send().await.unwrap().json().await.unwrap();
+    assert!(banner["announcement"].is_null() && banner["html"].is_null(), "{banner}");
+}
+
+/// Repository invitations are a runtime site setting (`repository_invitations.enabled`).
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn repository_invitations_site_setting() {
+    let _g = MAINT.write().await; // changes instance-wide settings
+    let s = TestServer::start().await;
+    let a = admin(&s).await;
+    let owner = s.user().await;
+    let invitee = s.user().await;
+    let repo = s.create_repo(&owner, true).await;
+    let full = format!("{}/{repo}", owner.login);
+    let (st, _) = s.call(Some(&a), "PUT", "/manage/v1/config/settings", Some(json!({"repository_invitations": {"enabled": "yes"}}))).await;
+    assert_eq!(st, 400);
+    let (_, v) = s.call(Some(&a), "GET", "/manage/v1/config/settings", None).await;
+    assert_eq!(v["repository_invitations"]["enabled"], false, "default (no FORGE_REPO_INVITATIONS): {v}");
+    // Default: GHES adds the collaborator directly.
+    let (st, _) = s.call(Some(&owner), "PUT", &format!("/repos/{full}/collaborators/{}", invitee.login), Some(json!({"permission": "push"}))).await;
+    assert_eq!(st, 204);
+    let (st, _) = s.call(Some(&owner), "DELETE", &format!("/repos/{full}/collaborators/{}", invitee.login), None).await;
+    assert_eq!(st, 204);
+    let (st, _) = s.call(Some(&a), "PUT", "/manage/v1/config/settings", Some(json!({"repository_invitations": {"enabled": true}}))).await;
+    assert_eq!(st, 204);
+    let (st, inv) = s.call(Some(&owner), "PUT", &format!("/repos/{full}/collaborators/{}", invitee.login), Some(json!({"permission": "push"}))).await;
+    // Restore before asserting so a failure can't leave the instance in invitation mode.
+    let (st2, _) = s.call(Some(&a), "PUT", "/manage/v1/config/settings", Some(json!({"repository_invitations": {"enabled": false}}))).await;
+    assert_eq!(st2, 204);
+    assert_eq!(st, 201, "{inv}");
+    assert_eq!(inv["invitee"]["login"], invitee.login.as_str());
+    assert_eq!(inv["permissions"], "write");
+    let (st, _) = s.call(Some(&invitee), "PATCH", &format!("/user/repository_invitations/{}", inv["id"]), None).await;
+    assert_eq!(st, 204);
+    let (_, perm) = s.call(Some(&owner), "GET", &format!("/repos/{full}/collaborators/{}/permission", invitee.login), None).await;
+    assert_eq!(perm["permission"], "write");
+    let (_, v) = s.call(Some(&a), "GET", "/manage/v1/config/settings", None).await;
+    assert_eq!(v["repository_invitations"]["enabled"], false);
 }
