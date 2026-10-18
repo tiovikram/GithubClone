@@ -60,6 +60,15 @@ fn public_perm(p: &str) -> &'static str {
     }
 }
 
+/// (name, base_role) of the custom repository role `name` of organization `org_id`.
+async fn custom_role(s: &AppState, org_id: i64, name: &str) -> ApiResult<Option<(String, String)>> {
+    Ok(sqlx::query_as("SELECT name, base_role FROM custom_repo_roles WHERE org_id = $1 AND lower(name) = lower($2)")
+        .bind(org_id)
+        .bind(name)
+        .fetch_optional(&s.db)
+        .await?)
+}
+
 fn stored_perm(p: &str) -> Option<&'static str> {
     Some(match p {
         "read" | "pull" => "pull",
@@ -89,7 +98,11 @@ pub async fn invitations_json(s: &AppState, viewer: &User, rows: &[InvitationRow
             "repository": crate::json::repo::repo(&api, s.base_url(), &ctx),
             "invitee": user(Some(r.invitee_id)),
             "inviter": user(r.inviter_id),
-            "permissions": public_perm(&r.permission),
+            "permissions": match stored_perm(&r.permission) {
+                Some(_) => public_perm(&r.permission),
+                // custom role: reported as its base role (the enum has no custom values)
+                None => custom_role(s, ctx.owner.id, &r.permission).await?.map(|(_, b)| public_perm(&b)).unwrap_or("write"),
+            },
             "created_at": crate::json::ts(r.created_at),
             "expired": expired(r),
             "url": format!("{api}/user/repository_invitations/{}", r.id),
@@ -102,7 +115,14 @@ pub async fn invitations_json(s: &AppState, viewer: &User, rows: &[InvitationRow
 /// Invites `invitee` to the repository (admin). Re-inviting refreshes the pending invitation.
 pub async fn create_invitation(s: &AppState, ctx: &RepoCtx, inviter: &User, invitee: &User, permission: &str) -> ApiResult<InvitationRow> {
     ctx.require(Perm::Admin)?;
-    let perm = stored_perm(permission).ok_or_else(|| ApiError::validation("RepositoryInvitation", "permissions", "invalid"))?;
+    let perm: String = match stored_perm(permission) {
+        Some(p) => p.to_string(),
+        // Organization repositories: a custom repository role (granted on acceptance).
+        None => custom_role(s, ctx.owner.id, permission)
+            .await?
+            .map(|(name, _)| name)
+            .ok_or_else(|| ApiError::validation("RepositoryInvitation", "permissions", "invalid"))?,
+    };
     let row: InvitationRow = sqlx::query_as(
         "INSERT INTO repo_invitations (repo_id, invitee_id, inviter_id, permission) VALUES ($1,$2,$3,$4)
          ON CONFLICT (repo_id, invitee_id) DO UPDATE SET permission = $4, inviter_id = $3, created_at = now() RETURNING *",

@@ -26,6 +26,8 @@ pub fn routes() -> Router<AppState> {
         .route("/user/memberships/orgs/{org}", delete(decline_org_invitation))
         .route("/healthz", axum::routing::get(|| async { "ok" }))
         .route("/announcement", axum::routing::get(announcement))
+        // web UI helpers of the repoadmin area (traffic beacon, LFS state, enterprise slug)
+        .merge(crate::api::repo_traffic::forge_routes())
         .merge(crate::forge_admin::routes())
         .merge(crate::api::social_forge::forge_routes())
         .layer(axum::middleware::from_fn(require_csrf_header))

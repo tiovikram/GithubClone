@@ -5,7 +5,7 @@ import { BranchSelect } from "../components/BranchSelect";
 import { ErrorBox, Flash } from "../components/common";
 import { useRepo } from "../components/RepoLayout";
 import { useAsync, useTitle } from "../hooks";
-import { repoSettings } from "../areas";
+import { repoSettings, Slot } from "../areas";
 import type { SettingsSection } from "../areas/types";
 import type { RepoCtx } from "../components/RepoLayout";
 import { SettingsShell } from "../components/SettingsShell";
@@ -22,7 +22,8 @@ export function RepoSettingsPage() {
 }
 
 function GeneralSettings() {
-  const { repo, owner, name, base, isAdmin, setRepo } = useRepo();
+  const ctx = useRepo();
+  const { repo, owner, name, base, isAdmin, setRepo } = ctx;
   const nav = useNavigate();
   const branches = useAsync(() => api.branches(owner, name), [owner, name]);
   const [description, setDescription] = useState(repo.description || "");
@@ -112,8 +113,10 @@ function GeneralSettings() {
         </div>
         <button type="submit" className="btn btn-primary" disabled={busy}>{busy ? "Saving…" : "Save changes"}</button>
       </form>
+      <Slot name="repo.settings.general" ctx={ctx} />
 
       <h2 className="h3 c-danger">Danger Zone</h2>
+      <Slot name="repo.settings.danger" ctx={ctx} />
       <form className="box danger-zone box-body" onSubmit={del}>
         <h3 className="h5">Delete this repository</h3>
         <p className="muted small">Once you delete a repository, there is no going back. Please be certain.</p>

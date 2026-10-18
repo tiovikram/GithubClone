@@ -136,7 +136,15 @@ fn parse_permission(p: Option<&str>) -> ApiResult<&'static str> {
 /// Grants `user` access to the repository. Returns true when newly added.
 pub async fn add_collaborator(state: &AppState, ctx: &RepoCtx, user: &User, permission: Option<&str>) -> ApiResult<bool> {
     ctx.require(Perm::Admin)?;
-    let perm = parse_permission(permission)?;
+    let perm: String = match parse_permission(permission) {
+        Ok(p) => p.to_string(),
+        // Organization repositories also accept a custom repository role name (stored as the
+        // role; it counts as its base role, see `orgs::perm`).
+        Err(e) => match custom_role_name(state, ctx, permission.unwrap_or_default()).await? {
+            Some(name) => name,
+            None => return Err(e),
+        },
+    };
     if user.id == ctx.owner.id {
         return Err(ApiError::unprocessable("Repository owner cannot be a collaborator"));
     }
@@ -182,6 +190,40 @@ pub async fn remove_collaborator(state: &AppState, ctx: &RepoCtx, actor: &User, 
     Ok(())
 }
 
+/// The canonical name of the org's custom repository role `name` (case-insensitive), if any.
+async fn custom_role_name(s: &AppState, ctx: &RepoCtx, name: &str) -> ApiResult<Option<String>> {
+    if ctx.owner.kind != "Organization" || name.is_empty() {
+        return Ok(None);
+    }
+    Ok(sqlx::query_scalar("SELECT name FROM custom_repo_roles WHERE org_id = $1 AND lower(name) = lower($2)")
+        .bind(ctx.owner.id)
+        .bind(name)
+        .fetch_optional(&s.db)
+        .await?)
+}
+
+/// Direct collaborators whose stored grant is a custom repository role: user id -> (role, base level).
+async fn custom_grants(s: &AppState, ctx: &RepoCtx) -> ApiResult<std::collections::HashMap<i64, (String, Perm)>> {
+    if ctx.owner.kind != "Organization" {
+        return Ok(Default::default());
+    }
+    let rows: Vec<(i64, String, String)> = sqlx::query_as(
+        "SELECT c.user_id, r.name, r.base_role FROM repo_collaborators c
+           JOIN custom_repo_roles r ON r.org_id = $2 AND lower(r.name) = lower(c.permission)
+          WHERE c.repo_id = $1",
+    )
+    .bind(ctx.repo.id)
+    .bind(ctx.owner.id)
+    .fetch_all(&s.db)
+    .await?;
+    Ok(rows.into_iter().map(|(id, n, b)| (id, (n, Perm::from_str(&b)))).collect())
+}
+
+/// `role_name` of a collaborator: the custom role when it is what grants the effective level.
+fn effective_role(custom: &std::collections::HashMap<i64, (String, Perm)>, user_id: i64, p: Perm) -> String {
+    custom.get(&user_id).filter(|(_, b)| *b == p).map(|(n, _)| n.clone()).unwrap_or_else(|| role_name(p).to_string())
+}
+
 // ---------------------------------------------------------------------------------------------
 // Handlers.
 
@@ -215,11 +257,16 @@ async fn list(
         .filter(|(_, perm, _)| min.is_none_or(|m| *perm >= m))
         .collect();
     let total = filtered.len() as i64;
+    let custom = custom_grants(&s, &ctx).await?;
     let items = filtered
         .into_iter()
         .skip(p.offset() as usize)
         .take(p.per_page() as usize)
-        .map(|(u, perm, _)| collaborator_json(&s, u, *perm))
+        .map(|(u, perm, _)| {
+            let mut v = collaborator_json(&s, u, *perm);
+            v["role_name"] = json!(effective_role(&custom, u.id, *perm));
+            v
+        })
         .collect();
     Ok(Paged::new(&uri, &s, p, Some(total), items))
 }
@@ -283,9 +330,10 @@ async fn permission(
     let ctx = load_ctx(&s, u.as_ref(), &owner, &repo).await?;
     let target = db::user_by_login(&s.db, &username).await?;
     let p = db::permission(&s.db, Some(&target), &ctx.repo, &ctx.owner).await?;
+    let custom = custom_grants(&s, &ctx).await?;
     Ok(Json(json!({
         "permission": legacy_permission(p),
-        "role_name": role_name(p),
+        "role_name": effective_role(&custom, target.id, p),
         "user": collaborator_json(&s, &target, p),
     })))
 }

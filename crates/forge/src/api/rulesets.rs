@@ -1,6 +1,9 @@
 //! Repository and organization rulesets:
 //! /repos/{o}/{r}/rulesets[/{id}], /orgs/{org}/rulesets[/{id}] and
-//! /repos/{o}/{r}/rules/branches/{branch} (the active rules that apply to a branch).
+//! /repos/{o}/{r}/rules/branches/{branch} (the active rules that apply to a branch), and
+//! enterprise rulesets at /enterprises/{e}/rulesets[/{id}] (site admins; they apply to the
+//! organization-owned repositories selected by their `organization_name` / repository
+//! conditions, like github.com's enterprise rulesets).
 //! Enforcement (pushes and API writes) lives in `crate::rules`.
 use axum::extract::{OriginalUri, Path, Query, State};
 use axum::response::Response;
@@ -24,6 +27,8 @@ pub fn routes() -> Router<AppState> {
         .route("/repos/{owner}/{repo}/rules/branches/{*branch}", get(branch_rules))
         .route("/orgs/{org}/rulesets", get(list_org).post(create_org))
         .route("/orgs/{org}/rulesets/{id}", get(get_org).put(update_org).delete(delete_org))
+        .route("/enterprises/{enterprise}/rulesets", get(list_ent).post(create_ent))
+        .route("/enterprises/{enterprise}/rulesets/{id}", get(get_ent).put(update_ent).delete(delete_ent))
 }
 
 #[derive(Debug, Clone, sqlx::FromRow)]
@@ -37,6 +42,9 @@ pub struct RulesetRow {
     pub conditions: Option<Value>,
     pub rules: Value,
     pub bypass_actors: Value,
+    /// An enterprise ruleset (no repository or organization).
+    #[sqlx(default)]
+    pub enterprise: bool,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -46,6 +54,7 @@ pub struct RulesetRow {
 pub enum Level {
     Repo(RepoCtx),
     Org(User),
+    Enterprise,
 }
 
 impl Level {
@@ -53,12 +62,16 @@ impl Level {
         match self {
             Level::Repo(c) => ("Repository", c.full_name()),
             Level::Org(o) => ("Organization", o.login.clone()),
+            Level::Enterprise => ("Enterprise", crate::enterprise::slug()),
         }
     }
 }
 
 /// The source of a ruleset row as seen from `level` (a repo's list may include org rulesets).
 pub fn source_of(row: &RulesetRow, level: &Level) -> (&'static str, String) {
+    if row.enterprise {
+        return ("Enterprise", crate::enterprise::slug());
+    }
     match (level, row.org_id) {
         (Level::Repo(c), Some(_)) => ("Organization", c.owner.login.clone()),
         _ => level.source(),
@@ -69,6 +82,10 @@ pub fn ruleset_json(s: &AppState, row: &RulesetRow, level: &Level, full: bool) -
     let (source_type, source) = source_of(row, level);
     let (self_href, html) = match source_type {
         "Repository" => (format!("{}/repos/{source}/rulesets/{}", s.api_url(), row.id), format!("{}/{source}/rules/{}", s.base_url(), row.id)),
+        "Enterprise" => (
+            format!("{}/enterprises/{source}/rulesets/{}", s.api_url(), row.id),
+            format!("{}/enterprises/{source}/settings/rules/{}", s.base_url(), row.id),
+        ),
         _ => (
             format!("{}/orgs/{source}/rulesets/{}", s.api_url(), row.id),
             format!("{}/organizations/{source}/settings/rules/{}", s.base_url(), row.id),
@@ -151,10 +168,12 @@ fn validate(input: &RulesetInput, creating: bool) -> ApiResult<()> {
     Ok(())
 }
 
-/// Repo admin, or org admin for org rulesets.
+/// Repo admin, org admin for org rulesets, site admin for enterprise rulesets.
 async fn require_admin(s: &AppState, level: &Level, actor: &User) -> ApiResult<()> {
     match level {
         Level::Repo(c) => c.require(Perm::Admin),
+        Level::Enterprise if actor.site_admin => Ok(()),
+        Level::Enterprise => Err(crate::enterprise::forbidden()),
         Level::Org(o) => {
             let admin: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM org_members WHERE org_id = $1 AND user_id = $2 AND role = 'admin')")
                 .bind(o.id)
@@ -174,6 +193,7 @@ fn level_ids(level: &Level) -> (Option<i64>, Option<i64>) {
     match level {
         Level::Repo(c) => (Some(c.repo.id), None),
         Level::Org(o) => (None, Some(o.id)),
+        Level::Enterprise => (None, None),
     }
 }
 
@@ -182,8 +202,8 @@ pub async fn create_ruleset(s: &AppState, level: &Level, actor: &User, input: Ru
     validate(&input, true)?;
     let (repo_id, org_id) = level_ids(level);
     let row: RulesetRow = sqlx::query_as(
-        "INSERT INTO rulesets (repo_id, org_id, name, target, enforcement, conditions, rules, bypass_actors)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *",
+        "INSERT INTO rulesets (repo_id, org_id, name, target, enforcement, conditions, rules, bypass_actors, enterprise)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *",
     )
     .bind(repo_id)
     .bind(org_id)
@@ -193,6 +213,7 @@ pub async fn create_ruleset(s: &AppState, level: &Level, actor: &User, input: Ru
     .bind(input.conditions.filter(|c| !c.is_null()))
     .bind(input.rules.unwrap_or_else(|| json!([])))
     .bind(input.bypass_actors.unwrap_or_else(|| json!([])))
+    .bind(matches!(level, Level::Enterprise))
     .fetch_one(&s.db)
     .await?;
     // ruleset history (orgs area)
@@ -201,18 +222,23 @@ pub async fn create_ruleset(s: &AppState, level: &Level, actor: &User, input: Ru
 }
 
 /// Rulesets visible at `level`. For a repository, `includes_parents` adds the owning
-/// organization's rulesets.
+/// organization's rulesets; for an organization (and its repositories) also the enterprise's.
 pub async fn list_rulesets(s: &AppState, level: &Level, includes_parents: bool, targets: Option<&[String]>) -> ApiResult<Vec<RulesetRow>> {
     let rows: Vec<RulesetRow> = match level {
         Level::Repo(c) => {
             let org = (includes_parents && c.owner.kind == "Organization").then_some(c.owner.id);
-            sqlx::query_as("SELECT * FROM rulesets WHERE repo_id = $1 OR ($2::bigint IS NOT NULL AND org_id = $2) ORDER BY id")
+            sqlx::query_as("SELECT * FROM rulesets WHERE repo_id = $1 OR ($2::bigint IS NOT NULL AND (org_id = $2 OR enterprise)) ORDER BY id")
                 .bind(c.repo.id)
                 .bind(org)
                 .fetch_all(&s.db)
                 .await?
         }
-        Level::Org(o) => sqlx::query_as("SELECT * FROM rulesets WHERE org_id = $1 ORDER BY id").bind(o.id).fetch_all(&s.db).await?,
+        Level::Org(o) => sqlx::query_as("SELECT * FROM rulesets WHERE org_id = $1 OR ($2 AND enterprise) ORDER BY id")
+            .bind(o.id)
+            .bind(includes_parents)
+            .fetch_all(&s.db)
+            .await?,
+        Level::Enterprise => sqlx::query_as("SELECT * FROM rulesets WHERE enterprise ORDER BY id").fetch_all(&s.db).await?,
     };
     Ok(rows.into_iter().filter(|r| targets.is_none_or(|t| t.iter().any(|x| x == &r.target))).collect())
 }
@@ -224,7 +250,7 @@ pub async fn get_ruleset(s: &AppState, level: &Level, id: i64) -> ApiResult<Rule
 /// Rows owned directly by `level` (not inherited) can be changed there.
 async fn own_ruleset(s: &AppState, level: &Level, id: i64) -> ApiResult<RulesetRow> {
     let r = get_ruleset(s, level, id).await?;
-    if level_ids(level) != (r.repo_id, r.org_id) {
+    if level_ids(level) != (r.repo_id, r.org_id) || r.enterprise != matches!(level, Level::Enterprise) {
         return Err(ApiError::not_found());
     }
     Ok(r)
@@ -429,6 +455,43 @@ async fn update_org(State(s): State<AppState>, AuthUser(u): AuthUser, Path((org,
 
 async fn delete_org(State(s): State<AppState>, AuthUser(u): AuthUser, Path((org, id)): Path<(String, i64)>) -> ApiResult<Response> {
     let level = org_level(&s, &org).await?;
+    delete_ruleset(&s, &level, &u, id).await?;
+    Ok(no_content())
+}
+
+async fn ent_level(e: &str) -> ApiResult<Level> {
+    crate::enterprise::check_enterprise(e)?;
+    Ok(Level::Enterprise)
+}
+
+async fn list_ent(State(s): State<AppState>, uri: OriginalUri, AuthUser(u): AuthUser, Path(e): Path<String>, Query(q): Query<ListQuery>) -> ApiResult<Paged> {
+    let level = ent_level(&e).await?;
+    require_admin(&s, &level, &u).await?;
+    let rows = list_rulesets(&s, &level, true, targets(&q).as_deref()).await?;
+    Ok(render_list(&s, &uri, &level, rows, &q))
+}
+
+async fn create_ent(State(s): State<AppState>, AuthUser(u): AuthUser, Path(e): Path<String>, Json(b): Json<RulesetInput>) -> ApiResult<Response> {
+    let level = ent_level(&e).await?;
+    let row = create_ruleset(&s, &level, &u, b).await?;
+    Ok(created(ruleset_json(&s, &row, &level, true)))
+}
+
+async fn get_ent(State(s): State<AppState>, AuthUser(u): AuthUser, Path((e, id)): Path<(String, i64)>) -> ApiResult<Json<Value>> {
+    let level = ent_level(&e).await?;
+    require_admin(&s, &level, &u).await?;
+    let row = get_ruleset(&s, &level, id).await?;
+    Ok(Json(ruleset_json(&s, &row, &level, true)))
+}
+
+async fn update_ent(State(s): State<AppState>, AuthUser(u): AuthUser, Path((e, id)): Path<(String, i64)>, Json(b): Json<RulesetInput>) -> ApiResult<Json<Value>> {
+    let level = ent_level(&e).await?;
+    let row = update_ruleset(&s, &level, &u, id, b).await?;
+    Ok(Json(ruleset_json(&s, &row, &level, true)))
+}
+
+async fn delete_ent(State(s): State<AppState>, AuthUser(u): AuthUser, Path((e, id)): Path<(String, i64)>) -> ApiResult<Response> {
+    let level = ent_level(&e).await?;
     delete_ruleset(&s, &level, &u, id).await?;
     Ok(no_content())
 }

@@ -72,6 +72,8 @@ pub mod repos_env;
 pub mod repos_settings;
 pub mod repos_rules;
 pub mod repos_stats;
+pub mod repo_traffic;
+pub mod repo_merge_opts;
 pub mod repos_pages;
 pub mod users_extra;
 pub mod issues_extra;
@@ -162,6 +164,7 @@ pub fn routes() -> Router<AppState> {
         .merge(repos_settings::routes())
         .merge(repos_rules::routes())
         .merge(repos_stats::routes())
+        .merge(repo_traffic::routes())
         .merge(repos_pages::routes())
         .merge(users_extra::routes())
         .merge(issues_extra::routes())
