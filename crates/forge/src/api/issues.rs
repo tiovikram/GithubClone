@@ -597,6 +597,7 @@ pub async fn insert_issue_row(conn: &mut PgConnection, repo_id: i64, author_id: 
 
 /// Creates an issue. Any user who can read the repository may open one.
 pub async fn create_issue(state: &AppState, ctx: &RepoCtx, actor: &User, input: CreateIssue) -> ApiResult<IssueRow> {
+    crate::api::orgs_invitations::require_not_blocked(&state.db, &ctx.owner, actor).await?;
     require_issues_enabled(ctx)?;
     if input.title.trim().is_empty() {
         return Err(ApiError::validation("Issue", "title", "missing_field"));

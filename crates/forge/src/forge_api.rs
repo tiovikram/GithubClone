@@ -22,6 +22,8 @@ pub fn routes() -> Router<AppState> {
         .route("/tokens", post(create_token).get(list_tokens))
         .route("/tokens/{id}", delete(delete_token))
         .route("/orgs", post(create_org))
+        .route("/orgs/{org}", axum::routing::patch(rename_org))
+        .route("/user/memberships/orgs/{org}", delete(decline_org_invitation))
         .route("/healthz", axum::routing::get(|| async { "ok" }))
         .route("/announcement", axum::routing::get(announcement))
         .layer(axum::middleware::from_fn(require_csrf_header))
@@ -215,4 +217,30 @@ struct CreateOrgBody {
 async fn create_org(State(s): State<AppState>, AuthUser(u): AuthUser, Json(b): Json<CreateOrgBody>) -> ApiResult<Response> {
     let org = crate::api::repos::create_organization(&s, &b.login, b.profile_name.as_deref(), &u).await?;
     Ok((StatusCode::CREATED, axum::Json(json::user::org_simple(&s.api_url(), s.base_url(), &org))).into_response())
+}
+
+#[derive(Deserialize)]
+struct RenameOrgBody {
+    login: Option<String>,
+}
+
+/// `PATCH /api/forge/orgs/{org}` `{"login": ...}` (forge-only): an organization owner renames
+/// the organization ("Rename organization" in the org settings). GHES only offers the
+/// site-admin `PATCH /admin/organizations/{org}`.
+async fn rename_org(State(s): State<AppState>, AuthUser(u): AuthUser, Path(org): Path<String>, Json(b): Json<RenameOrgBody>) -> ApiResult<Response> {
+    let o = crate::orgs::org_by_login(&s, &org).await?;
+    crate::orgs::require_owner(&s, &o, &u).await?;
+    let login = b.login.filter(|l| !l.trim().is_empty()).ok_or_else(|| ApiError::validation("Organization", "login", "missing_field"))?;
+    let o = crate::enterprise::rename_org(&s, &u, &o, login.trim()).await?;
+    Ok(axum::Json(json::user::org_simple(&s.api_url(), s.base_url(), &o)).into_response())
+}
+
+/// `DELETE /api/forge/user/memberships/orgs/{org}` (forge-only): the invitee declines a pending
+/// organization invitation (done in the web UI only on the hosted product).
+async fn decline_org_invitation(State(s): State<AppState>, AuthUser(u): AuthUser, Path(org): Path<String>) -> ApiResult<Response> {
+    let o = crate::orgs::org_by_login(&s, &org).await?;
+    if !crate::api::orgs_invitations::decline(&s, &o, &u).await? {
+        return Err(ApiError::not_found());
+    }
+    Ok(StatusCode::NO_CONTENT.into_response())
 }

@@ -28,6 +28,7 @@ pub mod gists;
 pub mod gist_git;
 pub mod misc;
 pub mod orgs_extra;
+pub mod orgs_invitations;
 pub mod orgs_props;
 pub mod orgs_registries;
 pub mod orgs_roles;
@@ -120,6 +121,7 @@ pub fn routes() -> Router<AppState> {
         .merge(webhooks::routes())
         .merge(social::routes())
         .merge(orgs_extra::routes())
+        .merge(orgs_invitations::routes())
         .merge(orgs_teams::routes())
         .merge(orgs_settings::routes())
         .merge(orgs_roles::routes())
