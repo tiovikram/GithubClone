@@ -106,6 +106,19 @@ pub async fn blob_size(state: &AppState, digest: &str) -> ApiResult<Option<i64>>
     Ok(sqlx::query_scalar("SELECT size FROM package_blobs WHERE digest = $1").bind(digest).fetch_optional(&state.db).await?)
 }
 
+/// Whether the blob is recorded *and* its object exists (a row whose object went missing, e.g.
+/// restored from a database backup without the bucket, is re-filled by the next upload).
+pub async fn blob_stored(state: &AppState, digest: &str) -> ApiResult<bool> {
+    if blob_size(state, digest).await?.is_none() {
+        return Ok(false);
+    }
+    match state.store.head(&blob_key(digest)).await {
+        Ok(_) => Ok(true),
+        Err(object_store::Error::NotFound { .. }) => Ok(false),
+        Err(e) => Err(e.into()),
+    }
+}
+
 /// Marks blobs as recently used (protects them from `forge gc` while a push is in flight).
 pub async fn touch_blobs(state: &AppState, digests: &[String]) -> ApiResult<()> {
     sqlx::query("UPDATE package_blobs SET last_seen_at = now() WHERE digest = ANY($1) AND last_seen_at < now() - interval '1 minute'")
@@ -118,7 +131,7 @@ pub async fn touch_blobs(state: &AppState, digests: &[String]) -> ApiResult<()> 
 /// Stores a small object (a manifest, an npm tarball) in the blob store; returns its digest.
 pub async fn put_blob_bytes(state: &AppState, data: Bytes) -> ApiResult<String> {
     let digest = sha256_digest(&data);
-    if blob_size(state, &digest).await?.is_none() {
+    if !blob_stored(state, &digest).await? {
         let len = data.len() as i64;
         state.store.put(&blob_key(&digest), data.into()).await?;
         sqlx::query("INSERT INTO package_blobs (digest, size) VALUES ($1, $2) ON CONFLICT (digest) DO UPDATE SET last_seen_at = now()")

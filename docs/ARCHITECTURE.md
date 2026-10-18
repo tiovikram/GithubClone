@@ -39,6 +39,8 @@ Configuration is environment only:
 - `/api/graphql` — GraphQL (subset of GitHub schema needed by gh; see docs/research/gh-protocol.md).
 - `/{owner}/{repo}(.git)?/info/refs`, `/git-upload-pack`, `/git-receive-pack` — git smart HTTP.
 - `/api/forge/...` — forge-only endpoints (signup, login/session, admin). Not GitHub API.
+- `/v2/...` — OCI container registry (GHCR equivalent; images `{host}/{owner}/{name}`), token
+  endpoint `/v2/token`. `/npm/...` — npm registry for `@owner/name`. See "Packages" below.
 - `/login`, `/logout` handled by the SPA + `/api/forge/session`.
 - everything else — the web UI (SPA, embedded static assets, `index.html` fallback).
 
@@ -144,6 +146,31 @@ An embedded `russh` server, started by `forge serve` when `FORGE_SSH_LISTEN` is 
 - **Runner groups** (`actions_runner_groups`): per org and for the enterprise, with a `Default`
   group each; membership in `actions_runner_group_runners` (no row = default group). forge has no
   GitHub-hosted runner fleet: jobs run on self-hosted runners (`forge runner`).
+
+## Packages (`packages/`, `api/packages.rs`)
+- **Storage.** Every package object (layer, image config, manifest, npm tarball) is a blob at
+  `packages/blobs/sha256/<hex>` in object storage, shared between packages (`package_blobs`).
+  Postgres holds `packages` (owner, type `container`/`npm`, name, visibility, linked repo),
+  `package_versions` (container: name = manifest digest; npm: the version), `package_tags`
+  (container tags, npm dist-tags), `package_version_blobs` (what each version references) and
+  `package_repo_blobs` (blobs pushed into `owner/name` before a manifest references them).
+- **Uploads** (`package_uploads`): each PATCH chunk is its own object
+  (`packages/uploads/<id>/<n>-<rand>`), appended with a compare-and-swap on the part count; the
+  final PUT re-hashes (or, for a single chunk, reuses the hash), verifies the digest and copies
+  into the blob store. Any pod can take any chunk.
+- **Auth.** `/v2/` answers 401 + `WWW-Authenticate: Bearer realm="{base}/v2/token"`; the token
+  endpoint (GET with Basic, or docker's POST `grant_type=password|refresh_token`) returns an
+  HMAC-signed identity token (`fgr_<uid>.<exp>.<mac>`, key `signing_secrets.registry`). PATs and
+  Basic work directly too. Permissions are checked per request (`packages::package_perm`).
+- **Permissions** (GitHub's granular model): the owning user, the owners of the owning org and
+  the publisher administer; a package linked to a repository (`org.opencontainers.image.source`
+  label/annotation, package.json `repository`, same owner only) inherits its access (read/write/
+  admin); public packages are world-readable. New packages are private unless linked to a public
+  repository at creation. Publishing a new package needs the namespace (the user, or org
+  membership).
+- **Deletes are soft** (REST API, `DELETE manifests/<digest>`, `npm unpublish`); restorable for
+  30 days; `forge gc` (`packages::gc::run`) purges them and deletes blobs nothing references
+  (1 h grace, refreshed whenever a client is told a blob exists).
 
 ## Crate layout (`crates/forge/src`)
 ```

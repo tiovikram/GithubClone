@@ -493,6 +493,12 @@ async fn get_blob(state: &AppState, user: Option<&User>, full: &str, digest: &st
     }
     let size = super::blob_size(state, digest).await?.ok_or_else(RegErr::blob_unknown)?;
     super::touch_blobs(state, &[digest.to_string()]).await?;
+    sqlx::query("UPDATE package_repo_blobs SET last_seen_at = now() WHERE owner_id = $1 AND name = $2 AND digest = $3 AND last_seen_at < now() - interval '1 minute'")
+        .bind(t.owner.id)
+        .bind(&t.name)
+        .bind(digest)
+        .execute(&state.db)
+        .await?;
     let range = headers.get(header::RANGE).and_then(|v| v.to_str().ok()).and_then(|r| parse_range(r, size as u64));
     let mut res = if head {
         let mut r = Response::new(Body::empty());
@@ -732,7 +738,7 @@ async fn finish_upload(state: &AppState, t: &Target, up: UploadRow, digest: &str
         delete_upload_objects(state, &up).await;
         return Err(RegErr::digest_invalid("provided digest did not match uploaded content").detail(json!({ "computed": computed })));
     }
-    if super::blob_size(state, digest).await?.is_none() {
+    if !super::blob_stored(state, digest).await? {
         let dest = super::blob_key(digest);
         match &source {
             Some(src) => state.store.copy(src, &dest).await?,
@@ -1060,21 +1066,15 @@ async fn tags_list(state: &AppState, user: Option<&User>, full: &str, q: &std::c
 async fn catalog(state: &AppState, user: Option<&User>, q: &std::collections::HashMap<String, String>) -> RegResult<Response> {
     let n = page_n(q);
     let last = q.get("last").cloned().unwrap_or_default();
-    let rows: Vec<(PackageRow, String)> = {
-        let pkgs: Vec<PackageRow> = sqlx::query_as("SELECT * FROM packages WHERE package_type = 'container' AND deleted_at IS NULL ORDER BY id")
-            .fetch_all(&state.db)
-            .await?;
-        let owners = crate::json::issue::users_by_ids(&state.db, &pkgs.iter().map(|p| p.owner_id).collect::<Vec<_>>()).await?;
-        pkgs.into_iter()
-            .filter_map(|p| owners.get(&p.owner_id).map(|o| (format!("{}/{}", o.login.to_lowercase(), p.name), p)))
-            .map(|(n, p)| (p, n))
-            .collect()
-    };
+    let pkgs: Vec<PackageRow> = sqlx::query_as("SELECT * FROM packages WHERE package_type = 'container' AND deleted_at IS NULL ORDER BY id")
+        .fetch_all(&state.db)
+        .await?;
+    let owners = crate::json::issue::users_by_ids(&state.db, &pkgs.iter().map(|p| p.owner_id).collect::<Vec<_>>()).await?;
     let mut names = Vec::new();
-    for (p, name) in rows {
-        let owner = db::user_by_id(&state.db, p.owner_id).await?;
-        if super::package_perm(state, user, &p, &owner).await? >= PkgPerm::Read {
-            names.push(name);
+    for p in pkgs {
+        let Some(owner) = owners.get(&p.owner_id) else { continue };
+        if super::package_perm(state, user, &p, owner).await? >= PkgPerm::Read {
+            names.push(format!("{}/{}", owner.login.to_lowercase(), p.name));
         }
     }
     names.sort();
