@@ -143,8 +143,10 @@ pub async fn delete_reaction(s: &AppState, ctx: &RepoCtx, subject_type: &str, su
         .fetch_optional(&s.db)
         .await?;
     let Some(owner) = owner else { return Err(ApiError::not_found()) };
-    if owner != user.id && ctx.perm < crate::db::Perm::Admin {
-        return Err(ApiError::forbidden("Must have admin rights to Repository."));
+    // Only the reaction's author may remove it (GitHub; admins included).
+    let _ = ctx;
+    if owner != user.id {
+        return Err(ApiError::forbidden("You can only delete your own reactions."));
     }
     sqlx::query("DELETE FROM reactions WHERE id = $1").bind(reaction_id).execute(&s.db).await?;
     Ok(super::no_content())

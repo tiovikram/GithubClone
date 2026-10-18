@@ -8,6 +8,7 @@
 //!   fragments, ID/String variable interchange, undeclared variables): we run async-graphql in
 //!   `ValidationMode::Fast` and fill absent nullable variables with `null`.
 //! * Feature-gated fields from §5.2 are deliberately absent so gh takes the simplest GHES path.
+pub mod archived;
 pub mod connection;
 pub mod discussions;
 pub mod enums;
@@ -68,6 +69,7 @@ pub fn schema() -> &'static ForgeSchema {
             // introspection) stay far below these.
             .limit_depth(32)
             .limit_complexity(5_000)
+            .extension(archived::ArchivedGuard)
             .finish()
     })
 }

@@ -148,10 +148,11 @@ async fn get_one(State(s): State<AppState>, MaybeUser(u): MaybeUser, headers: He
         let path = pulls::repo_for_reading(&s, &pull).await?;
         let g = &s.git.git;
         let body = if kind == "diff" {
-            pulls::git::raw_diff(g, &path, pull.diff_base(), &pull.pr.head_sha, None).await?
+            pulls::git::raw_diff(g, &path, pull.diff_base(), &pull.pr.head_sha, None).await
         } else {
-            pulls::git::format_patch(g, &path, &pull.range()).await?
-        };
+            pulls::git::format_patch(g, &path, &pull.range()).await
+        }
+        .map_err(|e| crate::security::diff_api_error(e, "PullRequest"))?;
         let ct = format!("application/vnd.github.{kind}; charset=utf-8");
         return Ok(([(header::CONTENT_TYPE, ct)], body).into_response());
     }

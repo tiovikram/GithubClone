@@ -488,9 +488,18 @@ pub async fn diff(git: &GitCmd, repo: &Path, from: Option<&str>, to: &str, with_
         f.binary = bin;
     }
     if with_patch && !files.is_empty() {
-        let out = git
-            .run(repo, &["diff-tree", "-r", "-M", "-p", "--no-color", "--no-ext-diff", "--no-textconv", from, to])
-            .await?;
+        // Bounded (FORGE_MAX_DIFF_BYTES): beyond it, patches are omitted like GitHub does for
+        // large diffs; the file list and stats above are complete.
+        let (out, truncated) = crate::security::git_output_capped(
+            git,
+            repo,
+            &["diff-tree", "-r", "-M", "-p", "--no-color", "--no-ext-diff", "--no-textconv", from, to],
+            crate::security::max_diff_bytes(),
+        )
+        .await?;
+        if truncated {
+            return Ok(files);
+        }
         let chunks = split_patch(&out);
         for (f, chunk) in files.iter_mut().zip(chunks.into_iter()) {
             if !f.binary {
@@ -590,9 +599,10 @@ fn split_patch(out: &[u8]) -> Vec<Option<String>> {
 }
 
 /// Plain-text unified diff between two revisions (`Accept: application/vnd.github.diff`).
+/// Fails with `security::DiffTooLarge` beyond `FORGE_MAX_DIFF_BYTES`.
 pub async fn diff_text(git: &GitCmd, repo: &Path, from: Option<&str>, to: &str) -> anyhow::Result<Vec<u8>> {
     let from = from.unwrap_or(EMPTY_TREE);
-    git.run(repo, &["diff-tree", "-r", "-M", "-p", "--full-index", "--no-color", "--no-ext-diff", "--no-textconv", from, to])
+    crate::security::git_diff_capped(git, repo, &["diff-tree", "-r", "-M", "-p", "--full-index", "--no-color", "--no-ext-diff", "--no-textconv", from, to])
         .await
 }
 
@@ -601,7 +611,7 @@ pub async fn diff_text(git: &GitCmd, repo: &Path, from: Option<&str>, to: &str) 
 pub async fn format_patch(git: &GitCmd, repo: &Path, args: &[&str]) -> anyhow::Result<Vec<u8>> {
     let mut a = vec!["format-patch", "--stdout", "--no-color", "--no-signature", "--full-index", "--binary"];
     a.extend_from_slice(args);
-    git.run(repo, &a).await
+    crate::security::git_diff_capped(git, repo, &a).await
 }
 
 /// Parses an ISO-8601 timestamp into (unix seconds, "+hhmm").

@@ -204,29 +204,41 @@ struct CreateOrg {
     profile_name: Option<String>,
 }
 
-/// GHES admin endpoint; forge lets any authenticated user create an org they administer.
+/// GHES admin endpoint (`enterprise-admin/create-org`): site administrators only, like GHES.
+/// Normal users create organizations through the forge-only `POST /api/forge/orgs`.
 async fn create_org(State(s): State<AppState>, AuthUser(u): AuthUser, Json(req): Json<CreateOrg>) -> ApiResult<Response> {
-    if !crate::forge_api::valid_login(&req.login) {
-        return Err(ApiError::validation("Organization", "login", "invalid"));
+    if !u.site_admin {
+        return Err(ApiError::forbidden("Must be a site administrator."));
     }
     let admin = match req.admin.as_deref() {
         Some(a) => db::user_by_login(&s.db, a).await?,
         None => u.clone(),
     };
+    let org = create_organization(&s, &req.login, req.profile_name.as_deref(), &admin).await?;
+    Ok(created(json::user::org_simple(&s.api_url(), s.base_url(), &org)))
+}
+
+/// Creates organization `login` with `admin` as its first (admin) member.
+pub async fn create_organization(s: &AppState, login: &str, profile_name: Option<&str>, admin: &User) -> ApiResult<User> {
+    if !crate::forge_api::valid_login(login) {
+        return Err(ApiError::validation("Organization", "login", "invalid"));
+    }
+    let mut tx = s.db.begin().await?;
     let org: Option<User> = sqlx::query_as(
         "INSERT INTO users (login, kind, name) VALUES ($1, 'Organization', $2) ON CONFLICT DO NOTHING RETURNING *",
     )
-    .bind(&req.login)
-    .bind(&req.profile_name)
-    .fetch_optional(&s.db)
+    .bind(login)
+    .bind(profile_name)
+    .fetch_optional(&mut *tx)
     .await?;
     let org = org.ok_or_else(|| ApiError::validation("Organization", "login", "already_exists"))?;
     sqlx::query("INSERT INTO org_members (org_id, user_id, role) VALUES ($1, $2, 'admin')")
         .bind(org.id)
         .bind(admin.id)
-        .execute(&s.db)
+        .execute(&mut *tx)
         .await?;
-    Ok(created(json::user::org_simple(&s.api_url(), s.base_url(), &org)))
+    tx.commit().await?;
+    Ok(org)
 }
 
 /// Builds full-repository JSON including parent/source for forks.
