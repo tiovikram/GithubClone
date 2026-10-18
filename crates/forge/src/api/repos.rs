@@ -440,7 +440,10 @@ async fn list_rows(s: &AppState, where_sql: &str, binds: Vec<i64>, viewer: Optio
         _ => "",
     };
     // Repos visible to the viewer (the shared rule, see `db::readable_sql`).
-    let visible = db::readable_sql("r.id", "$1");
+    // The two cheap cases the function also accepts go first: forge_repo_readable is not
+    // inlinable (recursive CTE), and calling it for every row made a 30-repo page cost
+    // O(owned repos) (~26 ms at 630 repos, page + count).
+    let visible = format!("(NOT r.private OR r.owner_id = $1 OR {})", db::readable_sql("r.id", "$1"));
     let sql_base = format!("FROM repositories r JOIN users o ON o.id = r.owner_id WHERE {visible} AND ({where_sql}){vis}");
     let sql = format!("SELECT r.id {sql_base} ORDER BY {} LIMIT {} OFFSET {}", q.order(), p.limit(), p.offset());
     let count_sql = format!("SELECT count(*) {sql_base}");
