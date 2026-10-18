@@ -349,7 +349,10 @@ async fn enterprise_settings_are_for_site_admins() {
         u = s.user().await; // the very first user of a fresh database is a site admin
     }
     let e = "/enterprises/forge/actions/permissions";
+    // non-admins: 403 (enterprise area: site admins own the single enterprise); other slugs: 404
     let (st, _) = s.call(Some(&u), "GET", &format!("{e}/workflow"), None).await;
+    assert_eq!(st, 403);
+    let (st, _) = s.call(Some(&admin), "GET", "/enterprises/not-this-one/actions/permissions/workflow", None).await;
     assert_eq!(st, 404);
     let (st, wf) = s.call(Some(&admin), "GET", &format!("{e}/workflow"), None).await;
     assert_eq!(st, 200);

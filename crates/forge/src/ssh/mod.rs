@@ -490,6 +490,7 @@ async fn serve_push(
 ) -> anyhow::Result<u32> {
     let git = state.git.git.clone();
     let guard = crate::protection::push_guard(state, ctx).await?;
+    let ent_hooks = crate::enterprise::prereceive::hook_guard(state, ctx, pusher, "git push", None).await?;
     let tap = Arc::new(Mutex::new(PushRequestParser::default()));
     let tap2 = tap.clone();
     let result = state
@@ -506,6 +507,9 @@ async fn serve_push(
             }
             if let Some(g) = &guard {
                 g.apply(&mut cmd);
+            }
+            if let Some(h) = &ent_hooks {
+                h.apply(&mut cmd);
             }
             let mut child = cmd.spawn()?;
             let stdin = child.stdin.take().unwrap();
