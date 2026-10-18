@@ -701,3 +701,50 @@ jobs:
     let (_, appr) = s.call(Some(&u), "GET", &format!("{rp}/actions/runs/{gid}/approvals"), None).await;
     assert_eq!(appr, json!([]), "gate reviews are not environment approvals");
 }
+
+/// The web UI's run pages: the job summary (GITHUB_STEP_SUMMARY, masked) lands in the job's
+/// check run output text, and `/api/forge/.../jobs/{id}/steps` serves each step's log.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn job_summary_and_per_step_logs() {
+    let s = TestServer::start().await;
+    let u = s.user().await;
+    let repo = common::unique("r");
+    let (st, _) = s.call(Some(&u), "POST", "/user/repos", Some(json!({"name": repo, "auto_init": true, "private": true}))).await;
+    assert_eq!(st, 201);
+    let rp = format!("/repos/{}/{repo}", u.login);
+    let _runner = start_runner(&s, &u, &rp, "").await;
+    let b64 = base64::engine::general_purpose::STANDARD;
+    let (_, pk) = s.call(Some(&u), "GET", &format!("{rp}/actions/secrets/public-key"), None).await;
+    let key = crypto_box::PublicKey::from_slice(&b64.decode(pk["key"].as_str().unwrap()).unwrap()).unwrap();
+    let sealed = key.seal(&mut crypto_box::aead::OsRng, b"summary-secret-value").unwrap();
+    let (st, _) = s.call(Some(&u), "PUT", &format!("{rp}/actions/secrets/SUM"), Some(json!({"encrypted_value": b64.encode(sealed), "key_id": pk["key_id"]}))).await;
+    assert_eq!(st, 201);
+    let wf = "name: Sum\non: workflow_dispatch\njobs:\n  a:\n    runs-on: ubuntu-latest\n    steps:\n      - name: First\n        run: echo first-step-output\n      - name: Second\n        run: |\n          echo second-step-output\n          echo \"### Results ${{ secrets.SUM }}\" >> \"$GITHUB_STEP_SUMMARY\"\n";
+    put_file(&s, &u, &rp, ".github/workflows/sum.yml", wf).await;
+    let (_, v) = s.call(Some(&u), "POST", &format!("{rp}/actions/workflows/sum.yml/dispatches"), Some(json!({"ref": "main", "return_run_details": true}))).await;
+    let id = v["workflow_run_id"].as_i64().unwrap();
+    let r = wait_run(&s, &u, &rp, id, 1).await;
+    assert_eq!(r["conclusion"], "success");
+    let js = jobs(&s, &u, &rp, id).await;
+    let job = &js[0];
+    let (st, cr) = s.call(Some(&u), "GET", &format!("{rp}/check-runs/{}", job["id"]), None).await;
+    assert_eq!(st, 200, "{cr}");
+    let text = cr["output"]["text"].as_str().unwrap_or_default();
+    assert!(text.contains("### Results ***"), "summary in check run text, masked: {cr}");
+    assert!(!text.contains("summary-secret-value"));
+    let url = format!("{}/api/forge{rp}/actions/jobs/{}/steps", s.base, job["id"]);
+    let res = s.client().get(&url).header("Authorization", format!("token {}", u.token)).send().await.unwrap();
+    assert_eq!(res.status().as_u16(), 200);
+    let v: Value = res.json().await.unwrap();
+    let steps = v["steps"].as_array().unwrap().clone();
+    let log_of = |name: &str| {
+        let n = job["steps"].as_array().unwrap().iter().find(|st| st["name"] == name).unwrap()["number"].clone();
+        steps.iter().find(|st| st["number"] == n).map(|st| st["log"].as_str().unwrap().to_string()).unwrap_or_default()
+    };
+    assert!(log_of("First").contains("first-step-output"), "{v}");
+    assert!(!log_of("First").contains("second-step-output"));
+    assert!(log_of("Second").contains("second-step-output"));
+    // the repository is private: anonymous callers get a 404
+    let res = s.client().get(&url).send().await.unwrap();
+    assert_eq!(res.status().as_u16(), 404);
+}
