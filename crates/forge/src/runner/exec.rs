@@ -213,6 +213,8 @@ pub struct Job {
     pub container: Option<String>,
     pub runner_name: String,
     pub summary: String,
+    /// check-run annotations (workflow commands, failed processes), at most 50
+    pub annotations: Arc<Mutex<Vec<Value>>>,
 }
 
 pub fn which(bin: &str) -> Option<PathBuf> {
@@ -302,6 +304,7 @@ impl Job {
                 container: None,
                 runner_name: runner_name.to_string(),
                 summary: String::new(),
+                annotations: Arc::new(Mutex::new(Vec::new())),
             },
             up,
         ))
@@ -443,6 +446,29 @@ impl Job {
         e
     }
 
+    /// Records a check-run annotation from `::error file=f,line=n,title=t::msg` (or a failure).
+    pub fn annotate(&self, level: &str, props: &str, msg: &str) {
+        let mut a = json!({ "path": ".github", "start_line": 1, "end_line": 1, "message": self.log.mask(msg),
+            "annotation_level": match level { "error" => "failure", "warning" => "warning", _ => "notice" } });
+        for kv in props.split(',') {
+            let Some((k, v)) = kv.trim().split_once('=') else { continue };
+            match k {
+                "file" => a["path"] = json!(v),
+                "line" => a["start_line"] = json!(v.parse::<i64>().unwrap_or(1).max(1)),
+                "endLine" => a["end_line"] = json!(v.parse::<i64>().unwrap_or(1).max(1)),
+                "title" => a["title"] = json!(v),
+                _ => {}
+            }
+        }
+        if a["end_line"].as_i64() < a["start_line"].as_i64() {
+            a["end_line"] = a["start_line"].clone();
+        }
+        let mut v = self.annotations.lock().unwrap();
+        if v.len() < 50 {
+            v.push(a);
+        }
+    }
+
     pub fn err(&self, msg: &str) {
         self.log.line(&format!("##[error]{msg}"));
     }
@@ -527,7 +553,10 @@ fn workflow_command(job: &Job, line: &str, outputs: &mut Map<String, Value>) -> 
         }
         "group" => Some(format!("##[group]{msg}")),
         "endgroup" => Some("##[endgroup]".into()),
-        "error" | "warning" | "notice" => Some(format!("##[{cmd}]{}", unescape(msg))),
+        "error" | "warning" | "notice" => {
+            job.annotate(cmd, props, &unescape(msg));
+            Some(format!("##[{cmd}]{}", unescape(msg)))
+        }
         "debug" => {
             if job.contexts.pointer("/secrets/ACTIONS_STEP_DEBUG").and_then(Value::as_str) == Some("true") {
                 Some(format!("##[debug]{}", unescape(msg)))
@@ -631,6 +660,7 @@ pub async fn run_process(job: &Job, mut cmd: tokio::process::Command, timeout: O
     if !status.success() {
         let code = status.code().map(|c| c.to_string()).unwrap_or_else(|| "signal".into());
         job.err(&format!("Process completed with exit code {code}."));
+        job.annotate("error", "", &format!("Process completed with exit code {code}."));
     }
     Ok(status.success())
 }

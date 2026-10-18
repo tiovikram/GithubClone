@@ -277,6 +277,9 @@ jobs:
     assert_eq!(concl(&js, "cleanup"), "success", "if: always() runs after a failed dependency");
     let bad = js.iter().find(|j| j["name"] == "test (bad)").unwrap();
     assert!(job_log(&s, &u, &rp, bad).await.contains("boom"));
+    let (_, ann) = s.call(Some(&u), "GET", &format!("{rp}/check-runs/{}/annotations", bad["id"]), None).await;
+    assert_eq!(ann[0]["message"], "Process completed with exit code 1.", "{ann}");
+    assert_eq!(ann[0]["annotation_level"], "failure");
 
     // Re-run failed jobs: only the failed matrix instance and its dependents run again.
     let ok_id = js.iter().find(|j| j["name"] == "test (ok)").unwrap()["id"].clone();

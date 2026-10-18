@@ -451,6 +451,7 @@ struct CompleteBody {
     conclusion: String,
     outputs: Option<Value>,
     steps: Option<Value>,
+    annotations: Option<Vec<crate::api::checks::AnnotationInput>>,
 }
 
 async fn complete(State(s): State<AppState>, headers: HeaderMap, Path(id): Path<i64>, Json(b): Json<CompleteBody>) -> ApiResult<Response> {
@@ -465,6 +466,25 @@ async fn complete(State(s): State<AppState>, headers: HeaderMap, Path(id): Path<
         _ => json!({}),
     });
     engine::finish_job(&s, job.id, &concl, outputs, b.steps).await?;
+    // annotations on the job's check run (what `gh run view` lists under ANNOTATIONS)
+    if let Some(list) = b.annotations.filter(|l| !l.is_empty()) {
+        let repo = db::repo_by_id(&s.db, job.repo_id).await?;
+        let owner = db::user_by_id(&s.db, repo.owner_id).await?;
+        let ctx = RepoCtx { repo, owner, perm: Perm::Admin };
+        let bot = token::bot_user(&s.db).await?;
+        let input = crate::api::checks::CheckRunInput {
+            output: Some(crate::api::checks::OutputInput {
+                title: Some(format!("{} {concl}", job.name)),
+                summary: Some(format!("Job `{}` finished with conclusion `{concl}`.", job.name)),
+                annotations: Some(list.into_iter().take(50).collect()),
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        if let Err(e) = crate::api::checks::update_check_run(&s, &ctx, &bot, job.id, input).await {
+            tracing::warn!(job = job.id, error = %e.message, "could not record annotations");
+        }
+    }
     // Ephemeral (and JIT) runners are removed after their job.
     if let Some(rid) = job.runner_id {
         sqlx::query("DELETE FROM actions_runners WHERE id = $1 AND ephemeral").bind(rid).execute(&s.db).await?;
