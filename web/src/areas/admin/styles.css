@@ -1,0 +1,78 @@
+/* Site admin area (tokens from src/styles.css, so light and dark themes both work). */
+
+.sa-titlebar { background: var(--bg-subtle); border-bottom: 1px solid var(--border); }
+.sa-titlebar-inner { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; padding-top: 12px; padding-bottom: 12px; }
+.sa-titlebar-title { font-size: 20px; font-weight: 600; color: var(--fg); }
+.sa-titlebar-title::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--danger); margin-right: 8px; vertical-align: middle; }
+
+.sa-head { margin-bottom: 16px; }
+.sa-head-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: space-between; }
+.sa-head-row h2 { margin: 0; }
+.sa-head-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.sa-head p { margin: 6px 0 0; }
+.sa-subhead { margin: 24px 0 8px; }
+.sa-crumbs { margin-bottom: 8px; color: var(--fg-muted); }
+
+.sa-filter { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.sa-filter .input:first-of-type { flex: 1 1 200px; min-width: 0; }
+
+.sa-row { align-items: center; flex-wrap: wrap; }
+.sa-row-main { min-width: 0; flex: 1 1 220px; }
+.sa-row-title { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.sa-row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.sa-break { overflow-wrap: anywhere; word-break: break-word; }
+.sa-inline-form { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 6px; }
+.sa-inline-form .input { min-width: 0; }
+
+.sa-badge-success { color: var(--success); border-color: currentColor; }
+.sa-badge-danger { color: var(--danger); border-color: currentColor; }
+.sa-badge-warn { background: var(--attention-subtle); border-color: var(--attention-border); color: var(--fg); }
+.sa-badge-accent { color: var(--accent); border-color: currentColor; }
+
+.sa-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 16px; }
+.sa-card { display: flex; flex-direction: column; gap: 6px; margin: 0; }
+.sa-card h3 { margin: 0; }
+.sa-card-link { margin-left: auto; }
+.sa-stat-groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.sa-stat-groups > .box { margin: 0; }
+.sa-stat-row { display: flex; flex-wrap: wrap; gap: 4px 20px; padding: 12px 16px; }
+.sa-stat { min-width: 64px; }
+.sa-stat-value { font-size: 22px; font-weight: 600; }
+.sa-stat-label { font-size: 12px; }
+
+.sa-user-head { display: flex; gap: 16px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+.sa-user-head h2 { margin: 0; overflow-wrap: anywhere; }
+.sa-dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 16px; margin: 0; }
+.sa-dl dt { font-weight: 600; }
+.sa-dl dd { margin: 0; overflow-wrap: anywhere; }
+@media (max-width: 480px) { .sa-dl { grid-template-columns: minmax(0, 1fr); } .sa-dl dd { margin-bottom: 6px; } }
+
+.sa-action { display: flex; gap: 16px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; padding: 16px; border-top: 1px solid var(--border-muted); }
+.box > .sa-action:first-child, .box.sa-action { border-top: 0; }
+.sa-action > div:first-child { flex: 1 1 240px; min-width: 0; }
+.sa-action p { margin: 2px 0 8px; }
+.btn-group-col { display: flex; flex-direction: column; gap: 6px; }
+.sa-scopes { border: 0; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0 8px; }
+.sa-scopes .check-row { padding: 2px 0; }
+
+.sa-json { max-height: 360px; overflow: auto; }
+.sa-action-name { font-weight: 600; }
+.sa-audit-row { align-items: flex-start; }
+.d-block { display: block; }
+
+/* maintenance-mode experience */
+.sa-maint-page {
+  position: fixed; inset: 0; z-index: 1000; background: var(--bg); color: var(--fg);
+  display: flex; align-items: center; justify-content: center; padding: 16px; overflow: auto;
+}
+.sa-maint-card { max-width: 560px; text-align: center; }
+.sa-maint-card h1 { font-size: 32px; margin: 16px 0 8px; }
+.sa-maint-msg { font-size: 18px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.sa-maint-actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 16px; }
+.sa-maint-bar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 900; padding: 8px 16px; text-align: center; font-size: 13px;
+  background: var(--attention-subtle); border-top: 1px solid var(--attention-border); color: var(--fg);
+  overflow-wrap: anywhere;
+}
+.sa-maint-bar-on { background: var(--danger-subtle); border-top-color: var(--danger); }
+.sa-card .badge { align-self: flex-start; }
