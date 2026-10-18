@@ -237,6 +237,16 @@ pub async fn set_closed(state: &AppState, ctx: &RepoCtx, actor: &User, d: &Discu
     .await?)
 }
 
+/// Locks or unlocks a discussion (GraphQL lockLockable / unlockLockable). Triage+.
+pub async fn set_locked(state: &AppState, ctx: &RepoCtx, d: &DiscussionRow, locked: bool) -> ApiResult<DiscussionRow> {
+    ctx.require(Perm::Triage)?;
+    Ok(sqlx::query_as("UPDATE discussions SET locked = $2, updated_at = now() WHERE id = $1 RETURNING *")
+        .bind(d.id)
+        .bind(locked)
+        .fetch_one(&state.db)
+        .await?)
+}
+
 pub async fn delete(state: &AppState, ctx: &RepoCtx, actor: &User, d: &DiscussionRow) -> ApiResult<()> {
     if ctx.perm < Perm::Admin && d.user_id != Some(actor.id) {
         return Err(ApiError::forbidden("Must have admin rights or be the author to delete this discussion."));

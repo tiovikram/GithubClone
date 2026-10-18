@@ -187,6 +187,7 @@ crate::gql_connection!(
     "ProjectV2ItemFieldValueEdge",
     ProjectV2ItemFieldValue
 );
+crate::gql_connection!(ProjectV2ViewConnection, ProjectV2ViewEdge, "ProjectV2ViewConnection", "ProjectV2ViewEdge", ProjectV2View);
 crate::gql_connection!(RepositoryConnectionV2, RepositoryEdgeV2, "ProjectV2RepositoryConnection", "ProjectV2RepositoryEdge", GRepo);
 
 async fn owner_of(ctx: &Context<'_>, owner_id: i64) -> async_graphql::Result<User> {
@@ -297,6 +298,22 @@ impl ProjectV2 {
     async fn teams(&self, first: Option<i32>, after: Option<String>) -> TeamConnection {
         let _ = (first, after);
         TeamConnection::empty()
+    }
+    /// The project's views: the implicit default table view "View 1" plus the views created
+    /// through the REST API (`POST …/projectsV2/{number}/views`), by number.
+    async fn views(
+        &self,
+        ctx: &Context<'_>,
+        first: Option<i32>,
+        after: Option<String>,
+        last: Option<i32>,
+        before: Option<String>,
+    ) -> async_graphql::Result<ProjectV2ViewConnection> {
+        let all = project_views(ctx, &self.row).await?;
+        Ok(ProjectV2ViewConnection::from_all(all, &ConnArgs::new(first, after, last, before)))
+    }
+    async fn view(&self, ctx: &Context<'_>, number: i32) -> async_graphql::Result<Option<ProjectV2View>> {
+        Ok(project_views(ctx, &self.row).await?.into_iter().find(|v| v.row.number == number as i64))
     }
 }
 
@@ -1715,6 +1732,122 @@ impl ProjectsMutation {
         let item_id = dec(&input.item_id, &["ProjectV2Item"])?;
         svc::delete_item(st(ctx), actor(ctx), pid, item_id).await.map_err(api_err)?;
         Ok(Some(DeleteProjectV2ItemPayload { client_mutation_id: input.client_mutation_id, deleted_item_id: Some(input.item_id) }))
+    }
+}
+
+// ---------------------------------------------------------------------------------------------
+// Views (created by the REST API into `projects_v2_views`; view 1 is implicit)
+
+#[derive(Enum, Copy, Clone, Eq, PartialEq, Debug)]
+pub enum ProjectV2ViewLayout {
+    BoardLayout,
+    TableLayout,
+    RoadmapLayout,
+}
+
+#[derive(Debug, Clone, sqlx::FromRow)]
+pub struct ViewRow {
+    pub id: i64,
+    pub number: i64,
+    pub name: String,
+    pub layout: String,
+    pub filter: Option<String>,
+    pub visible_fields: serde_json::Value,
+    pub group_by: serde_json::Value,
+    pub vertical_group_by: serde_json::Value,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
+}
+
+#[derive(Clone)]
+pub struct ProjectV2View {
+    row: Arc<ViewRow>,
+    project: Arc<ProjectRow>,
+}
+
+async fn project_views(ctx: &Context<'_>, project: &Arc<ProjectRow>) -> async_graphql::Result<Vec<ProjectV2View>> {
+    let rows: Vec<ViewRow> = sqlx::query_as(
+        "SELECT id, number, name, layout, filter, visible_fields, group_by, vertical_group_by, created_at, updated_at
+         FROM projects_v2_views WHERE project_id = $1 ORDER BY number",
+    )
+    .bind(project.id)
+    .fetch_all(&st(ctx).db)
+    .await
+    .map_err(|e| api_err(e.into()))?;
+    let mut out = Vec::with_capacity(rows.len() + 1);
+    if !rows.iter().any(|v| v.number == 1) {
+        // The implicit default view has no row (id 0).
+        out.push(ViewRow {
+            id: 0,
+            number: 1,
+            name: "View 1".into(),
+            layout: "table".into(),
+            filter: None,
+            visible_fields: serde_json::json!([]),
+            group_by: serde_json::json!([]),
+            vertical_group_by: serde_json::json!([]),
+            created_at: project.created_at,
+            updated_at: project.updated_at,
+        });
+    }
+    out.extend(rows);
+    Ok(out.into_iter().map(|row| ProjectV2View { row: Arc::new(row), project: project.clone() }).collect())
+}
+
+impl ProjectV2View {
+    async fn fields_in(&self, ctx: &Context<'_>, ids: &serde_json::Value, first: Option<i32>, after: Option<String>) -> async_graphql::Result<ProjectV2FieldConfigurationConnection> {
+        let want: Vec<i64> = ids.as_array().into_iter().flatten().filter_map(|v| v.as_i64()).collect();
+        let fields = svc::fields(st(ctx), self.project.id).await.map_err(api_err)?;
+        let all = want.iter().filter_map(|id| fields.iter().find(|f| f.id == *id).cloned()).map(field_config).collect();
+        Ok(ProjectV2FieldConfigurationConnection::from_all(all, &ConnArgs::new(first, after, None, None)))
+    }
+}
+
+#[Object(name = "ProjectV2View")]
+impl ProjectV2View {
+    async fn id(&self) -> ID {
+        if self.row.id == 0 {
+            ID(ids::encode_str("ProjectV2View", &format!("{}:1", self.project.id)))
+        } else {
+            ID(ids::encode("ProjectV2View", self.row.id))
+        }
+    }
+    async fn database_id(&self) -> i64 {
+        self.row.id
+    }
+    async fn number(&self) -> i32 {
+        self.row.number as i32
+    }
+    async fn name(&self) -> &str {
+        &self.row.name
+    }
+    async fn layout(&self) -> ProjectV2ViewLayout {
+        match self.row.layout.as_str() {
+            "board" => ProjectV2ViewLayout::BoardLayout,
+            "roadmap" => ProjectV2ViewLayout::RoadmapLayout,
+            _ => ProjectV2ViewLayout::TableLayout,
+        }
+    }
+    async fn filter(&self) -> Option<&str> {
+        self.row.filter.as_deref()
+    }
+    async fn created_at(&self) -> DateTime {
+        dt(self.row.created_at)
+    }
+    async fn updated_at(&self) -> DateTime {
+        dt(self.row.updated_at)
+    }
+    async fn project(&self) -> ProjectV2 {
+        ProjectV2 { row: self.project.clone() }
+    }
+    async fn visible_fields(&self, ctx: &Context<'_>, first: Option<i32>, after: Option<String>) -> async_graphql::Result<ProjectV2FieldConfigurationConnection> {
+        self.fields_in(ctx, &self.row.visible_fields, first, after).await
+    }
+    async fn group_by_fields(&self, ctx: &Context<'_>, first: Option<i32>, after: Option<String>) -> async_graphql::Result<ProjectV2FieldConfigurationConnection> {
+        self.fields_in(ctx, &self.row.group_by, first, after).await
+    }
+    async fn vertical_group_by_fields(&self, ctx: &Context<'_>, first: Option<i32>, after: Option<String>) -> async_graphql::Result<ProjectV2FieldConfigurationConnection> {
+        self.fields_in(ctx, &self.row.vertical_group_by, first, after).await
     }
 }
 

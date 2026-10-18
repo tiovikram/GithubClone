@@ -536,6 +536,17 @@ impl GPull {
     async fn review_decision(&self, ctx: &Context<'_>) -> Option<PullRequestReviewDecision> {
         self.git(ctx).await.and_then(|g| g.review_decision)
     }
+    async fn review_threads(
+        &self,
+        ctx: &Context<'_>,
+        first: Option<i32>,
+        after: Option<String>,
+        last: Option<i32>,
+        before: Option<String>,
+    ) -> async_graphql::Result<super::review_threads::PullRequestReviewThreadConnection> {
+        let all = super::review_threads::threads(ctx, self.repo.clone(), self.row.id, self.row.number, self.row.user_id).await?;
+        Ok(super::review_threads::PullRequestReviewThreadConnection::from_all(all, &ConnArgs::new(first, after, last, before)))
+    }
     async fn review_requests(&self, ctx: &Context<'_>, first: Option<i32>, after: Option<String>, last: Option<i32>, before: Option<String>) -> async_graphql::Result<Option<ReviewRequestConnection>> {
         let ids: Vec<i64> = sqlx::query_scalar("SELECT user_id FROM pull_review_requests WHERE issue_id = $1 ORDER BY created_at, user_id")
             .bind(self.row.id)

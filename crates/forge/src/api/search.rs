@@ -343,6 +343,16 @@ fn push_issue_terms(qb: &mut QueryBuilder<Postgres>, terms: &[Term], viewer: Opt
                 };
                 qb.push(format!(" AND {not}({cond})"));
             }
+            // `archived:true|false` filters by the repository's archived state (github.com/issues
+            // uses `archived:false`).
+            "archived" => {
+                let cond = match lv.as_str() {
+                    "true" => "r.archived",
+                    "false" => "NOT r.archived",
+                    _ => "FALSE",
+                };
+                qb.push(format!(" AND {not}({cond})"));
+            }
             "reason" => {
                 let r = match lv.as_str() {
                     "completed" => "completed",
@@ -448,8 +458,28 @@ fn push_issue_terms(qb: &mut QueryBuilder<Postgres>, terms: &[Term], viewer: Opt
                 }
                 qb.push(")");
             }
-            // Not modelled (no review requests / teams / projects yet): matches nothing.
-            "review-requested" | "team-review-requested" | "team" | "project" | "linked" | "review" | "status" => {
+            // Pending review requests (forge has no team review requests, so `review-requested`
+            // and `user-review-requested` are the same).
+            "review-requested" | "user-review-requested" => {
+                qb.push(format!(" AND {not}EXISTS(SELECT 1 FROM pull_review_requests srr WHERE srr.issue_id = i.id AND srr.user_id = "));
+                user_id_sql(qb, login_value(v, viewer));
+                qb.push(")");
+            }
+            "review" => {
+                let cond = match lv.as_str() {
+                    "none" => Some("NOT EXISTS(SELECT 1 FROM pull_reviews sr WHERE sr.issue_id = i.id AND sr.state IN ('APPROVED', 'CHANGES_REQUESTED', 'COMMENTED'))"),
+                    "required" => Some("NOT EXISTS(SELECT 1 FROM pull_reviews sr WHERE sr.issue_id = i.id AND sr.state = 'APPROVED')"),
+                    "approved" => Some("EXISTS(SELECT 1 FROM pull_reviews sr WHERE sr.issue_id = i.id AND sr.state = 'APPROVED')"),
+                    "changes_requested" => Some("EXISTS(SELECT 1 FROM pull_reviews sr WHERE sr.issue_id = i.id AND sr.state = 'CHANGES_REQUESTED')"),
+                    _ => None,
+                };
+                match cond {
+                    Some(c) => qb.push(format!(" AND {not}(i.is_pull AND {c})")),
+                    None => qb.push(format!(" AND {}", if t.negated { "TRUE" } else { "FALSE" })),
+                };
+            }
+            // Not modelled (no team review requests / classic projects): matches nothing.
+            "team-review-requested" | "team" | "project" | "linked" | "status" => {
                 qb.push(format!(" AND {}", if t.negated { "TRUE" } else { "FALSE" }));
             }
             // Unknown qualifiers are plain text, like GitHub.
