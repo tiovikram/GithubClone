@@ -23,7 +23,20 @@ pub fn routes() -> Router<AppState> {
         .route("/tokens/{id}", delete(delete_token))
         .route("/orgs", post(create_org))
         .route("/healthz", axum::routing::get(|| async { "ok" }))
+        .route("/announcement", axum::routing::get(announcement))
         .layer(axum::middleware::from_fn(require_csrf_header))
+}
+
+/// The enterprise announcement banner for the web UI (public, like the GHES banner shown on
+/// every page): the stored banner (`PATCH /enterprise/announcement`) with its markdown rendered.
+async fn announcement(State(s): State<AppState>) -> ApiResult<Json<Value>> {
+    let mut v = crate::api::ent_admin::announcement(&s).await?;
+    let html = match v.get("announcement").and_then(Value::as_str).filter(|t| !t.trim().is_empty()) {
+        Some(text) => Value::String(crate::api::misc::render_markdown(&s, text, true, None).await?),
+        None => Value::Null,
+    };
+    v["html"] = html;
+    Ok(Json(v))
 }
 
 /// Browser-originated state changes here (login, signup, logout, tokens) must carry the
