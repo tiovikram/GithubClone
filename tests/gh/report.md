@@ -1,6 +1,6 @@
 # gh compatibility report
 
-gh: `gh version 2.102.0 (2026-09-30)`, host `forge.localhost` (GHES path, http_unix_socket). Generated 2026-10-18T04:03:50Z.
+gh: `gh version 2.102.0 (2026-09-30)`, host `forge.localhost` (GHES path, http_unix_socket). Generated 2026-10-18T04:12:55Z.
 Denominator: see docs/gh-coverage.md (catalogue: tests/gh/commands.tsv).
 
 **PASS 166/166 forge-relevant gh commands (100%)**
