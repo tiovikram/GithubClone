@@ -13,6 +13,7 @@ pub mod meta;
 pub mod pulls;
 pub mod actions;
 pub mod actions_secrets;
+pub mod actions_settings;
 pub mod commit_comments;
 pub mod deployments;
 pub mod discussions;
@@ -102,6 +103,8 @@ pub fn routes() -> Router<AppState> {
         .merge(rulesets::routes())
         .merge(signing_keys::routes())
         .merge(actions::routes())
+        .merge(actions_settings::routes())
+        .merge(actions_settings::enterprise_routes())
         .merge(checks::routes())
         .merge(review_reactions::routes())
         .merge(actions_secrets::routes())

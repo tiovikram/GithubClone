@@ -18,6 +18,7 @@ chrono = { version = "0.4.45", features = ["serde"] }
 clap = { version = "4.6.7", features = ["derive", "env"] }
 curve25519-dalek = "5.0.0"
 comrak = { version = "0.56.0", default-features = false }
+crypto_box = { version = "0.9.1", features = ["seal", "std"] }
 futures = "0.3.34"
 hex = "0.4.3"
 hmac = "0.13"
