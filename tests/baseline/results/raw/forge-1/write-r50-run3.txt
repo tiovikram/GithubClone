@@ -1,19 +1,19 @@
 checks: 100.00%
-data_received: 15730692 (262145.2/s)
-data_sent: 1800050 (29997.1/s)
-http_req_blocked: avg=0.0 p50=0.0 p95=0.0 p99=0.0 max=1.7
-http_req_connecting: avg=0.0 p50=0.0 p95=0.0 p99=0.0 max=0.2
-http_req_duration: avg=3.1 p50=3.0 p95=4.2 p99=4.5 max=10.1
-http_req_duration{expected_response:true}: avg=3.1 p50=3.0 p95=4.2 p99=4.5 max=10.1
-http_req_duration{name:create_comment}: avg=2.7 p50=2.7 p95=3.3 p99=3.6 max=6.8
-http_req_duration{name:create_issue}: avg=3.6 p50=3.6 p95=4.3 p99=5.0 max=10.1
+data_received: 15730692 (262117.5/s)
+data_sent: 1800050 (29993.9/s)
+http_req_blocked: avg=0.0 p50=0.0 p95=0.0 p99=0.0 max=1.9
+http_req_connecting: avg=0.0 p50=0.0 p95=0.0 p99=0.0 max=0.3
+http_req_duration: avg=5.6 p50=5.5 p95=6.5 p99=7.4 max=16.0
+http_req_duration{expected_response:true}: avg=5.6 p50=5.5 p95=6.5 p99=7.4 max=16.0
+http_req_duration{name:create_comment}: avg=5.7 p50=5.6 p95=6.1 p99=7.2 max=16.0
+http_req_duration{name:create_issue}: avg=5.5 p50=5.3 p95=6.7 p99=7.9 max=15.6
 http_req_failed: 0.00%
 http_req_failed{name:create_comment}: 0.00%
 http_req_failed{name:create_issue}: 0.00%
-http_req_receiving: avg=0.0 p50=0.0 p95=0.1 p99=0.1 max=0.2
-http_req_sending: avg=0.0 p50=0.0 p95=0.0 p99=0.0 max=0.1
+http_req_receiving: avg=0.0 p50=0.0 p95=0.0 p99=0.1 max=0.2
+http_req_sending: avg=0.0 p50=0.0 p95=0.0 p99=0.0 max=0.5
 http_req_tls_handshaking: avg=0.0 p50=0.0 p95=0.0 p99=0.0 max=0.0
-http_req_waiting: avg=3.1 p50=3.0 p95=4.1 p99=4.5 max=10.0
+http_req_waiting: avg=5.5 p50=5.5 p95=6.5 p99=7.3 max=15.9
 http_reqs: 6002 (100.0/s)
-iteration_duration: avg=6.5 p50=6.6 p95=7.7 p99=8.6 max=17.7
+iteration_duration: avg=11.4 p50=11.0 p95=12.7 p99=15.2 max=28.4
 iterations: 3001 (50.0/s)

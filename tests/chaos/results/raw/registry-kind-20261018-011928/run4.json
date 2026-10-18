@@ -1,0 +1,1 @@
+{"ok": true, "digest": "sha256:85b9753b8fc6cab62c034e0c56cedcdb1039cadaffb8679e544a3c51d91a9029", "size": 100663296, "elapsed_s": 18.8, "verify": [true, true, true], "retries": 1, "resumed_from": [41943040], "restarts": 0, "chunks": 12, "errors": ["patch: BrokenPipeError(32, 'Broken pipe')"]}

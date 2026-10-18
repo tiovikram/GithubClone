@@ -1,27 +1,27 @@
-time="2026-10-12T22:13:42-05:00" level=warning msg="Insufficient VUs, reached 400 active VUs and cannot initialize more" executor=constant-arrival-rate scenario=read
+time="2026-10-18T02:40:10-05:00" level=warning msg="Insufficient VUs, reached 400 active VUs and cannot initialize more" executor=constant-arrival-rate scenario=read
 checks: 100.00%
-data_received: 175108871 (2871743.2/s)
-data_sent: 3600078 (59040.4/s)
-dropped_iterations: 14051 (230.4/s)
-http_req_blocked: avg=0.0 p50=0.0 p95=0.0 p99=0.1 max=9.3
-http_req_connecting: avg=0.0 p50=0.0 p95=0.0 p99=0.1 max=9.3
-http_req_duration: avg=1483.7 p50=322.9 p95=6310.0 p99=6772.3 max=7670.6
-http_req_duration{expected_response:true}: avg=1483.7 p50=322.9 p95=6310.0 p99=6772.3 max=7670.6
-http_req_duration{name:get_contents}: avg=240.8 p50=228.4 p95=403.0 p99=508.6 max=693.0
-http_req_duration{name:get_repo}: avg=296.4 p50=283.8 p95=490.8 p99=627.3 max=884.0
-http_req_duration{name:get_user}: avg=106.8 p50=93.9 p95=223.9 p99=298.1 max=502.3
-http_req_duration{name:list_issues}: avg=5772.5 p50=5970.4 p95=6772.3 p99=7105.6 max=7670.6
-http_req_duration{name:list_user_repos}: avg=1002.1 p50=979.6 p95=1393.7 p99=1722.6 max=2345.9
+data_received: 169927173 (2786947.6/s)
+data_sent: 3536154 (57995.9/s)
+dropped_iterations: 14337 (235.1/s)
+http_req_blocked: avg=0.0 p50=0.0 p95=0.0 p99=0.1 max=1.4
+http_req_connecting: avg=0.0 p50=0.0 p95=0.0 p99=0.1 max=0.7
+http_req_duration: avg=1512.3 p50=332.7 p95=6480.8 p99=6955.1 max=7993.2
+http_req_duration{expected_response:true}: avg=1512.3 p50=332.7 p95=6480.8 p99=6955.1 max=7993.2
+http_req_duration{name:get_contents}: avg=249.0 p50=239.6 p95=403.8 p99=532.2 max=900.3
+http_req_duration{name:get_repo}: avg=307.3 p50=292.4 p95=505.3 p99=641.6 max=1004.4
+http_req_duration{name:get_user}: avg=108.4 p50=94.9 p95=226.4 p99=313.3 max=465.2
+http_req_duration{name:list_issues}: avg=5980.5 p50=6155.0 p95=6959.4 p99=7295.1 max=7993.2
+http_req_duration{name:list_user_repos}: avg=1037.1 p50=1015.9 p95=1440.2 p99=1731.3 max=2224.1
 http_req_failed: 0.00%
 http_req_failed{name:get_contents}: 0.00%
 http_req_failed{name:get_repo}: 0.00%
 http_req_failed{name:get_user}: 0.00%
 http_req_failed{name:list_issues}: 0.00%
 http_req_failed{name:list_user_repos}: 0.00%
-http_req_receiving: avg=0.1 p50=0.0 p95=0.4 p99=0.6 max=21.9
+http_req_receiving: avg=0.1 p50=0.0 p95=0.4 p99=0.6 max=16.7
 http_req_sending: avg=0.0 p50=0.0 p95=0.0 p99=0.0 max=0.1
 http_req_tls_handshaking: avg=0.0 p50=0.0 p95=0.0 p99=0.0 max=0.0
-http_req_waiting: avg=1483.6 p50=322.8 p95=6309.7 p99=6772.0 max=7670.0
-http_reqs: 15950 (261.6/s)
-iteration_duration: avg=1483.8 p50=323.0 p95=6310.1 p99=6772.4 max=7670.6
-iterations: 15950 (261.6/s)
+http_req_waiting: avg=1512.2 p50=332.6 p95=6480.4 p99=6954.7 max=7992.9
+http_reqs: 15664 (256.9/s)
+iteration_duration: avg=1512.4 p50=332.7 p95=6480.9 p99=6955.4 max=7993.5
+iterations: 15664 (256.9/s)

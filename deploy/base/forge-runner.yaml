@@ -5,6 +5,9 @@
 # the forge-secrets Secret (FORGE_RUNNER_REGISTRATION_TOKEN). The pod name is the runner name
 # (re-registration replaces it); runners offline for 14 days are pruned by the server.
 #
+# Image: the `forge-runner` target of the repo Dockerfile (same binary as forge:dev plus the CLI
+# tools workflow steps expect: curl, tar, gzip, xz, unzip, jq, python3, ...).
+#
 # Scale with `kubectl scale deployment/forge-runner --replicas=N`. Each pod runs
 # FORGE_RUNNER_SLOTS jobs at a time; on SIGTERM it stops taking jobs and finishes running ones
 # (FORGE_RUNNER_DRAIN_SECS, bounded by terminationGracePeriodSeconds).
@@ -34,7 +37,7 @@ spec:
         seccompProfile: {type: RuntimeDefault}
       initContainers:
         - name: wait-forge
-          image: forge:dev
+          image: forge-runner:dev
           imagePullPolicy: IfNotPresent
           command:
             - bash
@@ -49,7 +52,7 @@ spec:
             capabilities: {drop: [ALL]}
       containers:
         - name: runner
-          image: forge:dev
+          image: forge-runner:dev
           imagePullPolicy: IfNotPresent
           args: ["runner"]
           env:

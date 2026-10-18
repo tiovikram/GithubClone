@@ -1,3 +1,352 @@
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92110 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92118 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92126 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92134 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92142 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92150 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92158 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92166 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92174 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92183 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92191 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92199 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92288 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92301 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92310 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92319 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92327 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92335 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92344 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92352 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92361 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92369 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92377 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92386 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92395 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92403 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92411 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92420 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92428 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92437 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92445 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92453 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92461 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92470 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92480 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92490 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92498 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92506 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92515 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92523 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92531 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92539 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92547 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92559 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92572 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92584 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92596 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92608 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92617 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92626 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92634 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92643 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92651 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92659 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92668 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92677 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92685 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92693 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92701 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92708 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92715 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92723 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92731 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92738 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92747 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92755 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92764 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92772 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92789 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92798 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92813 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92827 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92853 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92862 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92871 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92880 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92889 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92897 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92904 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92912 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92920 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92929 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92937 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92945 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92953 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92961 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92969 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 92977 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93023 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93034 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93044 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93054 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93063 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93073 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93082 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93092 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93101 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93111 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93145 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93155 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93163 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93171 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93179 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93187 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93196 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93205 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93213 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93221 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93228 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93236 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93245 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93253 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93260 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93269 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93278 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93287 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93295 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93303 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93316 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93328 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93351 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93360 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93368 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93378 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93385 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93394 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93404 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93411 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93419 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93427 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93442 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93454 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93461 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93470 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93478 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93486 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93494 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93502 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93510 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93518 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93527 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93540 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93548 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93557 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93565 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93573 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93581 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93589 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93597 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93604 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93612 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93619 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93627 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93640 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93648 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93657 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93665 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93673 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93682 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93695 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93703 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93710 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93720 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93728 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93736 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93744 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93751 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93759 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93767 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93776 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93793 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93800 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93808 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93821 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93829 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93837 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93845 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93854 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93863 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93871 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93880 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93888 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93897 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93905 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93912 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93919 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93927 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93934 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93943 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93950 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93960 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93969 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93977 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93985 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 93994 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94003 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94011 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94020 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94028 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94037 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94045 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94054 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94062 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94070 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94077 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94085 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94097 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94107 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94115 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94124 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94133 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94141 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94148 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94155 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94163 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94172 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94180 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94189 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94202 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94211 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94219 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94227 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94235 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94242 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94252 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94259 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94270 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94278 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94289 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94296 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94306 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94314 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94322 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94337 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94349 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94358 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94368 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94377 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94385 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94393 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94401 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94409 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94417 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94425 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94434 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94442 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94451 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94462 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94471 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94481 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94491 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94500 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94508 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94516 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94524 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94532 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94539 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94547 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94555 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94563 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94572 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94580 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94590 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94598 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94606 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94615 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94622 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94629 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94638 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94645 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94653 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94661 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94668 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94676 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94684 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94692 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94699 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94707 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94715 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94723 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94732 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94742 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94750 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94759 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94767 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94774 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94782 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94790 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94798 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94806 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94813 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94820 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94829 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94837 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94844 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94853 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94879 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94892 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94903 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94925 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94950 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94961 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94971 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94979 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 94991 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95001 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95010 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95017 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95030 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95038 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95046 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95055 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95063 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95071 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95080 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95088 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95096 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95104 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95112 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95120 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95129 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95138 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95147 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95156 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95165 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95176 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95185 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95194 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95207 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95216 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95225 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95234 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95243 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95251 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95260 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95268 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95277 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95284 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95294 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95301 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95309 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95318 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95327 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95337 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95345 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95354 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95362 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95371 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95379 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
 #    case                                       res   notes
 1    auth status                                PASS  
 2    api user (REST GET)                        PASS  
@@ -87,6 +436,270 @@
 86   api graphql --paginate                     PASS  
 87   repo delete                                PASS  
 88   repo view deleted (404)                    PASS  
+89   auth login --with-token                    PASS  
+90   auth status (stored token)                 PASS  
+91   auth login (second account)                PASS  
+92   auth status (two accounts)                 PASS  
+93   auth switch                                PASS  
+94   auth token                                 PASS  
+95   auth token --user                          PASS  
+96   auth setup-git                             PASS  
+97   auth setup-git result                      PASS  
+98   auth refresh (device flow)                 PASS  
+99   auth refresh result                        PASS  
+100  auth logout                                PASS  
+101  auth logout result                         PASS  
+102  browse -n (repo)                           PASS  
+103  browse -n (issue)                          PASS  
+104  browse -n (file)                           PASS  
+105  browse -n --settings                       PASS  
+106  browse -n --releases                       PASS  
+107  browse -n --commit                         PASS  
+108  repo archive                               PASS  
+109  repo archive result                        PASS  
+110  repo unarchive                             PASS  
+111  repo unarchive result                      PASS  
+112  repo rename                                PASS  
+113  repo rename result                         PASS  
+114  repo edit --add-topic                      PASS  
+115  repo view --json (topics, more fields)     PASS  
+116  repo list --json --jq                      PASS  
+117  repo list --topic                          PASS  
+118  repo set-default                           PASS  
+119  repo set-default --view                    PASS  
+120  repo sync (local)                          PASS  
+121  repo sync (local) result                   PASS  
+122  repo sync (fork from parent)               PASS  
+123  repo sync (fork) result                    PASS  
+124  repo deploy-key add                        PASS  
+125  repo deploy-key list                       PASS  
+126  repo deploy-key list --json                PASS  
+127  repo deploy-key delete                     PASS  
+128  repo autolink create                       PASS  
+129  repo autolink list                         PASS  
+130  repo autolink list --json                  PASS  
+131  repo autolink view                         PASS  
+132  repo autolink delete                       PASS  
+133  repo gitignore list                        PASS  
+134  repo gitignore view                        PASS  
+135  repo license list                          PASS  
+136  repo license view                          PASS  
+137  repo read-file                             PASS  
+138  repo read-file --ref --json                PASS  
+139  repo read-dir                              PASS  
+140  repo read-dir PATH --json                  PASS  
+141  issue create (for transfer)                PASS  
+142  issue transfer                             PASS  
+143  issue transfer result                      PASS  
+144  issue transfer (gone from source)          PASS  
+145  issue pin                                  PASS  
+146  issue pin result                           PASS  
+147  issue unpin                                PASS  
+148  issue unpin result                         PASS  
+149  issue lock                                 PASS  
+150  issue lock result                          PASS  
+151  issue unlock                               PASS  
+152  issue unlock result                        PASS  
+153  issue develop                              PASS  
+154  issue develop --list                       PASS  
+155  issue develop result                       PASS  
+156  issue comment --edit-last                  PASS  
+157  issue status --json                        PASS  
+158  issue list --json --jq                     PASS  
+159  issue create --milestone                   PASS  
+160  issue list --milestone                     PASS  
+161  issue edit (two issues)                    PASS  
+162  issue close --json view                    PASS  
+163  issue reopen (again)                       PASS  
+164  pr lock                                    PASS  
+165  pr lock result                             PASS  
+166  pr unlock                                  PASS  
+167  pr unlock result                           PASS  
+168  pr update-branch                           PASS  
+169  pr update-branch result                    PASS  
+170  pr create (behind base)                    PASS  
+171  pr update-branch --rebase                  PASS  
+172  pr update-branch --rebase result           PASS  
+173  pr revert                                  PASS  
+174  pr revert result                           PASS  
+175  pr revert diff                             PASS  
+176  pr comment --edit-last                     PASS  
+177  pr view --comments                         PASS  
+178  pr status --json                           PASS  
+179  pr checks --json                           PASS  
+180  pr diff --patch                            PASS  
+181  pr list --json --jq                        PASS  
+182  pr list --label                            PASS  
+183  pr edit --add-reviewer                     PASS  
+184  pr review --request-changes -> approve     PASS  
+185  label edit                                 PASS  
+186  label edit result                          PASS  
+187  label clone                                PASS  
+188  label clone result                         PASS  
+189  label delete                               PASS  
+190  label delete result                        PASS  
+191  release create (with asset)                PASS  
+192  release create --draft --generate-notes    PASS  
+193  release upload                             PASS  
+194  release view --json                        PASS  
+195  release list --json                        PASS  
+196  release download (pattern)                 PASS  
+197  release download result                    PASS  
+198  release download --archive                 PASS  
+199  release download --archive result          PASS  
+200  release edit                               PASS  
+201  release edit result                        PASS  
+202  release delete-asset                       PASS  
+203  release delete-asset result                PASS  
+204  release delete                             PASS  
+205  release delete result                      PASS  
+206  gist create                                PASS  
+207  gist create (stdin)                        PASS  
+208  gist list                                  PASS  
+209  gist list --public                         PASS  
+210  gist view                                  PASS  
+211  gist view --files                          PASS  
+212  gist edit --add                            PASS  
+213  gist edit FILE (replace content)           PASS  
+214  gist edit result                           PASS  
+215  gist edit --desc                           PASS  
+216  gist rename                                PASS  
+217  gist rename result                         PASS  
+218  gist clone                                 PASS  
+219  gist clone result                          PASS  
+220  gist delete                                PASS  
+221  gist delete result                         PASS  
+222  ssh-key add                                PASS  
+223  ssh-key add --type signing                 PASS  
+224  ssh-key list                               PASS  
+225  ssh-key delete                             PASS  
+226  ssh-key delete result                      PASS  
+227  gpg-key add                                PASS  
+228  gpg-key list                               PASS  
+229  gpg-key delete                             PASS  
+230  gpg-key delete result                      PASS  
+231  org list                                   PASS  
+232  search repos                               PASS  
+233  search repos --json                        PASS  
+234  search issues                              PASS  
+235  search issues --json                       PASS  
+236  search prs                                 PASS  
+237  search prs --json --state                  PASS  
+238  search commits                             PASS  
+239  search commits --json                      PASS  
+240  search code                                PASS  
+241  search code --json                         PASS  
+242  status                                     PASS  
+243  status --org                               PASS  
+244  api -X PATCH                               PASS  
+245  api --include                              PASS  
+246  api --template                             PASS  
+247  api --input                                PASS  
+248  api graphql -F variables                   PASS  
+249  api 404                                    PASS  
+250  ruleset list                               PASS  
+251  ruleset view                               PASS  
+252  ruleset check                              PASS  
+253  workflow list                              PASS  
+254  workflow list --json                       PASS  
+255  workflow view                              PASS  
+256  workflow disable                           PASS  
+257  workflow disable result                    PASS  
+258  workflow enable                            PASS  
+259  workflow enable result                     PASS  
+260  workflow run                               PASS  
+261  run list                                   PASS  
+262  run list --json                            PASS  
+263  run view                                   PASS  
+264  run view --json                            PASS  
+265  run cancel                                 PASS  
+266  run watch                                  PASS  
+267  run rerun                                  PASS  
+268  run download                               PASS  
+269  run delete                                 PASS  
+270  cache list                                 PASS  
+271  cache list --json                          PASS  
+272  cache delete --all                         PASS  
+273  secret set                                 PASS  
+274  secret list                                PASS  
+275  secret list --json                         PASS  
+276  secret delete                              PASS  
+277  secret delete result                       PASS  
+278  variable set                               PASS  
+279  variable list                              PASS  
+280  variable list --json                       PASS  
+281  variable get                               PASS  
+282  variable set (update)                      PASS  
+283  variable set result                        PASS  
+284  variable delete                            PASS  
+285  alias set                                  PASS  
+286  alias set (use)                            PASS  
+287  alias list                                 PASS  
+288  alias import                               PASS  
+289  alias import (use)                         PASS  
+290  alias delete                               PASS  
+291  config set                                 PASS  
+292  config get                                 PASS  
+293  config list                                PASS  
+294  config clear-cache                         PASS  
+295  completion                                 PASS  
+296  licenses                                   PASS  
+297  extension install                          PASS  
+298  extension list                             PASS  
+299  extension exec                             PASS  
+300  extension upgrade                          PASS  
+301  extension upgrade result                   PASS  
+302  extension search                           PASS  
+303  extension remove                           PASS  
+304  extension create                           PASS  
+305  extension create result                    PASS  
+306  skill list                                 PASS  
+307  repo edit --enable-discussions             PASS  
+308  discussion create                          PASS  
+309  discussion create (Q&A)                    PASS  
+310  discussion list                            PASS  
+311  discussion list --json                     PASS  
+312  discussion list --category                 PASS  
+313  discussion view                            PASS  
+314  discussion comment                         PASS  
+315  discussion view --comments                 PASS  
+316  discussion edit                            PASS  
+317  discussion edit result                     PASS  
+318  project create                             PASS  
+319  project list                               PASS  
+320  project list --format json                 PASS  
+321  project view                               PASS  
+322  project edit                               PASS  
+323  project field-create                       PASS  
+324  project field-create (text)                PASS  
+325  project field-list                         PASS  
+326  project item-create                        PASS  
+327  project item-add                           PASS  
+328  project item-list                          PASS  
+329  project item-edit (draft)                  PASS  
+330  project item-edit (field by name)          PASS  
+331  project item-edit result                   PASS  
+332  project item-list --query                  PASS  
+333  project item-archive                       PASS  
+334  project item-archive result                PASS  
+335  project item-delete                        PASS  
+336  project item-delete result                 PASS  
+337  project field-delete                       PASS  
+338  project field-delete result                PASS  
+339  project link                               PASS  
+340  project link result                        PASS  
+341  project unlink                             PASS  
+342  project unlink result                      PASS  
+343  project copy                               PASS  
+344  project mark-template                      PASS  
+345  project mark-template result               PASS  
+346  project close                              PASS  
+347  project close --undo                       PASS  
+348  project delete                             PASS  
+349  project delete result                      PASS  
 
-PASS 88/88 (100%)
-logs: /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a69095d3dd37d103c/data/bench/gh-forge/logs   report: /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a69095d3dd37d103c/tests/baseline/results/compat/gh-forge.md
+
+Cases: PASS 349/349 (100%)
+PASS 166/166 forge-relevant gh commands (100%)
+166/197 of all gh commands (84%)
+logs: /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/data/bench/gh-forge/logs   report: /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/baseline/results/compat/gh-forge.md

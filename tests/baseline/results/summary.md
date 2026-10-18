@@ -8,45 +8,45 @@ Latency is k6 `http_req_duration` over all requests of the scenario, in ms. *Thr
 | scenario | metric | forgejo-1 | forge-1 | forge-3 |
 |---|---|---:|---:|---:|
 | API reads @ 100 req/s | throughput req/s | 100 | 100 | 100 |
-| API reads @ 100 req/s | p50 / p95 / p99 ms | 5.5 / 18.4 / 29.1 | 3.9 / 5.1 / 5.8 | 3.8 / 5.8 / 6.5 |
+| API reads @ 100 req/s | p50 / p95 / p99 ms | 5.6 / 19.5 / 30.8 | 3.8 / 5.1 / 6.0 | 3.8 / 5.7 / 6.5 |
 | API reads @ 100 req/s | errors | 0.00% | 0.00% | 0.00% |
 | API reads @ 100 req/s | dropped iterations | 0.0 | 0.0 | 0.0 |
-| API reads @ 500 req/s | throughput req/s | 258 | 500 | 500 |
-| API reads @ 500 req/s | p50 / p95 / p99 ms | 330 / 6310 / 6787 | 2.4 / 2.7 / 3.0 | 2.5 / 3.6 / 3.8 |
+| API reads @ 500 req/s | throughput req/s | 257 | 500 | 500 |
+| API reads @ 500 req/s | p50 / p95 / p99 ms | 335 / 6383 / 6858 | 2.3 / 2.8 / 3.2 | 2.6 / 3.6 / 3.9 |
 | API reads @ 500 req/s | errors | 0.00% | 0.00% | 0.00% |
-| API reads @ 500 req/s | dropped iterations | 14291 | 0.0 | 0.0 |
-| API reads @ 1000 req/s | throughput req/s | 258 | 1000 | 1000 |
-| API reads @ 1000 req/s | p50 / p95 / p99 ms | 345 / 6348 / 6842 | 2.5 / 3.1 / 3.6 | 2.8 / 4.2 / 4.8 |
+| API reads @ 500 req/s | dropped iterations | 14360 | 0.0 | 0.0 |
+| API reads @ 1000 req/s | throughput req/s | 257 | 1000 | 1000 |
+| API reads @ 1000 req/s | p50 / p95 / p99 ms | 356 / 6389 / 6902 | 2.6 / 3.1 / 3.8 | 2.8 / 4.3 / 5.3 |
 | API reads @ 1000 req/s | errors | 0.00% | 0.00% | 0.00% |
-| API reads @ 1000 req/s | dropped iterations | 44301 | 0.0 | 0.0 |
-| API reads, saturation (64 VUs closed loop) | throughput req/s | 273 | 1900 | 2894 |
-| API reads, saturation (64 VUs closed loop) | p50 / p95 / p99 ms | 75.3 / 951 / 1046 | 29.1 / 70.6 / 81.5 | 19.1 / 50.4 / 64.2 |
+| API reads @ 1000 req/s | dropped iterations | 44346 | 0.0 | 0.0 |
+| API reads, saturation (64 VUs closed loop) | throughput req/s | 268 | 1805 | 2817 |
+| API reads, saturation (64 VUs closed loop) | p50 / p95 / p99 ms | 75.0 / 936 / 1016 | 31.9 / 70.3 / 81.5 | 20.1 / 50.2 / 64.0 |
 | API reads, saturation (64 VUs closed loop) | errors | 0.00% | 0.00% | 0.00% |
-| git clone/fetch, 1 VU | throughput req/s | 155 | 283 | 275 |
-| git clone/fetch, 1 VU | clones+fetches/s | 51.7 | 94.4 | 91.7 |
-| git clone/fetch, 1 VU | p50 / p95 / p99 ms | 3.6 / 6.5 / 6.9 | 1.4 / 3.8 / 4.0 | 1.4 / 3.9 / 4.1 |
-| git clone/fetch, 1 VU | full sequence p50 / p95 / p99 ms | 21.0 / 22.0 / 24.0 | 12.0 / 13.0 / 14.0 | 12.0 / 13.0 / 14.0 |
+| git clone/fetch, 1 VU | throughput req/s | 155 | 279 | 277 |
+| git clone/fetch, 1 VU | clones+fetches/s | 51.8 | 92.9 | 92.3 |
+| git clone/fetch, 1 VU | p50 / p95 / p99 ms | 3.5 / 6.4 / 7.1 | 1.4 / 3.8 / 4.1 | 1.4 / 3.9 / 4.1 |
+| git clone/fetch, 1 VU | full sequence p50 / p95 / p99 ms | 21.0 / 22.0 / 25.0 | 12.0 / 13.0 / 14.0 | 12.0 / 13.0 / 14.0 |
 | git clone/fetch, 1 VU | errors | 0.00% | 0.00% | 0.00% |
-| git clone/fetch, 8 VUs | throughput req/s | 403 | 676 | 1140 |
-| git clone/fetch, 8 VUs | clones+fetches/s | 134 | 225 | 380 |
-| git clone/fetch, 8 VUs | p50 / p95 / p99 ms | 14.4 / 42.1 / 53.3 | 4.8 / 36.4 / 42.1 | 4.2 / 10.3 / 12.6 |
-| git clone/fetch, 8 VUs | full sequence p50 / p95 / p99 ms | 59.0 / 86.0 / 96.0 | 34.0 / 57.0 / 64.0 | 22.0 / 27.0 / 30.0 |
+| git clone/fetch, 8 VUs | throughput req/s | 403 | 671 | 1122 |
+| git clone/fetch, 8 VUs | clones+fetches/s | 134 | 224 | 374 |
+| git clone/fetch, 8 VUs | p50 / p95 / p99 ms | 14.5 / 41.2 / 52.0 | 4.9 / 33.5 / 40.9 | 4.3 / 10.5 / 13.0 |
+| git clone/fetch, 8 VUs | full sequence p50 / p95 / p99 ms | 59.0 / 85.0 / 94.0 | 37.0 / 56.0 / 66.0 | 22.0 / 28.0 / 32.0 |
 | git clone/fetch, 8 VUs | errors | 0.00% | 0.00% | 0.00% |
-| git clone/fetch, 32 VUs | throughput req/s | 396 | 747 | 1454 |
-| git clone/fetch, 32 VUs | clones+fetches/s | 132 | 249 | 485 |
-| git clone/fetch, 32 VUs | p50 / p95 / p99 ms | 78.8 / 121 / 145 | 36.4 / 78.9 / 92.1 | 17.3 / 38.1 / 50.8 |
-| git clone/fetch, 32 VUs | full sequence p50 / p95 / p99 ms | 240 / 303 / 328 | 122 / 182 / 200 | 64.0 / 96.0 / 113 |
+| git clone/fetch, 32 VUs | throughput req/s | 391 | 731 | 1435 |
+| git clone/fetch, 32 VUs | clones+fetches/s | 130 | 244 | 478 |
+| git clone/fetch, 32 VUs | p50 / p95 / p99 ms | 79.7 / 122 / 144 | 41.1 / 79.5 / 91.9 | 17.5 / 39.0 / 52.6 |
+| git clone/fetch, 32 VUs | full sequence p50 / p95 / p99 ms | 243 / 305 / 330 | 127 / 184 / 202 | 66.0 / 98.0 / 119 |
 | git clone/fetch, 32 VUs | errors | 0.00% | 0.00% | 0.00% |
 | write mix @ 10 it/s (20 req/s) | throughput req/s | 20.0 | 20.0 | 20.0 |
-| write mix @ 10 it/s (20 req/s) | p50 / p95 / p99 ms | 12.9 / 26.8 / 37.3 | 7.2 / 9.4 / 10.8 | 7.4 / 10.1 / 12.3 |
+| write mix @ 10 it/s (20 req/s) | p50 / p95 / p99 ms | 12.9 / 28.5 / 40.0 | 11.7 / 15.5 / 16.9 | 11.8 / 16.5 / 18.8 |
 | write mix @ 10 it/s (20 req/s) | errors | 0.00% | 0.00% | 0.00% |
 | write mix @ 10 it/s (20 req/s) | dropped iterations | 0.0 | 0.0 | 0.0 |
 | write mix @ 25 it/s (50 req/s) | throughput req/s | 50.0 | 50.0 | 50.0 |
-| write mix @ 25 it/s (50 req/s) | p50 / p95 / p99 ms | 9.5 / 30.1 / 46.0 | 4.2 / 7.2 / 7.9 | 4.3 / 6.9 / 7.8 |
+| write mix @ 25 it/s (50 req/s) | p50 / p95 / p99 ms | 9.5 / 28.1 / 39.4 | 7.0 / 8.3 / 9.7 | 7.2 / 8.9 / 10.0 |
 | write mix @ 25 it/s (50 req/s) | errors | 0.00% | 0.00% | 0.00% |
 | write mix @ 25 it/s (50 req/s) | dropped iterations | 0.0 | 0.0 | 0.0 |
 | write mix @ 50 it/s (100 req/s) | throughput req/s | 100.0 | 100 | 100 |
-| write mix @ 50 it/s (100 req/s) | p50 / p95 / p99 ms | 10.1 / 40.5 / 59.6 | 3.0 / 4.2 / 4.5 | 3.1 / 4.4 / 5.0 |
+| write mix @ 50 it/s (100 req/s) | p50 / p95 / p99 ms | 9.9 / 38.8 / 59.1 | 5.6 / 6.6 / 7.6 | 5.8 / 6.8 / 8.3 |
 | write mix @ 50 it/s (100 req/s) | errors | 0.00% | 0.00% | 0.00% |
 | write mix @ 50 it/s (100 req/s) | dropped iterations | 0.0 | 0.0 | 0.0 |
 
@@ -54,22 +54,22 @@ Latency is k6 `http_req_duration` over all requests of the scenario, in ms. *Thr
 
 | endpoint | forgejo-1 @500 | forge-1 @500 | forge-3 @500 | forgejo-1 sat | forge-1 sat | forge-3 sat |
 |---|---:|---:|---:|---:|---:|---:|
-| get_repo | 491 | 1.1 | 1.2 | 79.5 | 33.4 | 19.2 |
-| list_issues | 6782 | 2.7 | 2.9 | 1046 | 63.3 | 42.2 |
-| get_contents | 405 | 2.8 | 3.1 | 109 | 41.4 | 34.7 |
-| get_user | 222 | 0.9 | 1.0 | 38.9 | 29.2 | 15.8 |
-| list_user_repos | 1443 | 2.8 | 3.8 | 208 | 81.4 | 63.9 |
+| get_repo | 512 | 1.4 | 1.5 | 77.9 | 39.9 | 25.1 |
+| list_issues | 6856 | 2.7 | 3.0 | 1015 | 62.2 | 42.1 |
+| get_contents | 423 | 2.9 | 3.2 | 108 | 39.6 | 34.8 |
+| get_user | 226 | 0.9 | 1.0 | 38.2 | 27.4 | 15.7 |
+| list_user_repos | 1440 | 2.9 | 3.8 | 204 | 81.4 | 63.7 |
 
 ### Write mix per request p95 (ms)
 
 | rate | request | forgejo-1 | forge-1 | forge-3 |
 |---|---|---:|---:|---:|
-| 10 it/s | create_issue | 26.7 | 9.9 | 10.7 |
-| 10 it/s | create_comment | 26.9 | 7.5 | 8.3 |
-| 25 it/s | create_issue | 31.8 | 7.5 | 7.2 |
-| 25 it/s | create_comment | 25.8 | 4.2 | 4.4 |
-| 50 it/s | create_issue | 42.9 | 4.3 | 4.6 |
-| 50 it/s | create_comment | 38.1 | 3.3 | 3.3 |
+| 10 it/s | create_issue | 29.0 | 16.1 | 17.3 |
+| 10 it/s | create_comment | 28.5 | 11.9 | 12.3 |
+| 25 it/s | create_issue | 31.0 | 8.5 | 9.2 |
+| 25 it/s | create_comment | 21.8 | 7.4 | 7.4 |
+| 50 it/s | create_issue | 41.8 | 6.7 | 7.1 |
+| 50 it/s | create_comment | 36.1 | 6.2 | 6.4 |
 
 Runs per scenario: forgejo-1: 3, forge-1: 3, forge-3: 3.
 
@@ -77,31 +77,50 @@ Runs per scenario: forgejo-1: 3, forge-1: 3, forge-3: 3.
 
 | target | overall | tier 1 | tier 2 | tested ops | nonconforming | not implemented |
 |---|---:|---:|---:|---:|---:|---:|
-| forge /api/v3 | 224/1105 (20.3%) | 102/104 (98.1%) | 120/129 (93%) | 226 | 0 | 2 |
-| Forgejo /api/v1 | 29/1105 (2.6%) | 10/104 (9.6%) | 19/129 (14.7%) | 145 | 66 | 50 |
-| Forgejo /api/v3 | 0/1105 (0%) | 0/104 (0%) | 0/129 (0%) | 7 | 0 | 7 |
+| forge /api/v3 | 1105/1105 (100%) | 104/104 (100%) | 129/129 (100%) | 1105 | 0 | 0 |
+| Forgejo /api/v1 | 45/1105 (4.1%) | 10/104 (9.6%) | 18/129 (14%) | 440 | 100 | 295 |
+| Forgejo /api/v3 | 0/1105 (0%) | 0/104 (0%) | 0/129 (0%) | 23 | 0 | 23 |
 
 Per tag (tags where any target was tested): conforming / ops (% of tested)
 
 | tag | ops | forge /api/v3 | Forgejo /api/v1 | Forgejo /api/v3 |
 |---|---:|---:|---:|---:|
-| repos | 193 | 75 (100%) | 7 (16.3%) | 0 (untested) |
-| actions | 160 | 2 (100%) | 1 (50%) | 0 (untested) |
-| orgs | 89 | 7 (100%) | 1 (14.3%) | 0 (untested) |
-| issues | 47 | 38 (100%) | 5 (13.9%) | 0 (untested) |
-| users | 37 | 13 (100%) | 6 (46.2%) | 0 (0%) |
-| teams | 35 | 1 (100%) | 0 (0%) | 0 (untested) |
-| activity | 32 | 13 (100%) | 7 (53.8%) | 0 (untested) |
-| pulls | 27 | 26 (100%) | 0 (untested) | 0 (untested) |
-| gists | 20 | 5 (100%) | 0 (0%) | 0 (untested) |
-| reactions | 15 | 12 (85.7%) | 0 (0%) | 0 (untested) |
+| repos | 193 | 193 (100%) | 8 (6.8%) | 0 (0%) |
+| enterprise-admin | 171 | 171 (100%) | 0 (0%) | 0 (untested) |
+| actions | 160 | 160 (100%) | 1 (1.8%) | 0 (0%) |
+| orgs | 89 | 89 (100%) | 6 (10.3%) | 0 (untested) |
+| issues | 47 | 47 (100%) | 5 (11.1%) | 0 (untested) |
+| apps | 39 | 39 (100%) | 0 (untested) | 0 (untested) |
+| users | 37 | 37 (100%) | 13 (39.4%) | 0 (0%) |
+| teams | 35 | 35 (100%) | 0 (0%) | 0 (untested) |
+| activity | 32 | 32 (100%) | 8 (30.8%) | 0 (untested) |
+| dependabot | 28 | 28 (100%) | 0 (untested) | 0 (untested) |
+| packages | 27 | 27 (100%) | 0 (untested) | 0 (untested) |
+| pulls | 27 | 27 (100%) | 0 (untested) | 0 (untested) |
+| projects | 26 | 26 (100%) | 0 (untested) | 0 (untested) |
+| secret-scanning | 23 | 23 (100%) | 0 (0%) | 0 (0%) |
+| code-security | 20 | 20 (100%) | 0 (0%) | 0 (untested) |
+| gists | 20 | 20 (100%) | 0 (0%) | 0 (untested) |
+| code-scanning | 17 | 17 (100%) | 0 (untested) | 0 (untested) |
+| reactions | 15 | 15 (100%) | 0 (0%) | 0 (untested) |
 | git | 13 | 13 (100%) | 0 (0%) | 0 (untested) |
-| checks | 12 | 2 (100%) | 0 (untested) | 0 (untested) |
+| checks | 12 | 12 (100%) | 0 (untested) | 0 (untested) |
+| migrations | 11 | 11 (100%) | 0 (0%) | 0 (untested) |
+| oauth-authorizations | 10 | 10 (100%) | 0 (untested) | 0 (untested) |
 | search | 7 | 7 (100%) | 0 (0%) | 0 (untested) |
+| enterprise-team-organizations | 6 | 6 (100%) | 0 (untested) | 0 (untested) |
+| private-registries | 6 | 6 (100%) | 0 (0%) | 0 (untested) |
+| enterprise-teams | 5 | 5 (100%) | 0 (untested) | 0 (untested) |
+| enterprise-team-memberships | 5 | 5 (100%) | 0 (untested) | 0 (untested) |
 | meta | 4 | 4 (100%) | 0 (0%) | 0 (0%) |
-| licenses | 3 | 2 (100%) | 0 (0%) | 0 (0%) |
-| gitignore | 2 | 1 (100%) | 1 (100%) | 0 (0%) |
-| markdown | 2 | 1 (100%) | 1 (100%) | 0 (0%) |
+| licenses | 3 | 3 (100%) | 0 (0%) | 0 (0%) |
+| dependency-graph | 3 | 3 (100%) | 0 (0%) | 0 (untested) |
+| security-advisories | 2 | 2 (100%) | 0 (0%) | 0 (untested) |
+| codes-of-conduct | 2 | 2 (100%) | 0 (0%) | 0 (untested) |
+| billing | 2 | 2 (100%) | 0 (untested) | 0 (untested) |
+| gitignore | 2 | 2 (100%) | 2 (100%) | 0 (0%) |
+| markdown | 2 | 2 (100%) | 2 (100%) | 0 (0%) |
+| oidc | 2 | 2 (100%) | 0 (0%) | 0 (0%) |
 | emojis | 1 | 1 (100%) | 0 (0%) | 0 (0%) |
 | rate-limit | 1 | 1 (100%) | 0 (0%) | 0 (untested) |
 
@@ -109,5 +128,6 @@ Per tag (tags where any target was tested): conforming / ops (% of tested)
 
 | check | forge | Forgejo |
 |---|---:|---:|
-| tests/gh/run.sh (gh as enterprise host) | 88/88 | 0/88 |
+| tests/gh/run.sh (gh as enterprise host): forge-relevant gh commands | 166/166 | 11/166 |
+| tests/gh/run.sh: cases | 349/349 | 17/349 |
 | git smart HTTP smoke (tests/baseline/git-smoke.sh) | 17/17 | 17/17 |

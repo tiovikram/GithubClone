@@ -1,0 +1,1 @@
+{"ok": true, "digest": "sha256:cb2045877b20983e6782a3e3c8b3e7aec8f71cf649ceb7395227749d9120bb12", "size": 100663296, "elapsed_s": 18.9, "verify": [true, true, true], "retries": 2, "resumed_from": [25165824], "restarts": 0, "chunks": 12, "errors": ["patch: BrokenPipeError(32, 'Broken pipe')", "status: RemoteDisconnected('Remote end closed connection without response')"]}

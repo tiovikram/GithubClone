@@ -1,0 +1,29 @@
+2026-10-18T05:47:02.1542404Z Current runner version: '0.1.0'
+2026-10-18T05:47:02.1542527Z Runner name: 'forge-runner-5d6b7b6b78-rr7lg'
+2026-10-18T05:47:02.1542701Z Machine name: 'forge-runner-5d6b7b6b78-rr7lg'
+2026-10-18T05:47:02.1542737Z Job: long (.github/workflows/long.yml)
+2026-10-18T05:47:02.1542778Z Executor: shell
+2026-10-18T05:47:02.1552874Z ##[group]Run for i in $(seq 1 60); do echo "tick $i"; sleep 1; done
+2026-10-18T05:47:02.1552892Z for i in $(seq 1 60); do echo "tick $i"; sleep 1; done
+2026-10-18T05:47:02.1552901Z echo "finished on $RUNNER_NAME"
+2026-10-18T05:47:02.1552910Z shell: bash --noprofile --norc -eo pipefail {0}
+2026-10-18T05:47:02.1552917Z ##[endgroup]
+2026-10-18T05:47:02.1584703Z tick 1
+2026-10-18T05:47:03.1608978Z tick 2
+2026-10-18T05:47:04.1626968Z tick 3
+2026-10-18T05:47:05.1650323Z tick 4
+2026-10-18T05:47:06.1670100Z tick 5
+2026-10-18T05:47:07.1691772Z tick 6
+2026-10-18T05:47:08.1708641Z tick 7
+2026-10-18T05:47:09.1748412Z tick 8
+2026-10-18T05:47:10.1777337Z tick 9
+2026-10-18T05:47:11.1791365Z tick 10
+2026-10-18T05:47:12.1810548Z tick 11
+2026-10-18T05:47:13.1882277Z tick 12
+2026-10-18T05:47:14.1915556Z tick 13
+2026-10-18T05:47:15.1943718Z tick 14
+2026-10-18T05:47:16.1968053Z tick 15
+2026-10-18T05:47:17.2045368Z tick 16
+2026-10-18T05:47:18.2059278Z tick 17
+2026-10-18T05:47:19.2064695Z tick 18
+2026-10-18T05:50:21.3026127Z ##[error]The runner has lost communication with the server. Verify the machine is running and has a healthy network connection.

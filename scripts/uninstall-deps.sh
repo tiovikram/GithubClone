@@ -24,13 +24,14 @@ have() { command -v "$1" >/dev/null 2>&1; }
 FORMULAE=()
 [ -n "$LIST" ] && while read -r f; do [ -n "$f" ] && FORMULAE+=("$f"); done < <(sort -u "$LIST")
 CLUSTERS_K3D=(); CLUSTERS_KIND=()
-have k3d && while read -r c; do [ -n "$c" ] && CLUSTERS_K3D+=("$c"); done < <(k3d cluster list -o json 2>/dev/null | jq -r '.[].name' 2>/dev/null | grep '^forge')
+have k3d && while read -r c; do [ -n "$c" ] && CLUSTERS_K3D+=("$c"); done < <(k3d cluster list -o json 2>/dev/null | jq -r '.[].name' 2>/dev/null | grep -E '^(forge|bench)')
 have kind && while read -r c; do [ -n "$c" ] && CLUSTERS_KIND+=("$c"); done < <(kind get clusters 2>/dev/null | grep '^forge')
 IMAGES=(); VOLUMES=()
 if have docker; then
-  while read -r i; do [ -n "$i" ] && IMAGES+=("$i"); done < <(docker images --format '{{.Repository}}:{{.Tag}}' | grep -E '^forge(:|-)' )
-  # Volumes created by k3d (k3d-forge-images) and kind/k3d node containers of forge clusters.
-  while read -r v; do [ -n "$v" ] && VOLUMES+=("$v"); done < <(docker volume ls -q | grep -E '^(k3d-forge|forge)')
+  while read -r i; do [ -n "$i" ] && IMAGES+=("$i"); done < <(docker images --format '{{.Repository}}:{{.Tag}}' | grep -E '^(forge(:|-)|localhost:(8080|8088)/)' )
+  # Volumes created by k3d (k3d-forge-images, k3d-bench-images), docker compose (forge-baseline-compat_*)
+  # and kind/k3d node containers of forge clusters.
+  while read -r v; do [ -n "$v" ] && VOLUMES+=("$v"); done < <(docker volume ls -q | grep -E '^(k3d-forge|k3d-bench|forge)')
 fi
 
 echo "This will remove:"
@@ -53,11 +54,17 @@ for c in "${CLUSTERS_KIND[@]:-}"; do [ -n "$c" ] && kind delete cluster --name "
 if have docker; then
   for i in "${IMAGES[@]:-}"; do [ -n "$i" ] && docker rmi -f "$i"; done
   for v in "${VOLUMES[@]:-}"; do [ -n "$v" ] && docker volume rm -f "$v"; done
-  EXTRA=$(docker images --format '{{.Repository}}:{{.Tag}}' | grep -E '^(rancher/k3s|ghcr.io/k3d-io/|kindest/node|cgr.dev/chainguard/minio|postgres:16|rust:1-bookworm|node:24-bookworm-slim|debian:bookworm-slim|codeberg.org/forgejo/forgejo|grafana/k6|alpine/socat|ubuntu:24.04|alpine:3.20)' | tr '\n' ' ')
-  # (ubuntu:24.04 and alpine:3.20 are pulled by the Actions docker executor of `forge runner`.)
+  # Images pulled for the clusters, the Docker build, the baseline and tests. By ID, so untagged
+  # (<none>) leftovers such as kindest/node go too. ubuntu:24.04 and alpine:3.20 are pulled by the
+  # Actions docker executor of `forge runner`; docker/dockerfile is BuildKit's syntax frontend;
+  # pgsty/minio and bitnamilegacy/minio* were MinIO image candidates tried before
+  # cgr.dev/chainguard/minio. (node:24-bookworm is NOT listed: other projects use it.)
+  EXTRA_RE='^(rancher/k3s|ghcr.io/k3d-io/|kindest/node|cgr.dev/chainguard/minio|postgres:16|rust:1-bookworm|node:24-bookworm-slim|debian:bookworm-slim|debian:trixie-slim|docker/dockerfile|codeberg.org/forgejo/forgejo|grafana/k6|alpine/socat|ubuntu:24.04|alpine:3.20|pgsty/minio|bitnamilegacy/minio|registry.k8s.io/metrics-server)'
+  EXTRA=$(docker images --format '{{.Repository}}:{{.Tag}}' | grep -E "$EXTRA_RE" | tr '\n' ' ')
+  EXTRA_IDS=$(docker images --format '{{.Repository}}:{{.Tag}} {{.ID}}' | grep -E "$EXTRA_RE" | awk '{print $2}' | sort -u | tr '\n' ' ')
   if [ -n "$EXTRA" ] && confirm "Also remove images pulled for the clusters/build: $EXTRA?"; then
     # shellcheck disable=SC2086
-    docker rmi -f $EXTRA
+    docker rmi -f $EXTRA_IDS
   fi
   if confirm "Prune the Docker build cache (forge builds)?"; then docker builder prune -af; fi
 fi

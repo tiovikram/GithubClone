@@ -39,6 +39,8 @@ mkdir -p "$WORK"/{logs,gh,xdg-cache,xdg-config,xdg-state,xdg-data,work}
 
 if [ "${GH_SUITE_EXTERNAL:-}" = "1" ]; then
   ALICE="$GH_SUITE_ALICE"; BOB="$GH_SUITE_BOB"; TOKEN="$GH_SUITE_TOKEN"; BOB_TOKEN="$GH_SUITE_BOB_TOKEN"
+  # No local binary in external mode: `"$FORGE" admin ...` calls fail and fall back to the API.
+  SUFFIX="$(LC_ALL=C tr -dc 'a-z0-9' </dev/urandom | head -c 6)"; FORGE=false
   [ -S "$SOCK" ] || { echo "GH_SUITE_SOCK $SOCK is not a socket" >&2; exit 2; }
 else
 if [ "${SKIP_BUILD:-}" != "1" ]; then

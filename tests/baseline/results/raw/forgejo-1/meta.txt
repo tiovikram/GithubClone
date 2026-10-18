@@ -1,8 +1,8 @@
-label=forgejo-1 app=forgejo replicas=1 base=http://localhost:8088 runs=3 duration=60s started=2026-10-13T03:11:58Z
+label=forgejo-1 app=forgejo replicas=1 base=http://localhost:8088 runs=3 duration=60s started=2026-10-18T07:38:26Z
 host=Darwin arm64 k6=v2.3.0 docker_cpus=10 docker_mem=8319504384
-NAME                       READY   STATUS    RESTARTS   AGE     IP          NODE                NOMINATED NODE   READINESS GATES
-forgejo-7c5794f6dd-jt7ql   1/1     Running   0          6m53s   10.42.2.3   k3d-bench-agent-0   <none>           <none>
-postgres-0                 1/1     Running   0          6m53s   10.42.4.3   k3d-bench-agent-1   <none>           <none>
-forgejo-7c5794f6dd-jt7ql sha256:4d4bd83c10b2fd04b982adc141eb65deaf5875ca33471016ecc3a7fe58566373
+NAME                       READY   STATUS    RESTARTS   AGE   IP          NODE                NOMINATED NODE   READINESS GATES
+forgejo-7c5794f6dd-9sthh   1/1     Running   0          30s   10.42.1.3   k3d-bench-agent-1   <none>           <none>
+postgres-0                 1/1     Running   0          30s   10.42.3.3   k3d-bench-agent-0   <none>           <none>
+forgejo-7c5794f6dd-9sthh sha256:4d4bd83c10b2fd04b982adc141eb65deaf5875ca33471016ecc3a7fe58566373
 postgres-0 sha256:ed134ce8cc303c24d12c4bc6f5a2a43dc7ee7bbde8f67d9f60be5cc03206eab0
-finished=2026-10-13T03:45:16Z
+finished=2026-10-18T08:11:45Z
