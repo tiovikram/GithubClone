@@ -89,6 +89,10 @@ export interface SlotProps {
   "home.sidebar": { user: User };
   /** Profile sidebar, below the user details. */
   "profile.sidebar": { user: User; me: User | null };
+  /** Repository settings → General, below the core form (e.g. features, pull request options). */
+  "repo.settings.general": { ctx: RepoCtx };
+  /** Repository settings → General, in the Danger Zone above "Delete this repository". */
+  "repo.settings.danger": { ctx: RepoCtx };
   /** Repository row extras on the repository list (rare). */
   "repo.list.meta": { repo: Repo };
 }
