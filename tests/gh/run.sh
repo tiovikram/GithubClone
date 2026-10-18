@@ -670,6 +670,57 @@ K="variable set" t "variable set result"     0 "^howdy\$"                    "$G
 t "variable delete"                          0 ""                            "$GH" variable delete GREETING -R "$R"
 
 # ------------------------------------------------------------------------------------------------
+# Actions with a runner (forge only): a `forge runner` registered to the repository runs the
+# jobs, so runs complete for real (watch, logs, artifacts, re-run of failed jobs, secrets).
+
+if [ "${GH_SUITE_EXTERNAL:-}" != "1" ]; then
+  REG_TOKEN="$(api_q -X POST "repos/$ALICE/demo/actions/runners/registration-token" --jq .token)"
+  mkdir -p "$WORK/runner"
+  (exec -a "forge-gh-suite-runner-$PORT" "$FORGE" runner --url "http://127.0.0.1:$PORT" --token "$REG_TOKEN" --name gh-suite \
+    --work-dir "$WORK/runner" --slots 2 >"$WORK/runner.log" 2>&1) &
+  RUNNER_PID=$!
+  BUILD_WF="name: Build
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo \"secret=\${{ secrets.BUILD_TOKEN }}\" && echo build-ok && ls README.md
+      - run: mkdir -p out && echo payload > out/result.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: result
+          path: out/
+  flaky:
+    runs-on: ubuntu-latest
+    steps:
+      - run: if [ \"\${{ github.run_attempt }}\" = 1 ]; then echo failing-first-attempt; exit 1; fi; echo second-attempt-ok
+"
+  api_q -X PUT "repos/$ALICE/demo/contents/.github/workflows/build.yml" -f message="Add build workflow" \
+    -f content="$(printf '%s' "$BUILD_WF" | base64 | tr -d '\n')" >/dev/null
+  K="secret set" t "secret set (for a job)"      0 ""                          "$GH" secret set BUILD_TOKEN -b "t0p-s3cret" -R "$R"
+  K="workflow run" t "workflow run (runner)"     0 ""                          "$GH" workflow run build.yml -R "$R" --ref main
+  for _ in $(seq 1 50); do
+    BUILD_RUN="$(api_q "repos/$ALICE/demo/actions/workflows/build.yml/runs" --jq '.workflow_runs[0].id')"
+    [ -n "$BUILD_RUN" ] && break; sleep 0.2
+  done
+  K="run watch" t "run watch --exit-status (failure)" 1 "flaky"               "$GH" run watch "$BUILD_RUN" -R "$R" --exit-status -i 1
+  K="run view" t "run view (completed jobs)"     0 "X main Build"                 "$GH" run view "$BUILD_RUN" -R "$R"
+  K="run view" t "run view --log"                0 "build-ok"                  "$GH" run view "$BUILD_RUN" -R "$R" --log
+  K="run view" t "run view --log (secret masked)" 0 "secret=\\*\\*\\*"         "$GH" run view "$BUILD_RUN" -R "$R" --log
+  K="run view" t "run view --log-failed"         0 "failing-first-attempt"     "$GH" run view "$BUILD_RUN" -R "$R" --log-failed
+  K="run download" t "run download (artifact)"   0 ""                          "$GH" run download "$BUILD_RUN" -R "$R" -n result -D "$WORK/run-dl2"
+  K="run download" t "run download result"       0 "^payload\$"                cat "$WORK/run-dl2/result.txt"
+  K="run rerun" t "run rerun --failed"           0 ""                          "$GH" run rerun "$BUILD_RUN" -R "$R" --failed
+  K="run watch" t "run watch --exit-status (rerun succeeds)" 0 ""             "$GH" run watch "$BUILD_RUN" -R "$R" --exit-status -i 1
+  K="run list" t "run list --json (completed)"   0 "\"conclusion\": *\"success\"" "$GH" run list -R "$R" --workflow build.yml --json conclusion,status --limit 1
+  K="run view" t "run view --json jobs (attempt 2)" 0 "second-attempt|\"attempt\": *2" "$GH" run view "$BUILD_RUN" -R "$R" --json attempt,jobs
+  K="secret delete" t "secret delete (job secret)" 0 ""                        "$GH" secret delete BUILD_TOKEN -R "$R"
+  kill "$RUNNER_PID" 2>/dev/null; pkill -f "forge-gh-suite-runner-$PORT" 2>/dev/null
+fi
+
+# ------------------------------------------------------------------------------------------------
 # local-only commands: alias, config, completion, licenses
 
 t "alias set"                                0 ""                            "$GH" alias set iv 'issue view'

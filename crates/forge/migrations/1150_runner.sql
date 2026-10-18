@@ -185,6 +185,8 @@ CREATE TABLE actions_run_approvals (
     state        TEXT NOT NULL,
     user_id      BIGINT REFERENCES users(id) ON DELETE SET NULL,
     comment      TEXT NOT NULL DEFAULT '',
+    -- review: required reviewers; gate: custom deployment protection rule
+    kind         TEXT NOT NULL DEFAULT 'review',
     created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 

@@ -282,7 +282,7 @@ async fn approvals(State(s): State<AppState>, MaybeUser(u): MaybeUser, Path((own
     let ctx = db::load_repo(&s.db, u.as_ref(), &owner, &repo).await?;
     let run = super::actions::run_by_id(&s, &ctx, &id).await?;
     let rows: Vec<(Value, String, Option<i64>, String)> =
-        sqlx::query_as("SELECT environments, state, user_id, comment FROM actions_run_approvals WHERE run_id = $1 ORDER BY id").bind(run.id).fetch_all(&s.db).await?;
+        sqlx::query_as("SELECT environments, state, user_id, comment FROM actions_run_approvals WHERE run_id = $1 AND kind = 'review' ORDER BY id").bind(run.id).fetch_all(&s.db).await?;
     let mut out = Vec::new();
     for (envs, state, user_id, comment) in rows {
         let Some(uid) = user_id else { continue };
@@ -319,11 +319,19 @@ async fn review_pending_deployments(State(s): State<AppState>, AuthUser(u): Auth
     Ok(Json(Value::Array(deployments)).into_response())
 }
 
-/// Custom deployment protection rules are GitHub Apps; forge has no app that can gate a run,
-/// so no run ever waits on one.
-async fn review_custom_gates(State(s): State<AppState>, AuthUser(u): AuthUser, Path((owner, repo, id)): Path<(String, String, String)>, Json(_b): Json<Value>) -> ApiResult<Response> {
+#[derive(Deserialize)]
+struct GateBody {
+    environment_name: Option<String>,
+    state: Option<String>,
+    comment: Option<String>,
+}
+
+/// Review by a custom deployment protection rule (GitHub: the rule's app; here any writer).
+async fn review_custom_gates(State(s): State<AppState>, AuthUser(u): AuthUser, Path((owner, repo, id)): Path<(String, String, String)>, Json(b): Json<GateBody>) -> ApiResult<Response> {
     let ctx = db::load_repo(&s.db, Some(&u), &owner, &repo).await?;
-    super::actions::run_by_id(&s, &ctx, &id).await?;
+    let run = super::actions::run_by_id(&s, &ctx, &id).await?;
     ctx.require(Perm::Write)?;
-    Err(ApiError::unprocessable("This workflow run has no deployments waiting on a custom deployment protection rule"))
+    let env = b.environment_name.filter(|e| !e.is_empty()).ok_or_else(|| ApiError::validation("DeploymentProtectionRule", "environment_name", "missing_field"))?;
+    crate::runner::environments::review_gate(&s, &ctx, &run, &u, &env, b.state.as_deref(), &b.comment.unwrap_or_default()).await?;
+    Ok(no_content())
 }

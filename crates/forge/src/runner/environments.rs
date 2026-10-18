@@ -27,15 +27,25 @@ pub enum Gate {
     Fail(String),
 }
 
-async fn review_state(s: &AppState, run_id: i64, env_id: i64) -> ApiResult<Option<String>> {
+async fn review_state(s: &AppState, run_id: i64, env_id: i64, kind: &str) -> ApiResult<Option<String>> {
     Ok(sqlx::query_scalar(
-        "SELECT state FROM actions_run_approvals WHERE run_id = $1 AND environments @> jsonb_build_array(jsonb_build_object('id', $2::bigint))
+        "SELECT state FROM actions_run_approvals WHERE run_id = $1 AND kind = $3
+            AND environments @> jsonb_build_array(jsonb_build_object('id', $2::bigint))
           ORDER BY id DESC LIMIT 1",
     )
     .bind(run_id)
     .bind(env_id)
+    .bind(kind)
     .fetch_optional(&s.db)
     .await?)
+}
+
+async fn has_custom_rules(s: &AppState, env: &EnvRow) -> ApiResult<bool> {
+    let n: i64 = sqlx::query_scalar("SELECT count(*) FROM environment_protection_rules WHERE environment_id = $1 AND enabled")
+        .bind(env.id)
+        .fetch_one(&s.db)
+        .await?;
+    Ok(n > 0)
 }
 
 fn has_reviewers(env: &EnvRow) -> bool {
@@ -50,9 +60,16 @@ pub async fn gate(s: &AppState, ctx: &RepoCtx, run: &RunRow, name: &str, since: 
         return Ok(Gate::Fail(format!("Branch \"{git_ref}\" is not allowed to deploy to {name} due to environment protection rules.")));
     }
     if has_reviewers(&env) {
-        match review_state(s, run.id, env.id).await?.as_deref() {
+        match review_state(s, run.id, env.id, "review").await?.as_deref() {
             Some("approved") => {}
             Some("rejected") => return Ok(Gate::Fail(format!("The deployment to {name} was rejected."))),
+            _ => return Ok(Gate::Wait),
+        }
+    }
+    if has_custom_rules(s, &env).await? {
+        match review_state(s, run.id, env.id, "gate").await?.as_deref() {
+            Some("approved") => {}
+            Some("rejected") => return Ok(Gate::Fail(format!("The deployment to {name} was rejected by a deployment protection rule."))),
             _ => return Ok(Gate::Wait),
         }
     }
@@ -234,4 +251,33 @@ pub async fn review(s: &AppState, ctx: &RepoCtx, run: &RunRow, user: &User, env_
     }
     release_waiting(s, Some(run.id)).await?;
     Ok(deployments)
+}
+
+/// `POST /actions/runs/{id}/deployment_protection_rule`: a custom deployment protection rule
+/// (an integration) approves or rejects the run's deployment to `env_name`; without `state`
+/// only the comment is recorded.
+pub async fn review_gate(s: &AppState, ctx: &RepoCtx, run: &RunRow, user: &User, env_name: &str, state: Option<&str>, comment: &str) -> ApiResult<()> {
+    let pending = pending_envs(s, run).await?;
+    let mut found = None;
+    for (env, _) in &pending {
+        if env.name.eq_ignore_ascii_case(env_name) && has_custom_rules(s, env).await? {
+            found = Some(env.clone());
+        }
+    }
+    let env = found.ok_or_else(|| ApiError::unprocessable(format!("No deployment to environment '{env_name}' is waiting on a deployment protection rule for this run")))?;
+    let state = match state {
+        Some(st @ ("approved" | "rejected")) => st,
+        Some(_) => return Err(ApiError::validation("DeploymentProtectionRule", "state", "invalid")),
+        None => "commented",
+    };
+    sqlx::query("INSERT INTO actions_run_approvals (run_id, environments, state, user_id, comment, kind) VALUES ($1, $2, $3, $4, $5, 'gate')")
+        .bind(run.id)
+        .bind(json!([env_object(s, ctx, &env, true)]))
+        .bind(state)
+        .bind(user.id)
+        .bind(comment)
+        .execute(&s.db)
+        .await?;
+    release_waiting(s, Some(run.id)).await?;
+    Ok(())
 }
