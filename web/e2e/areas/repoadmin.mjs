@@ -244,7 +244,7 @@ export async function run(t) {
     await page().waitForSelector("#add-team");
     await page().select("#add-team", "devs");
     await page().select("#add-team-role", "write");
-    await t.clickText("Add team", "button");
+    await page().locator("form[aria-label='Add teams'] button[type=submit]").click();
     await page().waitForSelector('[data-testid="team-devs"]');
     const teams = (await t.rest(`/repos/${ORG}/${MOVED}/teams`)).json;
     assert(teams.some((x) => x.slug === "devs" && x.permission === "push"), `team permission ${JSON.stringify(teams)}`);
@@ -343,9 +343,9 @@ export async function run(t) {
     await fill("#rp-required_status_checks-contexts", "ci/build");
     await click('[data-testid="rule-commit_message_pattern"] input[type=checkbox]');
     await fill("#rp-commit_message_pattern-pattern", "feat");
-    await page().select('[data-testid="bypass-list"] select[aria-label="Add bypass"]', "RepositoryRole:2");
+    await page().select('[data-testid="bypass-list"] select[aria-label="Add bypass"]', "DeployKey:");
     await page().locator('[data-testid="bypass-list"] button::-p-text(Add)').click();
-    await waitText("Role: Maintain");
+    await waitText("Deploy keys");
     await shot("ra-12-ruleset-editor");
     await t.clickText("Create", "button");
     await page().waitForFunction(() => /\/settings\/rules\/\d+$/.test(location.pathname));
@@ -355,7 +355,7 @@ export async function run(t) {
     for (const ty of ["creation", "deletion", "non_fast_forward", "pull_request", "required_linear_history", "required_status_checks", "commit_message_pattern"])
       assert(types.includes(ty), `rule ${ty} in ${types}`);
     assert(r.conditions.ref_name.include.includes("~DEFAULT_BRANCH") && r.conditions.ref_name.include.includes("refs/heads/locked/*"), `targets ${JSON.stringify(r.conditions)}`);
-    assert(r.bypass_actors.some((b) => b.actor_type === "RepositoryRole" && b.actor_id === 2), "bypass actor");
+    assert(r.bypass_actors.some((b) => b.actor_type === "DeployKey"), "bypass actor");
     assert(r.rules.find((x) => x.type === "required_status_checks").parameters.required_status_checks[0].context === "ci/build", "status check param");
     // enforcement: creating locked/x is blocked
     const w = join(wd, "w");
@@ -493,7 +493,7 @@ export async function run(t) {
       await t.clickText("Redeliver", "button");
       await waitText("Redelivery requested.");
       await until(async () => (await t.rest(`${rp()}/hooks/${id}/deliveries`)).json.length > n0, "redelivery recorded");
-      await t.clickText("Settings", "a");
+      await page().locator(".ra-tabnav a::-p-text(Settings)").click();
       await page().waitForSelector("#hook-active");
       await click("#hook-active");
       await t.clickText("Update webhook", "button");
@@ -546,6 +546,8 @@ export async function run(t) {
 
   // ---------- pages ----------
   await step("repoadmin: GitHub Pages — publish from branch, build, visit, custom domain, unpublish", async () => {
+    const idx = await t.rest(`${rp()}/contents/index.html`, { method: "PUT", body: { message: "pages", content: Buffer.from(`<h1>ra pages ${RUN}</h1>`).toString("base64") } });
+    assert(idx.status === 201, `index.html ${idx.status}`);
     await goto(`/${full()}/settings/pages`);
     await page().waitForSelector("#pages-source");
     await page().select("#pages-source", "legacy");
@@ -557,7 +559,7 @@ export async function run(t) {
     await until(async () => (await t.rest(`${rp()}/pages`)).json.status === "built", "pages built", 30000);
     const href = await page().$eval('[data-testid="pages-url"]', (a) => a.getAttribute("href"));
     const res = await t.pageFetch(href);
-    assert(res.status === 200, `site ${href}: ${res.status}`);
+    assert(res.status === 200 && res.text.includes(`ra pages ${RUN}`), `site ${href}: ${res.status}`);
     await t.clickText("Request build", "button");
     await waitText("Build requested.");
     await fill("#pages-cname", "docs.example.com");

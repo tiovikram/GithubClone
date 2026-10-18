@@ -277,6 +277,13 @@ pub async fn full_json(s: &AppState, viewer: Option<&User>, ctx: &RepoCtx) -> Ap
     }
     let mut v = json::repo::full(&s.api_url(), s.base_url(), ctx, parent.as_ref(), source.as_ref());
     super::repo_merge_opts::apply(&mut v, &super::repo_merge_opts::load(s, ctx.repo.id).await?);
+    // Generated from a template (`POST /repos/{t}/{r}/generate`): the template, when visible.
+    let tpl: Option<Option<i64>> = sqlx::query_scalar("SELECT template_id FROM repo_templates WHERE repo_id = $1").bind(ctx.repo.id).fetch_optional(&s.db).await?;
+    if let Some(Some(tid)) = tpl {
+        if let Ok(t) = db::load_repo_by_id(&s.db, viewer, tid).await {
+            v["template_repository"] = json::repo::repo(&s.api_url(), s.base_url(), &t);
+        }
+    }
     v["subscribers_count"] = serde_json::json!(subscribers_count(s, ctx.repo.id).await?);
     // advsec: the security settings, shown to admins (as on GitHub).
     if ctx.perm >= Perm::Admin {

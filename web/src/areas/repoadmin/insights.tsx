@@ -58,7 +58,9 @@ function Bars({ data, height = 120, label, color = "var(--accent)", testid }: { 
           return (
             <g key={i}>
               <rect x={i * (w + gap)} y={0} width={w} height={height} fill="transparent"><title>{d.tip || `${d.label}: ${d.value}`}</title></rect>
-              {d.value > 0 && <rect x={i * (w + gap) + 1} y={height - h} width={w - 2} height={h} rx={2} fill={color} pointerEvents="none" />}
+              {d.value > 0 && (
+                <rect x={i * (w + gap) + (data.length < 30 ? 3 : 1)} y={height - h} width={data.length < 30 ? w - 6 : w - 2} height={h} rx={2} fill={color} pointerEvents="none" />
+              )}
             </g>
           );
         })}

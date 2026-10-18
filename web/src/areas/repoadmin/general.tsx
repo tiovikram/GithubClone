@@ -156,7 +156,7 @@ function ConfirmName({ full, value, onChange, id }: { full: string; value: strin
 function VisibilityForm({ ctx, close }: { ctx: RepoCtx; close: () => void }) {
   const repo = ctx.repo as RepoFull;
   const cur = repo.visibility || (repo.private ? "private" : "public");
-  const options = repo.owner.type === "Organization" ? ["public", "internal", "private"] : ["public", "private"];
+  const options = ["public", "private"];
   const [vis, setVis] = useState(options.find((o) => o !== cur) || "private");
   const [confirm, setConfirm] = useState("");
   const act = useAction();
@@ -199,7 +199,7 @@ function TransferForm({ ctx, close, onDone }: { ctx: RepoCtx; close: () => void;
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     const r = await act.run(() => ra.transfer(ctx.owner, ctx.name, { new_owner: owner.trim(), new_name: newName !== repo.name ? newName : undefined }));
-    if (r) onDone(r.full_name || `${owner.trim()}/${newName}`);
+    if (r) onDone(`${owner.trim()}/${newName}`);
   };
   return (
     <form onSubmit={submit}>

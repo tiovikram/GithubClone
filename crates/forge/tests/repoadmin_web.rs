@@ -312,3 +312,22 @@ async fn merge_commit_message_options() {
     let (_, c) = s.call(Some(&u), "GET", &format!("/repos/{full}/commits/{}", m["sha"].as_str().unwrap()), None).await;
     assert_eq!(c["commit"]["message"], format!("Add x (#{})\n\nAdds the x file.", pr["number"]), "{c}");
 }
+
+/// A repository generated from a template reports `template_repository` on GET (the "generated
+/// from" link of the web UI).
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn generated_repository_reports_its_template() {
+    let s = TestServer::start().await;
+    let u = s.user().await;
+    let repo = s.create_repo(&u, true).await;
+    let full = format!("{}/{repo}", u.login);
+    let (st, _) = s.call(Some(&u), "PATCH", &format!("/repos/{full}"), Some(json!({"is_template": true}))).await;
+    assert_eq!(st, 200);
+    let name = unique("gen");
+    let (st, g) = s.call(Some(&u), "POST", &format!("/repos/{full}/generate"), Some(json!({"name": name}))).await;
+    assert_eq!(st, 201, "{g}");
+    let (_, r) = s.call(Some(&u), "GET", &format!("/repos/{}/{name}", u.login), None).await;
+    assert_eq!(r["template_repository"]["full_name"], full.as_str(), "{r}");
+    let (_, t) = s.call(Some(&u), "GET", &format!("/repos/{full}"), None).await;
+    assert!(t.get("template_repository").is_none_or(Value::is_null), "the template itself has none");
+}
