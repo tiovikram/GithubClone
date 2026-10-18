@@ -77,3 +77,47 @@ Severity reflects impact on a multi-tenant instance where anyone can sign up.
 - **The repo advisory lock is held while a slow client uploads its pack** (HTTP and SSH push). A slow pusher blocks other writes to that repo until the request ends or times out. Bounded by `FORGE_MAX_PUSH_BYTES` and the SSH inactivity timeout (1 h). A future fix is to receive into a quarantine first, then lock.
 - **The timeline loads all items before paging** (diff/patch output is capped since #23).
 - **Webhooks honour system proxy settings** (`HTTPS_PROXY`). If a proxy is configured, the SSRF guard relies on the proxy's own egress policy.
+
+## Enterprise administration (enterprise area)
+- **Site admins are the enterprise owners.** Every `/admin/*`, `/enterprise/*`, `/enterprises/{e}/*`,
+  `/manage/v1/*` and `/scim/v2/enterprises/{e}/*` endpoint requires `users.site_admin`
+  (`enterprise::SiteAdmin`, 403 otherwise; 404 for an enterprise slug other than
+  `FORGE_ENTERPRISE_SLUG`). Organization and repository pre-receive overrides follow GHES:
+  org owners / repo admins, and only where the global hook allows downstream configuration.
+- **Suspended users cannot authenticate**: token, Basic (token or password), session cookie and
+  SSH key lookups all filter on `users.suspended_at` (`auth.rs`, `ssh/keys.rs`); suspension also
+  deletes the user's sessions. Site admins must be demoted before they can be suspended or deleted.
+- **Impersonation tokens** (`POST /admin/users/{u}/authorizations`) are ordinary tokens for the
+  user (`tokens.impersonation = true`), audited (`oauth_access.create`) and revoked with
+  `DELETE /admin/users/{u}/authorizations`.
+- **Maintenance mode** (`POST /manage/v1/maintenance`) answers 503 to every request (API, git,
+  web UI) except site admins, addresses on the IP exception list, `/healthz`, `/readyz`, the
+  session endpoint (so admins can sign in) and `/api/v3/manage/*`. The state is read from Postgres
+  by every pod (cached 2 s).
+- **Pre-receive hooks: trust model.** Hook scripts and environments are **site-admin code**: only
+  site admins can create or change hooks, choose their script repository/path or create
+  environments; org owners and repo admins can only change the enforcement of hooks that allow
+  it. During a push (HTTP and SSH) forge reads the script from the script repository's default
+  branch and runs it through `forge pre-receive-hooks` as git's `pre-receive` hook, before the
+  storage commit, so a rejected push never becomes durable. The runner is a limit, not a security
+  boundary against a malicious admin:
+  - the script gets a scrubbed environment: only `PATH`, `HOME` (a private per-push temp dir),
+    `LANG`, git's object/quarantine variables (`GIT_DIR`, `GIT_QUARANTINE_PATH`,
+    `GIT_OBJECT_DIRECTORY`, `GIT_ALTERNATE_OBJECT_DIRECTORIES`, push options) and GitHub's
+    `GITHUB_USER_LOGIN`, `GITHUB_USER_IP`, `GITHUB_REPO_NAME`, `GITHUB_REPO_PUBLIC`, `GITHUB_VIA`;
+    no forge secrets, database URL or cloud credentials are passed;
+  - it runs in its own process group with a 5 s wall-clock limit (the whole group is killed on
+    timeout) and its output is capped at 64 KiB per stream;
+  - an environment is a `.tar.gz` downloaded (by a job, from an http(s) `image_url`; private
+    addresses are refused unless `FORGE_WEBHOOK_ALLOW_PRIVATE=1`, max 512 MiB) into object storage
+    and extracted per pod into the git cache dir; the script runs with that directory as its
+    working directory and its `bin` dirs first on `PATH`. **This is not a chroot or container:**
+    the script runs as the forge user with the pod's filesystem and network visible, like the
+    branch-protection hook. Deployments that need isolation should run forge pods with a
+    restricted service account / read-only root filesystem and network policies.
+  - `testing` hooks run and print their verdict but never reject.
+- **LDAP endpoints store mappings only**; no LDAP server is contacted (sync requests are recorded
+  in `ent_ldap_sync_requests`). **Audit log streams** are stored (secrets must be sealed with the
+  stream key and are verified, never decrypted into responses) but forge does not deliver events
+  to external vendors. **Live migrations** are recorded with GHES's state machine; forge transfers
+  no data to the target.
