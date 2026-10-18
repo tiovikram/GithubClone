@@ -147,6 +147,7 @@ pub async fn create_repo(state: &AppState, owner: &User, creator: &User, req: Cr
         sqlx::query("UPDATE repositories SET pushed_at = now() WHERE id = $1").bind(repo.id).execute(&state.db).await?;
     }
     super::labels::on_repo_created(state, repo.id, creator).await?;
+    crate::orgs::grant_creator_admin(&state.db, owner, repo.id, creator).await?;
     let repo = db::repo_by_id(&state.db, repo.id).await?;
     Ok(RepoCtx { repo, owner: owner.clone(), perm: Perm::Admin })
 }
@@ -193,7 +194,13 @@ async fn create_for_org(
     if !member && !u.site_admin {
         return Err(ApiError::forbidden("You need admin access to the organization before adding a repository to it."));
     }
+    // members_can_create_{public,private}_repositories (crate::orgs)
+    let private = req.private.unwrap_or(false) || matches!(req.visibility.as_deref(), Some("private") | Some("internal"));
+    if !crate::orgs::may_create_repo(&s.db, &o, &u, private).await? {
+        return Err(ApiError::forbidden("You do not have permission to create repositories in this organization."));
+    }
     let ctx = create_repo(&s, &o, &u, req).await?;
+    crate::orgs::audit_quiet(&s.db, &o, Some(&u), "repo.create", serde_json::json!({ "repo": ctx.full_name(), "visibility": ctx.repo.visibility })).await;
     Ok(created(json::repo::full(&s.api_url(), s.base_url(), &ctx, None, None)))
 }
 

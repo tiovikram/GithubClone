@@ -60,7 +60,19 @@ Severity reflects impact on a multi-tenant instance where anyone can sign up.
 
 ## Known gaps / accepted risks (not fixed)
 - **Token scopes:** every token carries all scopes (documented in ARCHITECTURE). There are no fine-grained or read-only tokens.
-- **Org members get Write on every org repo.** GitHub's default base permission is Read. This is a product decision that needs an org setting.
+- ~~**Org members get Write on every org repo.**~~ Fixed by the orgs build-out: `PATCH /orgs/{org}`
+  `default_repository_permission` (`read` default, `write`, `admin`, `none`) is honoured by
+  `db::permission` (via `orgs::perm`), together with team grants (inherited by child teams), custom
+  repository roles, organization roles (`all_repo_*`, `security_manager`, custom base roles) and
+  collaborator grants. Members who create or fork a repo into the org get admin on it, like on
+  GitHub. Tests: `crates/forge/tests/orgs_extra.rs`.
+  **Remaining gap (for the security area):** listing/search SQL filters across `api/*` and
+  `graphql/*` still treat any org membership as visibility of *private* org repositories
+  (`EXISTS(SELECT 1 FROM org_members ...)`). With base permission `none`, a member without a team
+  or collaborator grant can therefore see a private repo's *name/metadata in listings and search*
+  (e.g. `/orgs/{o}/repos`, `/user/repos`, search), although every direct access path (`load_repo`,
+  git, SSH, GraphQL `repository`/`node`) returns 404. Fix: replace those filters with a shared SQL
+  predicate that mirrors `orgs::perm::org_repo_permissions`.
 - **Unverified emails** drive commit attribution (`users_by_email`), and `simple-user` JSON includes `email`, so `/users` lists every email. GitHub requires verified emails and exposes only public ones. This needs an email-verification feature.
 - **The repo advisory lock is held while a slow client uploads its pack** (HTTP and SSH push). A slow pusher blocks other writes to that repo until the request ends or times out. Bounded by `FORGE_MAX_PUSH_BYTES` and the SSH inactivity timeout (1 h). A future fix is to receive into a quarantine first, then lock.
 - **The timeline loads all items before paging** (diff/patch output is capped since #23).
