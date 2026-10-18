@@ -11,7 +11,7 @@ Areas live in `web/src/areas/<area>/` and register themselves in `index.tsx` (an
 
 | Extension point | Rendered by | Notes |
 |---|---|---|
-| `topRoutes` | `App.tsx`, under the global layout | `<Route>` elements; static segments (`orgs/…`, `site-admin/…`) win over `:owner` |
+| `topRoutes` | `App.tsx`, under the global layout | `<Route>` elements. React Router ranks `/:owner/:repo` above `foo/*`, so add explicit two-segment routes (`foo/:id`) next to `foo/*`; `useParams()["*"]` is then undefined (treat as "") |
 | `repoRoutes` | `App.tsx`, under `/:owner/:repo` | e.g. `<Route path="actions/*" …/>` |
 | `repoTabs` | `RepoLayout.tsx` | order: Code 0, Issues 10, Pull requests 20, Releases 80, Settings 1000 |
 | `repoSettings` | `/:owner/:repo/settings/*` sidebar | General (core) is order 0 |
