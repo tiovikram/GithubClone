@@ -92,6 +92,20 @@ pub async fn create_artifact(s: &AppState, run: &crate::api::actions::RunRow, jo
     if name.is_empty() || name.contains(['/', '\\', ':', '<', '>', '|', '*', '?', '"', '\r', '\n']) {
         return Err(ApiError::unprocessable(format!("The artifact name is not valid: {name}")));
     }
+    // An artifact of an earlier attempt is replaced by the re-run's upload.
+    let older: Vec<ArtifactRow> = sqlx::query_as(
+        "SELECT a.* FROM actions_artifacts a LEFT JOIN actions_jobs j ON j.id = a.job_id
+          WHERE a.run_id = $1 AND a.name = $2
+            AND COALESCE(j.run_attempt, 0) < (SELECT run_attempt FROM actions_jobs WHERE id = $3)",
+    )
+    .bind(run.id)
+    .bind(name)
+    .bind(job_id)
+    .fetch_all(&s.db)
+    .await?;
+    for a in &older {
+        delete_artifact(s, a).await?;
+    }
     let exists: Option<i64> = sqlx::query_scalar("SELECT id FROM actions_artifacts WHERE run_id = $1 AND name = $2")
         .bind(run.id)
         .bind(name)

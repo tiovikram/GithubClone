@@ -336,6 +336,8 @@ async fn run_action_dir(job: &mut Job, dir: &Path, uses: &str, with: Map<String,
 
 fn auth_header(job: &Job, token: &str) -> String {
     let b = base64::engine::general_purpose::STANDARD.encode(format!("x-access-token:{token}"));
+    job.log.add_mask(&b);
+    job.log.add_mask(token);
     format!("http.{}/.extraheader=AUTHORIZATION: basic {b}", job.api.base)
 }
 
@@ -349,7 +351,10 @@ async fn git(job: &Job, dir: &Path, args: &[&str]) -> Result<String, String> {
         .env("GIT_CONFIG_NOSYSTEM", "1")
         .env("GIT_TERMINAL_PROMPT", "0");
     let (ok, out) = run_cmd(&mut cmd).await.map_err(|e| format!("git: {e}"))?;
-    let shown: Vec<&str> = args.iter().map(|a| if a.contains("extraheader") { "http.extraheader=***" } else { a }).collect();
+    let shown: Vec<&str> = args
+        .iter()
+        .map(|a| if a.contains("extraheader=") { "http.extraheader=***" } else if a.to_ascii_uppercase().starts_with("AUTHORIZATION:") { "***" } else { a })
+        .collect();
     job.log.line(&format!("[command]git {}", shown.join(" ")));
     let t = out.trim_end();
     if !t.is_empty() {

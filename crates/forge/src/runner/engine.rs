@@ -65,6 +65,9 @@ pub struct NewRun {
     pub display_title: Option<String>,
 }
 
+/// Marker in a placeholder job's `matrix`: only these instances are planned.
+const ONLY: &str = "__forge_only";
+
 pub fn workflow_id(repo_id: i64, path: &str) -> i64 {
     use sha2::{Digest, Sha256};
     let h = Sha256::digest(format!("{repo_id}:{path}").as_bytes());
@@ -144,7 +147,7 @@ pub async fn create_run(s: &AppState, ctx: &RepoCtx, nr: NewRun) -> ApiResult<Ru
         .await?;
     match parsed {
         Ok(w) => {
-            create_attempt_jobs(s, &run, 1, &w, None).await?;
+            create_attempt_jobs(s, &run, 1, &w, None, &HashMap::new()).await?;
             advance(s, run.id).await?;
         }
         Err(e) => {
@@ -165,7 +168,15 @@ pub async fn create_run(s: &AppState, ctx: &RepoCtx, nr: NewRun) -> ApiResult<Ru
 
 /// Inserts the jobs of a new attempt: one `pending` placeholder per workflow job (planned by
 /// `advance`). `carry` maps job keys to completed rows of the previous attempt that are kept.
-async fn create_attempt_jobs(s: &AppState, run: &RunRow, attempt: i32, w: &Workflow, carry: Option<&HashMap<String, Vec<JobRow>>>) -> ApiResult<()> {
+/// `only` restricts the re-planned matrix instances of a job key (re-run of failed instances).
+async fn create_attempt_jobs(
+    s: &AppState,
+    run: &RunRow,
+    attempt: i32,
+    w: &Workflow,
+    carry: Option<&HashMap<String, Vec<JobRow>>>,
+    only: &HashMap<String, Vec<Value>>,
+) -> ApiResult<()> {
     for (key, def) in &w.jobs {
         if let Some(rows) = carry.and_then(|c| c.get(key)) {
             for r in rows {
@@ -197,12 +208,14 @@ async fn create_attempt_jobs(s: &AppState, run: &RunRow, attempt: i32, w: &Workf
                 .execute(&s.db)
                 .await?;
             }
-            continue;
+            if !only.contains_key(key) {
+                continue;
+            }
         }
         let name = def.get("name").map(expr::to_string).filter(|n| !n.contains("${{")).unwrap_or_else(|| key.clone());
         sqlx::query(
-            "INSERT INTO actions_jobs (run_id, repo_id, run_attempt, job_key, name, needs, definition, labels, status)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending')",
+            "INSERT INTO actions_jobs (run_id, repo_id, run_attempt, job_key, name, needs, definition, labels, status, matrix)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9)",
         )
         .bind(run.id)
         .bind(run.repo_id)
@@ -212,6 +225,7 @@ async fn create_attempt_jobs(s: &AppState, run: &RunRow, attempt: i32, w: &Workf
         .bind(workflow::needs_of(def))
         .bind(def)
         .bind(workflow::runs_on_labels(def.get("runs-on").unwrap_or(&Value::Null)))
+        .bind(only.get(key).map(|l| json!({ ONLY: l })))
         .execute(&s.db)
         .await?;
     }
@@ -428,7 +442,15 @@ pub async fn advance(s: &AppState, run_id: i64) -> ApiResult<()> {
                 continue;
             }
             match workflow::plan_job(&j.job_key, &j.definition, &contexts) {
-                Ok(planned) => {
+                Ok(mut planned) => {
+                    if let Some(Value::Array(only)) = j.matrix.as_ref().and_then(|m| m.get(ONLY)) {
+                        planned.retain(|p| only.contains(p.matrix.as_ref().unwrap_or(&Value::Null)));
+                        if planned.is_empty() {
+                            sqlx::query("DELETE FROM actions_jobs WHERE id = $1").bind(j.id).execute(&mut *tx).await?;
+                            progressed = true;
+                            continue;
+                        }
+                    }
                     for (i, p) in planned.iter().enumerate() {
                         if i == 0 {
                             sqlx::query("UPDATE actions_jobs SET name = $2, matrix = $3, labels = $4, status = 'queued' WHERE id = $1")
@@ -685,6 +707,32 @@ pub async fn rerun(s: &AppState, run: &RunRow, actor: &User, mode: Rerun) -> Api
         }
     }
     let mut carry: HashMap<String, Vec<JobRow>> = HashMap::new();
+    let mut only: HashMap<String, Vec<Value>> = HashMap::new();
+    if matches!(mode, Rerun::Failed | Rerun::Job(_)) {
+        // directly re-run keys keep their successful matrix instances (other instances re-run)
+        let direct: Vec<String> = match &mode {
+            Rerun::Job(id) => prev.iter().filter(|j| j.id == *id).map(|j| j.job_key.clone()).collect(),
+            _ => prev.iter().filter(|j| !matches!(j.conclusion.as_deref(), Some("success" | "skipped" | "neutral"))).map(|j| j.job_key.clone()).collect(),
+        };
+        for key in direct {
+            let rows: Vec<&JobRow> = prev.iter().filter(|j| j.job_key == key).collect();
+            if rows.len() < 2 || rows.iter().any(|j| j.matrix.is_none()) {
+                continue;
+            }
+            let rerun_rows: Vec<&JobRow> = rows
+                .iter()
+                .copied()
+                .filter(|j| match &mode {
+                    Rerun::Job(id) => j.id == *id,
+                    _ => !matches!(j.conclusion.as_deref(), Some("success" | "skipped" | "neutral")),
+                })
+                .collect();
+            only.insert(key.clone(), rerun_rows.iter().filter_map(|j| j.matrix.clone()).collect());
+            for j in rows.iter().filter(|j| !rerun_rows.iter().any(|r| r.id == j.id)) {
+                carry.entry(key.clone()).or_default().push((*j).clone());
+            }
+        }
+    }
     for j in &prev {
         if !again.contains(&j.job_key) {
             carry.entry(j.job_key.clone()).or_default().push(j.clone());
@@ -708,7 +756,7 @@ pub async fn rerun(s: &AppState, run: &RunRow, actor: &User, mode: Rerun) -> Api
         .bind(actor.id)
         .execute(&s.db)
         .await?;
-    create_attempt_jobs(s, &updated, attempt, &w, Some(&carry)).await?;
+    create_attempt_jobs(s, &updated, attempt, &w, Some(&carry), &only).await?;
     advance(s, run.id).await?;
     Ok(sqlx::query_as("SELECT * FROM actions_runs WHERE id = $1").bind(run.id).fetch_one(&s.db).await?)
 }

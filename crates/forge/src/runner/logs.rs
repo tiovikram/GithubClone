@@ -11,7 +11,9 @@ use crate::state::AppState;
 
 /// `2026-10-17T06:30:00.1234567Z` (GitHub's log line timestamp format).
 pub fn stamp() -> String {
-    chrono::Utc::now().format("%Y-%m-%dT%H:%M:%S%.7fZ").to_string()
+    use chrono::Timelike;
+    let t = chrono::Utc::now();
+    format!("{}.{:07}Z", t.format("%Y-%m-%dT%H:%M:%S"), t.nanosecond() % 1_000_000_000 / 100)
 }
 
 fn chunk_path(job: i64, id: i64) -> ObjPath {

@@ -51,8 +51,21 @@ pub struct Workflow {
 }
 
 pub fn parse(text: &str) -> Result<Workflow, String> {
-    from_value(parse_yaml(text)?)
+    let mut raw = parse_yaml(text)?;
+    // JSON objects don't keep key order; remember the file order of the jobs.
+    if let Ok(docs) = YamlLoader::load_from_str(text) {
+        if let Some(Yaml::Hash(jobs)) = docs.first().map(|d| &d["jobs"]) {
+            let order: Vec<Value> = jobs.keys().map(|k| Value::String(yaml_key(k))).collect();
+            if let Some(o) = raw.as_object_mut() {
+                o.insert(JOB_ORDER.into(), Value::Array(order));
+            }
+        }
+    }
+    from_value(raw)
 }
+
+/// Key under which `parse` records the order of `jobs` in the file.
+pub const JOB_ORDER: &str = "__forge_job_order";
 
 /// Builds a workflow from its JSON form (as stored with a run).
 pub fn from_value(raw: Value) -> Result<Workflow, String> {
@@ -73,10 +86,14 @@ pub fn from_value(raw: Value) -> Result<Workflow, String> {
         Value::Object(m) => on = m,
         _ => return Err("workflow has no 'on' trigger".into()),
     }
-    let jobs: Vec<(String, Value)> = match obj.get("jobs") {
+    let mut jobs: Vec<(String, Value)> = match obj.get("jobs") {
         Some(Value::Object(m)) => m.iter().map(|(k, v)| (k.clone(), v.clone())).collect(),
         _ => vec![],
     };
+    if let Some(Value::Array(order)) = obj.get(JOB_ORDER) {
+        let pos = |k: &str| order.iter().position(|o| o.as_str() == Some(k)).unwrap_or(usize::MAX);
+        jobs.sort_by_key(|(k, _)| pos(k));
+    }
     if jobs.is_empty() {
         return Err("workflow must define at least one job".into());
     }
