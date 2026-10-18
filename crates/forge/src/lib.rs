@@ -100,6 +100,7 @@ pub fn app(state: AppState) -> Router {
         .route("/readyz", get(readyz))
         .merge(git::http::routes())
         .merge(runner::protocol::routes())
+        .merge(runner::oidc::routes())
         .merge(api::actions::download_routes())
         .merge(api::runner_runners::download_routes())
         .merge(api::branches::web_routes())

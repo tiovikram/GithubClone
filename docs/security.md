@@ -99,7 +99,7 @@ Severity reflects impact on a multi-tenant instance where anyone can sign up.
   visitor's session. A separate Pages domain would be stronger.
 - **Pages artifact deployments** (`POST /pages/deployments`) only fetch artifacts stored on this
   forge (release assets the caller can read), never arbitrary URLs (no SSRF). The `oidc_token` is
-  only checked for presence until forge has an OIDC issuer.
+  only checked for presence (it is not yet verified against forge's OIDC issuer).
 - **Webhooks honour system proxy settings** (`HTTPS_PROXY`). If a proxy is configured, the SSRF guard relies on the proxy's own egress policy.
 
 ## Enterprise administration (enterprise area)
@@ -197,10 +197,27 @@ request when a workflow runs on `pull_request`.
   GitHub's blob-storage redirects. Artifact downloads require authentication even on public
   repositories (GitHub does the same). Uploads stream to object storage and are capped by
   `FORGE_ACTIONS_MAX_UPLOAD` (2 GiB).
+- **OIDC ID tokens** (`runner/oidc.rs`). Only jobs whose effective `permissions:` grant
+  `id-token: write` (job or workflow level, or `write-all`; never by default, and not for fork
+  pull requests unless the fork policy sends write tokens) get `ACTIONS_ID_TOKEN_REQUEST_URL` and
+  `ACTIONS_ID_TOKEN_REQUEST_TOKEN`. The request token (`fid_` + 40, sha256-stored with the job's
+  claims, masked in logs) works only while its job is `in_progress` and until the job token
+  expiry. `GET {url}&audience=X` returns `{"count":1,"value":<jwt>}`: RS256, 5 minutes,
+  `iss` = `{base}/_services/token` (GHES's issuer), `aud` = the requested audience or the owner URL
+  `{base}/{owner}`, `sub` from the repository / organization subject template
+  (`include_claim_keys`, default `repo:o/r:ref:<ref>`, `…:environment:<env>`, `…:pull_request`),
+  plus GitHub's claims (`repository*`, `ref*`, `sha`, `workflow*`, `job_workflow_*`, `run_*`,
+  `actor*`, `event_name`, `head_ref`, `base_ref`, `environment`, `runner_environment` =
+  `self-hosted`, `enterprise`, `jti`). Discovery and JWKS are public at
+  `{base}/_services/token/.well-known/openid-configuration` and `.../.well-known/jwks`. The
+  signing key is one RSA-2048 key per site (`actions_oidc_keys`, created once by the first pod);
+  its PKCS#8 private key is sealed for the `('oidc', 0)` X25519 key of
+  `api::actions_settings::crypto`, itself sealed with the master key (`FORGE_SECRET_KEY`), so a
+  database dump alone does not reveal it. No key rotation yet (rotate by deleting the row; tokens
+  signed by the old key then stop verifying). Cloud providers must reach the issuer URL over
+  HTTPS to trust it, so `FORGE_BASE_URL` must be the public HTTPS URL.
 - **Known gaps.**
   - No per-job kernel isolation with the shell executor: jobs on the same runner host can see
     each other's processes. Use one slot per pod (the shipped default), or the docker executor.
-  - No OIDC ID tokens (`ACTIONS_ID_TOKEN_REQUEST_URL`); only the subject-claim settings are
-    stored.
   - First-time-contributor approval for fork pull requests is not enforced, because there is
     no approval UI.

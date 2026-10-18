@@ -364,6 +364,8 @@ pub async fn job_message(s: &AppState, job: &JobRow, runner: &RunnerRow) -> ApiR
     let fork = run.head_repo_id.is_some_and(|h| h != run.repo_id);
     let vars = if fork && !fork_secrets { json!({}) } else { engine::vars_context(s, &ctx, environment.as_deref()).await? };
     let secrets = secrets_context(s, &ctx, &run, environment.as_deref(), &job_token, fork_secrets).await;
+    // OIDC: ACTIONS_ID_TOKEN_REQUEST_URL / _TOKEN for jobs with `id-token: write`.
+    let id_token = super::oidc::request_token(s, &ctx, &run, job, &github, environment.as_deref(), fork_write, expires).await?;
     // `uses:` the Actions policy forbids (the runner fails those steps)
     let mut blocked: Vec<String> = Vec::new();
     for st in def.get("steps").and_then(Value::as_array).cloned().unwrap_or_default() {
@@ -406,6 +408,7 @@ pub async fn job_message(s: &AppState, job: &JobRow, runner: &RunnerRow) -> ApiR
         "runner": { "id": runner.id, "name": runner.name, "os": runner.os, "arch": runner.arch },
         "environment": environment,
         "blocked_uses": blocked,
+        "id_token": id_token,
     }))
 }
 

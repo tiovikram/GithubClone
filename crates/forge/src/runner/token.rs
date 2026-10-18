@@ -138,6 +138,8 @@ pub async fn revoke_job_tokens(db: &sqlx::PgPool, job_id: i64) -> ApiResult<()> 
         .execute(db)
         .await?;
     sqlx::query("DELETE FROM actions_job_tokens WHERE job_id = $1").bind(job_id).execute(db).await?;
+    // OIDC request tokens (runner/oidc.rs) die with the job too.
+    sqlx::query("DELETE FROM actions_oidc_request_tokens WHERE job_id = $1").bind(job_id).execute(db).await?;
     Ok(())
 }
 
