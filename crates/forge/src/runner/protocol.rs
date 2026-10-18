@@ -53,13 +53,14 @@ async fn runner_auth(s: &AppState, h: &HeaderMap) -> ApiResult<RunnerRow> {
     token::runner_for_credential(&s.db, &cred).await?.ok_or_else(ApiError::bad_credentials)
 }
 
+/// Job endpoints: the runner credential of the runner that claimed the job.
 async fn job_auth(s: &AppState, h: &HeaderMap, job_id: i64) -> ApiResult<JobRow> {
-    let t = bearer(h).ok_or_else(ApiError::unauthorized)?;
-    let scope = token::job_scope(&s.db, &t).await?.ok_or_else(ApiError::bad_credentials)?;
-    if scope.job_id != job_id {
-        return Err(ApiError::forbidden("This token belongs to another job"));
+    let runner = runner_auth(s, h).await?;
+    let job: JobRow = sqlx::query_as("SELECT * FROM actions_jobs WHERE id = $1").bind(job_id).fetch_optional(&s.db).await?.ok_or_else(ApiError::not_found)?;
+    if job.runner_id != Some(runner.id) {
+        return Err(ApiError::forbidden("This job is not assigned to this runner"));
     }
-    Ok(sqlx::query_as("SELECT * FROM actions_jobs WHERE id = $1").bind(job_id).fetch_one(&s.db).await?)
+    Ok(job)
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -269,22 +270,37 @@ async fn acquire(State(s): State<AppState>, headers: HeaderMap, body: axum::body
 
 /// GITHUB_TOKEN permission: write unless the workflow/job restricts `contents` to read (or
 /// the run comes from a fork).
-fn token_perm(run: &RunRow, job_def: &Value, default: Perm, fork_write: bool) -> Perm {
-    let perms = job_def.get("permissions").or_else(|| run.definition.as_ref().and_then(|d| d.get("permissions")));
+/// GITHUB_TOKEN permissions (app permission names): the job's or workflow's `permissions:`,
+/// else the repository default (permissive: everything write; restricted: contents and
+/// packages read). Fork pull requests get read-only tokens unless the fork policy allows.
+pub fn token_permissions(run: &RunRow, job_def: &Value, default: Perm, fork_write: bool) -> Map<String, Value> {
+    let spec = job_def.get("permissions").or_else(|| run.definition.as_ref().and_then(|d| d.get("permissions")));
+    let all = |lvl: &str| -> Map<String, Value> { token::TOKEN_PERMISSIONS.iter().map(|(_, p)| (p.to_string(), json!(lvl))).collect() };
+    let mut m = match spec {
+        None if default >= Perm::Write => all("write"),
+        None => [("contents", "read"), ("packages", "read")].iter().map(|(k, v)| (k.to_string(), json!(v))).collect(),
+        Some(Value::String(s)) if s == "write-all" => all("write"),
+        Some(Value::String(s)) if s == "read-all" => all("read"),
+        Some(Value::Object(o)) => {
+            let mut m = Map::new();
+            for (k, v) in o {
+                if let Some((_, app)) = token::TOKEN_PERMISSIONS.iter().find(|(gh, _)| gh == k) {
+                    if let Some(l @ ("read" | "write")) = v.as_str() {
+                        m.insert(app.to_string(), json!(l));
+                    }
+                }
+            }
+            m
+        }
+        Some(_) => Map::new(),
+    };
     let fork = run.head_repo_id.is_some_and(|h| h != run.repo_id);
     if fork && !fork_write {
-        return Perm::Read;
+        for v in m.values_mut() {
+            *v = json!("read");
+        }
     }
-    match perms {
-        None => default,
-        Some(Value::String(s)) if s == "write-all" => Perm::Write,
-        Some(Value::String(_)) => Perm::Read,
-        Some(Value::Object(m)) => match m.get("contents").and_then(Value::as_str) {
-            Some("write") => Perm::Write,
-            _ => Perm::Read,
-        },
-        Some(_) => Perm::Read,
-    }
+    m
 }
 
 /// Secrets for a job: GITHUB_TOKEN plus the Actions-settings secrets; fork pull requests get
@@ -322,8 +338,8 @@ pub async fn job_message(s: &AppState, job: &JobRow, runner: &RunnerRow) -> ApiR
     let fork_policy = super::settings::fork_pr_policy(s, ctx.repo.id).await;
     let fork_write = fork_policy.as_ref().is_some_and(|p| p.send_write_tokens_to_workflows);
     let fork_secrets = fork_policy.as_ref().is_some_and(|p| p.send_secrets_and_variables);
-    let perm = token_perm(&run, def, super::settings::default_token_perm(s, ctx.repo.id).await, fork_write);
-    let job_token = token::mint_job_token(&s.db, job.id, ctx.repo.id, perm, expires).await?;
+    let perms = token_permissions(&run, def, super::settings::default_token_perm(s, ctx.repo.id).await, fork_write);
+    let job_token = token::mint_job_token(&s.db, job.id, &ctx, &perms, expires).await?;
     let mut github = engine::github_context(s, &ctx, &run, actor.as_ref(), trig.as_ref(), &job.job_key);
     github["token"] = json!(job_token);
     let siblings: Vec<JobRow> = sqlx::query_as("SELECT * FROM actions_jobs WHERE run_id = $1 AND run_attempt = $2 ORDER BY id")

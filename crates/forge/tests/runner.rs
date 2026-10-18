@@ -600,3 +600,91 @@ async fn enterprise_runner_environment_reviews_and_repository_dispatch() {
     let (_, runs) = s.call(Some(&u), "GET", &format!("{rp}/actions/runs?event=repository_dispatch"), None).await;
     assert_eq!(runs["total_count"], 1, "types filter");
 }
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn github_token_permissions_recursion_guard_and_custom_gates() {
+    let s = TestServer::start().await;
+    let u = s.user().await;
+    let repo = s.create_repo(&u, true).await;
+    let rp = format!("/repos/{}/{repo}", u.login);
+    let _runner = start_runner(&s, &u, &rp, "").await;
+    // Default workflow permissions are read-only: pushing with GITHUB_TOKEN fails unless the
+    // job asks for `contents: write`. Pushes made by the token never trigger workflows.
+    let wf = r#"name: Push
+on:
+  workflow_dispatch:
+  push:
+    branches: [from-job-*]
+jobs:
+  ro:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: git push origin HEAD:refs/heads/from-job-ro && echo pushed || echo push-refused
+  rw:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          git -c user.name=ci -c user.email=ci@example.com commit --allow-empty -qm "from job"
+          git push origin HEAD:refs/heads/from-job-rw && echo pushed-rw
+      - run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST -H "Authorization: token ${{ github.token }}" "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/issues" -d '{"title":"x"}')
+          echo "issue-create=$code"
+"#;
+    put_file(&s, &u, &rp, ".github/workflows/push.yml", wf).await;
+    let (st, v) = s.call(Some(&u), "POST", &format!("{rp}/actions/workflows/push.yml/dispatches"), Some(json!({"ref": "main", "return_run_details": true}))).await;
+    assert_eq!(st, 200, "{v}");
+    let id = v["workflow_run_id"].as_i64().unwrap();
+    let run = wait_run(&s, &u, &rp, id, 1).await;
+    assert_eq!(run["conclusion"], "success", "{}", json!(jobs(&s, &u, &rp, id).await));
+    let js = jobs(&s, &u, &rp, id).await;
+    let ro = job_log(&s, &u, &rp, js.iter().find(|j| j["name"] == "ro").unwrap()).await;
+    assert!(ro.contains("push-refused"), "{ro}");
+    let rw = job_log(&s, &u, &rp, js.iter().find(|j| j["name"] == "rw").unwrap()).await;
+    assert!(rw.contains("pushed-rw"), "{rw}");
+    assert!(rw.contains("issue-create=403"), "only contents was granted: {rw}");
+    let (st, _) = s.call(Some(&u), "GET", &format!("{rp}/branches/from-job-rw"), None).await;
+    assert_eq!(st, 200);
+    let (st, _) = s.call(Some(&u), "GET", &format!("{rp}/branches/from-job-ro"), None).await;
+    assert_eq!(st, 404);
+    tokio::time::sleep(Duration::from_millis(500)).await;
+    let (_, pushes) = s.call(Some(&u), "GET", &format!("{rp}/actions/runs?event=push&branch=from-job-rw"), None).await;
+    assert_eq!(pushes["total_count"], 0, "pushes by GITHUB_TOKEN don't trigger runs");
+    // The token died with the job.
+    let tok_rows: i64 = sqlx::query_scalar("SELECT count(*) FROM actions_job_tokens WHERE job_id = ANY($1)")
+        .bind(js.iter().map(|j| j["id"].as_i64().unwrap()).collect::<Vec<_>>())
+        .fetch_one(&s.state.db)
+        .await
+        .unwrap();
+    assert_eq!(tok_rows, 0);
+
+    // Custom deployment protection rule: the job waits until the rule approves.
+    let (st, env) = s.call(Some(&u), "PUT", &format!("{rp}/environments/gate"), Some(json!({}))).await;
+    assert_eq!(st, 200, "{env}");
+    sqlx::query("INSERT INTO environment_protection_rules (environment_id, integration_id) VALUES ($1, 424242)")
+        .bind(env["id"].as_i64().unwrap())
+        .execute(&s.state.db)
+        .await
+        .unwrap();
+    let gated = "name: Gated\non: workflow_dispatch\njobs:\n  a:\n    runs-on: ubuntu-latest\n    environment: gate\n    steps:\n      - run: echo through-the-gate\n";
+    put_file(&s, &u, &rp, ".github/workflows/gated.yml", gated).await;
+    let (_, v) = s.call(Some(&u), "POST", &format!("{rp}/actions/workflows/gated.yml/dispatches"), Some(json!({"ref": "main", "return_run_details": true}))).await;
+    let gid = v["workflow_run_id"].as_i64().unwrap();
+    let (_, r) = s.call(Some(&u), "GET", &format!("{rp}/actions/runs/{gid}"), None).await;
+    assert_eq!(r["status"], "waiting");
+    let (st, _) = s.call(Some(&u), "POST", &format!("{rp}/actions/runs/{gid}/deployment_protection_rule"), Some(json!({"environment_name": "nope", "state": "approved", "comment": "x"}))).await;
+    assert_eq!(st, 422);
+    let (st, _) = s.call(Some(&u), "POST", &format!("{rp}/actions/runs/{gid}/deployment_protection_rule"), Some(json!({"environment_name": "gate", "comment": "looking"}))).await;
+    assert_eq!(st, 204);
+    let (_, r) = s.call(Some(&u), "GET", &format!("{rp}/actions/runs/{gid}"), None).await;
+    assert_eq!(r["status"], "waiting", "a comment does not open the gate");
+    let (st, _) = s.call(Some(&u), "POST", &format!("{rp}/actions/runs/{gid}/deployment_protection_rule"), Some(json!({"environment_name": "gate", "state": "approved", "comment": "ok"}))).await;
+    assert_eq!(st, 204);
+    let r = wait_run(&s, &u, &rp, gid, 1).await;
+    assert_eq!(r["conclusion"], "success");
+    let (_, appr) = s.call(Some(&u), "GET", &format!("{rp}/actions/runs/{gid}/approvals"), None).await;
+    assert_eq!(appr, json!([]), "gate reviews are not environment approvals");
+}

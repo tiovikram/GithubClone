@@ -1,38 +1,27 @@
 //! Credentials of the Actions system:
 //!
-//! - **Job tokens** (`GITHUB_TOKEN`, prefix `ghs_`): minted when a runner claims a job, valid for
-//!   that job's repository only, until the job completes (deleted) or expires. They authenticate
-//!   as the `github-actions[bot]` user; [`scope_middleware`] puts the token's scope in a
-//!   task-local for the request, and `db::permission` asks [`scoped_permission`] for the bot's
-//!   permission on a repository: the token's permission (read or write, never admin) on its own
-//!   repository, read on public repositories, nothing elsewhere. Without a scope (e.g. a spawned
-//!   task) the bot has no access at all (fail closed).
-//! - **Runner credentials** (prefix `ghr_`): issued at registration, identify one runner.
-//! - **Registration / remove tokens**: short-lived, created through the REST API.
-use axum::extract::{Request, State};
-use axum::middleware::Next;
-use axum::response::Response;
+//! - **Job tokens** (`GITHUB_TOKEN`): installation access tokens (`ghs_…`) of the built-in
+//!   `github-actions` app (as on GitHub), minted when a runner claims a job. Each token covers
+//!   only the job's repository, with the job's `permissions:` (or the repository's default
+//!   workflow permissions), and dies when the job completes or at its timeout + 30 min. The
+//!   apps area enforces them uniformly on REST, GraphQL and git smart HTTP
+//!   (`apps::scope::middleware`); they act as `github-actions[bot]`.
+//! - **Runner credentials** (`fgr_…`): issued at registration, identify one runner; the runner
+//!   protocol (`protocol.rs`) accepts them only for jobs the runner holds.
+//! - **Registration / remove tokens**: short-lived, created through the REST API (or the
+//!   static `FORGE_RUNNER_REGISTRATION_TOKEN`).
 use chrono::{DateTime, Utc};
+use serde_json::{json, Map, Value};
 
 use crate::auth::sha256_hex;
-use crate::db::{Perm, Repo, User};
+use crate::db::{RepoCtx, User};
 use crate::error::ApiResult;
-use crate::state::AppState;
 
 pub const BOT_LOGIN: &str = "github-actions[bot]";
-pub const JOB_TOKEN_PREFIX: &str = "ghs_";
-pub const RUNNER_CREDENTIAL_PREFIX: &str = "ghr_";
-
-#[derive(Clone, Debug)]
-pub struct JobScope {
-    pub job_id: i64,
-    pub repo_id: i64,
-    pub perm: Perm,
-}
-
-tokio::task_local! {
-    static SCOPE: Option<JobScope>;
-}
+pub const ACTIONS_APP_SLUG: &str = "github-actions";
+/// GitHub's id of the GitHub Actions app (used for the built-in app when free).
+pub const ACTIONS_APP_ID: i64 = 15368;
+pub const RUNNER_CREDENTIAL_PREFIX: &str = "fgr_";
 
 /// The `github-actions[bot]` user, created on first use.
 pub async fn bot_user(db: &sqlx::PgPool) -> ApiResult<User> {
@@ -50,81 +39,106 @@ pub fn is_actions_bot(u: &User) -> bool {
     u.kind == "Bot" && u.login.eq_ignore_ascii_case(BOT_LOGIN)
 }
 
-/// Mints a job token for `job_id` on `repo_id`.
-pub async fn mint_job_token(db: &sqlx::PgPool, job_id: i64, repo_id: i64, perm: Perm, expires_at: DateTime<Utc>) -> ApiResult<String> {
-    let token = format!("{JOB_TOKEN_PREFIX}{}", crate::auth::random_string(36));
+/// Every permission a workflow token can hold (GitHub's `permissions:` keys, app names).
+pub const TOKEN_PERMISSIONS: &[(&str, &str)] = &[
+    ("actions", "actions"),
+    ("checks", "checks"),
+    ("contents", "contents"),
+    ("deployments", "deployments"),
+    ("discussions", "discussions"),
+    ("issues", "issues"),
+    ("packages", "packages"),
+    ("pages", "pages"),
+    ("pull-requests", "pull_requests"),
+    ("repository-projects", "repository_projects"),
+    ("security-events", "security_events"),
+    ("statuses", "statuses"),
+];
+
+/// The built-in `github-actions` app (id 15368 when free), created on first use.
+pub async fn actions_app(db: &sqlx::PgPool) -> ApiResult<i64> {
+    if let Some(id) = sqlx::query_scalar::<_, i64>("SELECT id FROM apps WHERE slug = $1").bind(ACTIONS_APP_SLUG).fetch_optional(db).await? {
+        return Ok(id);
+    }
+    let bot = bot_user(db).await?;
+    let mut all = Map::new();
+    for (_, p) in TOKEN_PERMISSIONS {
+        all.insert(p.to_string(), json!("write"));
+    }
+    all.insert("metadata".into(), json!("read"));
+    let taken: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM apps WHERE id = $1)").bind(ACTIONS_APP_ID).fetch_one(db).await?;
+    let insert = format!(
+        "INSERT INTO apps ({}slug, name, owner_id, bot_user_id, description, external_url, client_id, client_secret_hash, permissions, public)
+         VALUES ({}$1, 'GitHub Actions', $2, $2, 'Automate your workflow from idea to production', 'https://help.github.com/en/actions',
+                 'Iv1.github-actions', $3, $4, TRUE)
+         ON CONFLICT DO NOTHING",
+        if taken { "" } else { "id, " },
+        if taken { "" } else { "15368, " },
+    );
+    sqlx::query(sqlx::AssertSqlSafe(insert))
+        .bind(ACTIONS_APP_SLUG)
+        .bind(bot.id)
+        .bind(sha256_hex(&crate::auth::random_string(40)))
+        .bind(Value::Object(all))
+        .execute(db)
+        .await?;
+    Ok(sqlx::query_scalar("SELECT id FROM apps WHERE slug = $1").bind(ACTIONS_APP_SLUG).fetch_one(db).await?)
+}
+
+/// The app's installation on the repository owner, created on first use.
+async fn installation(db: &sqlx::PgPool, app_id: i64, owner: &User) -> ApiResult<i64> {
+    let target_type = if owner.kind == "Organization" { "Organization" } else { "User" };
+    let perms = sqlx::query_scalar::<_, Value>("SELECT permissions FROM apps WHERE id = $1").bind(app_id).fetch_one(db).await?;
+    sqlx::query(
+        "INSERT INTO app_installations (app_id, target_id, target_type, repository_selection, permissions)
+         VALUES ($1, $2, $3, 'all', $4) ON CONFLICT DO NOTHING",
+    )
+    .bind(app_id)
+    .bind(owner.id)
+    .bind(target_type)
+    .bind(&perms)
+    .execute(db)
+    .await?;
+    Ok(sqlx::query_scalar("SELECT id FROM app_installations WHERE app_id = $1 AND target_id = $2").bind(app_id).bind(owner.id).fetch_one(db).await?)
+}
+
+/// Mints the GITHUB_TOKEN of a job: an installation token for `ctx`'s repository only, with
+/// `permissions` (app permission names -> `read`/`write`).
+pub async fn mint_job_token(db: &sqlx::PgPool, job_id: i64, ctx: &RepoCtx, permissions: &Map<String, Value>, expires_at: DateTime<Utc>) -> ApiResult<String> {
+    let app = actions_app(db).await?;
+    let inst = installation(db, app, &ctx.owner).await?;
+    let token = format!("ghs_{}", crate::auth::random_string(36));
+    let hash = sha256_hex(&token);
+    let mut perms = permissions.clone();
+    perms.insert("metadata".into(), json!("read"));
+    sqlx::query("INSERT INTO app_installation_tokens (installation_id, token_hash, repository_ids, permissions, expires_at) VALUES ($1, $2, $3, $4, $5)")
+        .bind(inst)
+        .bind(&hash)
+        .bind(vec![ctx.repo.id])
+        .bind(Value::Object(perms.clone()))
+        .bind(expires_at)
+        .execute(db)
+        .await?;
+    let contents = perms.get("contents").and_then(Value::as_str).unwrap_or("read");
     sqlx::query("INSERT INTO actions_job_tokens (token_hash, job_id, repo_id, perm, expires_at) VALUES ($1, $2, $3, $4, $5)")
-        .bind(sha256_hex(&token))
+        .bind(&hash)
         .bind(job_id)
-        .bind(repo_id)
-        .bind(if perm >= Perm::Write { "write" } else { "read" })
+        .bind(ctx.repo.id)
+        .bind(if contents == "write" { "write" } else { "read" })
         .bind(expires_at)
         .execute(db)
         .await?;
     Ok(token)
 }
 
-/// The scope of a job token, if it is valid.
-pub async fn job_scope(db: &sqlx::PgPool, token: &str) -> ApiResult<Option<JobScope>> {
-    if !token.starts_with(JOB_TOKEN_PREFIX) {
-        return Ok(None);
-    }
-    let row: Option<(i64, i64, String)> =
-        sqlx::query_as("SELECT job_id, repo_id, perm FROM actions_job_tokens WHERE token_hash = $1 AND expires_at > now()")
-            .bind(sha256_hex(token))
-            .fetch_optional(db)
-            .await?;
-    Ok(row.map(|(job_id, repo_id, perm)| JobScope { job_id, repo_id, perm: if perm == "write" { Perm::Write } else { Perm::Read } }))
-}
-
-/// Called by `auth::user_for_token` for `ghs_` tokens: the bot user if the token is valid.
-pub async fn user_for_job_token(db: &sqlx::PgPool, token: &str) -> ApiResult<Option<User>> {
-    if job_scope(db, token).await?.is_none() {
-        return Ok(None);
-    }
-    Ok(Some(bot_user(db).await?))
-}
-
-/// Called by `db::permission` for the bot user.
-pub fn scoped_permission(repo: &Repo) -> Perm {
-    let public = if repo.private { Perm::None } else { Perm::Read };
-    SCOPE
-        .try_with(|s| match s {
-            Some(sc) if sc.repo_id == repo.id => sc.perm,
-            Some(_) => public,
-            None => Perm::None,
-        })
-        .unwrap_or(Perm::None)
-}
-
-/// The job scope of the current request, if it was authenticated with a job token.
-pub fn current_scope() -> Option<JobScope> {
-    SCOPE.try_with(|s| s.clone()).ok().flatten()
-}
-
-fn bearer(req: &Request) -> Option<String> {
-    use base64::Engine;
-    let h = req.headers().get(axum::http::header::AUTHORIZATION)?.to_str().ok()?.trim().to_string();
-    let (scheme, cred) = h.split_once(' ')?;
-    let cred = cred.trim();
-    match scheme.to_ascii_lowercase().as_str() {
-        "token" | "bearer" => Some(cred.to_string()),
-        "basic" => {
-            let d = base64::engine::general_purpose::STANDARD.decode(cred).ok()?;
-            let d = String::from_utf8(d).ok()?;
-            Some(d.split_once(':').map(|(_, p)| p.to_string()).unwrap_or(d))
-        }
-        _ => None,
-    }
-}
-
-/// Outermost middleware: requests carrying a job token run with that token's scope.
-pub async fn scope_middleware(State(s): State<AppState>, req: Request, next: Next) -> Response {
-    let scope = match bearer(&req) {
-        Some(t) if t.starts_with(JOB_TOKEN_PREFIX) => job_scope(&s.db, &t).await.ok().flatten(),
-        _ => None,
-    };
-    SCOPE.scope(scope, next.run(req)).await
+/// Revokes the job tokens of a finished job.
+pub async fn revoke_job_tokens(db: &sqlx::PgPool, job_id: i64) -> ApiResult<()> {
+    sqlx::query("DELETE FROM app_installation_tokens WHERE token_hash IN (SELECT token_hash FROM actions_job_tokens WHERE job_id = $1)")
+        .bind(job_id)
+        .execute(db)
+        .await?;
+    sqlx::query("DELETE FROM actions_job_tokens WHERE job_id = $1").bind(job_id).execute(db).await?;
+    Ok(())
 }
 
 /// A runner identified by its credential.

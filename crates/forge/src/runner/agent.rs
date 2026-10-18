@@ -214,7 +214,7 @@ async fn worker(http: reqwest::Client, reg: Registered, executor: Executor, work
         let msg: Value = r.json().await?;
         let job_id = msg["job_id"].as_i64().unwrap_or(0);
         tracing::info!(job = job_id, name = %msg["name"], repo = %msg["repository"]["full_name"], "running job");
-        let api = Api { http: http.clone(), base: reg.url.clone(), token: msg["token"].as_str().unwrap_or("").to_string(), job_id };
+        let api = Api { http: http.clone(), base: reg.url.clone(), credential: reg.credential.clone(), token: msg["token"].as_str().unwrap_or("").to_string(), job_id };
         let concl = run_job(api, msg, executor, &work, &reg.name, keep).await;
         tracing::info!(job = job_id, conclusion = %concl, "job finished");
         if reg.once {

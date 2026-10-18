@@ -730,7 +730,10 @@ pub async fn cancel(s: &AppState, run: &RunRow, force: bool) -> ApiResult<()> {
         .execute(&s.db)
         .await?;
     if force {
-        sqlx::query("DELETE FROM actions_job_tokens WHERE job_id IN (SELECT id FROM actions_jobs WHERE run_id = $1)").bind(run.id).execute(&s.db).await?;
+        let ids: Vec<i64> = sqlx::query_scalar("SELECT id FROM actions_jobs WHERE run_id = $1").bind(run.id).fetch_all(&s.db).await?;
+        for id in ids {
+            token::revoke_job_tokens(&s.db, id).await?;
+        }
     }
     sqlx::query("UPDATE actions_run_attempts SET status = 'completed', conclusion = 'cancelled', updated_at = now() WHERE run_id = $1 AND attempt = $2")
         .bind(run.id)
@@ -867,7 +870,7 @@ pub async fn finish_job(s: &AppState, job_id: i64, conclusion: &str, outputs: Op
     .bind(&steps)
     .fetch_optional(&s.db)
     .await?;
-    sqlx::query("DELETE FROM actions_job_tokens WHERE job_id = $1").bind(job_id).execute(&s.db).await?;
+    token::revoke_job_tokens(&s.db, job_id).await?;
     let job = match job {
         Some(j) => j,
         None => {

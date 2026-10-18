@@ -369,6 +369,10 @@ async fn exec(
                 stderr(write, "ERROR: This repository was archived so it is read-only.\n").await;
                 return Ok(1);
             }
+            if crate::migration::is_locked(&state.db, ctx.repo.id).await {
+                stderr(write, "ERROR: Repository has been locked for migration.\n").await;
+                return Ok(1);
+            }
             serve_push(state, &ctx, &actor, read, write, proto).await
         }
     }

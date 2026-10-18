@@ -55,6 +55,48 @@ Configuration is environment only:
   and `X-Accepted-OAuth-Scopes`. All responses include `X-GitHub-Request-Id`, and
   `X-GitHub-Enterprise-Version` (we claim `3.14.0`).
 
+### GitHub Apps and OAuth apps (`crate::apps`, `api/apps_*.rs`)
+- **Registration** is forge-only: `POST /api/forge/apps` (a GitHub App manifest, optional `owner`
+  org) or the manifest flow (`POST /api/forge/app-manifests` returns a one-time `code`, exchanged
+  without auth at `POST /api/v3/app-manifests/{code}/conversions`). Both return the app with
+  `client_secret`, `webhook_secret` and an RSA-2048 private key `pem` (PKCS#1), shown once: only
+  the public key (`app_keys`) and a sha256 of the client secret are stored. App ids start at 2
+  (id 1 is the built-in checks app). Each app has a bot user `<slug>[bot]` (kind `Bot`).
+  `POST /api/forge/oauth-apps` registers an OAuth app (client id/secret only).
+- **App JWT**: `Authorization: Bearer <jwt>`, RS256 signed by one of the app's keys, `iss` = app id
+  or client id, `iat`/`exp` with `exp - iat` ≤ 10 min (60 s drift). Required by `/app`,
+  `/app/installations*`, `/app/hook/*`, `/{orgs,users,repos,enterprises}/…/installation`.
+  Failures are 401 with GitHub's messages.
+- **Installations**: `POST /api/forge/apps/{slug}/installations` (own account, an org the caller
+  owns, or `enterprise: true` for site admins) or `POST /enterprises/{e}/apps/organizations/{org}/installations`.
+  Private apps install only on their owner's account. An installation copies the app's
+  permissions/events and covers `all` or `selected` repositories of the account.
+- **Installation access tokens** (`POST /app/installations/{id}/access_tokens`): `ghs_` + 36,
+  sha256-stored, 1 h, optionally narrowed to repositories and a permission subset. They
+  authenticate as the bot user and are confined by `apps::scope::middleware` (mounted on the
+  whole app): the request is mapped to a GitHub App permission (`issues`, `contents`,
+  `pull_requests`, `checks`, `administration`, …; git push = `contents:write`) and refused with 403
+  "Resource not accessible by integration" when not granted; otherwise it runs in a task-local
+  scope and `db::permission` → `apps::scope::restrict` gives covered repositories exactly the
+  level the request needs and every other repository at most public read (private ones 404).
+  `/user*`, `/api/forge`, gists and admin endpoints are refused. GraphQL is read-only for app
+  tokens. Suspended installations' tokens stop working. Check runs/suites created with an
+  installation token belong to that app (`app` in check JSON).
+- **User-to-server tokens**: the device flow with a GitHub App's client id issues `ghu_` (8 h) +
+  `ghr_` refresh (6 months; `grant_type=refresh_token` rotates both). They act as the user,
+  restricted (min of user permission and the app's permission) to the app's installations'
+  repositories. OAuth apps get classic `gho_` tokens with the requested scopes.
+  `/applications/{client_id}/token*` (Basic `client_id:client_secret`) check, reset, delete and
+  scope them.
+- **Legacy OAuth Authorizations API** (`/authorizations*`, `/applications/grants*`): HTTP Basic
+  only (`login:password`, or a classic token as the password; app tokens refused); creates
+  classic tokens with scopes, grouped per user and application in `oauth_grants`.
+- **App webhooks**: one `webhooks` row per app (`app_id`), delivered by the standard queue with
+  `X-GitHub-Hook-Installation-Target-Type: integration`. Apps receive `installation` /
+  `installation_repositories` events, and repository events of their installations' repos for
+  subscribed events. The webhook secret is stored sealed with the app's key
+  (`api::actions_settings::crypto`, master key).
+
 ## Data model
 Postgres, migrations in `crates/forge/migrations` (sqlx). Ranges: `0001-0099` core (lead),
 new migrations by feature owners use the next free number with a descriptive name; never edit a

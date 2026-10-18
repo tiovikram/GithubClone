@@ -109,7 +109,9 @@ impl RepoCtx {
         } else if self.perm >= Perm::Read {
             Err(ApiError::forbidden("Must have admin rights to Repository."))
                 .map_err(|mut e| {
-                    if p <= Perm::Write {
+                    if crate::apps::scope::in_app_scope() {
+                        e.message = crate::apps::scope::NOT_ACCESSIBLE.into();
+                    } else if p <= Perm::Write {
                         e.message = "Resource not accessible by personal access token".into();
                     }
                     e
@@ -146,12 +148,14 @@ pub async fn repo_by_id(db: &PgPool, id: i64) -> ApiResult<Repo> {
 
 /// Computes the permission `viewer` has on `repo` (owned by `owner`).
 pub async fn permission(db: &PgPool, viewer: Option<&User>, repo: &Repo, owner: &User) -> ApiResult<Perm> {
+    let p = permission_unscoped(db, viewer, repo, owner).await?;
+    // App tokens (installation / user-to-server) are confined to their repositories and permissions.
+    Ok(crate::apps::scope::restrict(viewer, repo, p))
+}
+
+async fn permission_unscoped(db: &PgPool, viewer: Option<&User>, repo: &Repo, owner: &User) -> ApiResult<Perm> {
     let base = if repo.private { Perm::None } else { Perm::Read };
     let Some(u) = viewer else { return Ok(base) };
-    // runner: github-actions[bot] only has the permission of the request's job token.
-    if crate::runner::token::is_actions_bot(u) {
-        return Ok(crate::runner::token::scoped_permission(repo));
-    }
     if u.site_admin || u.id == owner.id {
         return Ok(Perm::Admin);
     }

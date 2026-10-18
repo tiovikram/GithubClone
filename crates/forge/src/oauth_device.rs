@@ -75,7 +75,7 @@ fn reply(headers: &HeaderMap, status: StatusCode, fields: &[(&str, String)]) -> 
         let obj: serde_json::Map<String, Value> = fields
             .iter()
             .map(|(k, v)| {
-                let val = if matches!(*k, "expires_in" | "interval") { v.parse::<i64>().map(Value::from).unwrap_or(json!(v)) } else { json!(v) };
+                let val = if matches!(*k, "expires_in" | "interval" | "refresh_token_expires_in") { v.parse::<i64>().map(Value::from).unwrap_or(json!(v)) } else { json!(v) };
                 (k.to_string(), val)
             })
             .collect();
@@ -172,6 +172,8 @@ pub enum Poll {
     Denied,
     Invalid,
     Token { token: String, scopes: String },
+    /// Tokens for a registered application (apps area): GitHub Apps get `ghu_` + refresh token.
+    Issued(crate::apps::oauth::IssuedTokens),
 }
 
 /// Exchanges an approved device code for a new personal access token (once).
@@ -194,6 +196,9 @@ pub async fn poll(state: &AppState, client_id: &str, device_code: &str) -> ApiRe
             if gone == 0 {
                 return Ok(Poll::Invalid);
             }
+            if let Some(t) = crate::apps::oauth::device_grant(state, &row.client_id, uid, &row.scopes).await? {
+                return Ok(Poll::Issued(t));
+            }
             let (_, token) = crate::forge_api::create_token_for(state, uid, &format!("{} (device flow)", row.client_id)).await?;
             Ok(Poll::Token { token, scopes: row.scopes })
         }
@@ -204,6 +209,15 @@ pub async fn poll(state: &AppState, client_id: &str, device_code: &str) -> ApiRe
 async fn access_token(State(s): State<AppState>, headers: HeaderMap, body: Bytes) -> ApiResult<Response> {
     let p = params(&headers, &body);
     let client_id = param(&p, "client_id").unwrap_or("");
+    if param(&p, "grant_type") == Some("refresh_token") {
+        let Some(rt) = param(&p, "refresh_token") else {
+            return Ok(oauth_error(&headers, "bad_refresh_token", "The refresh token passed is incorrect or expired."));
+        };
+        return Ok(match crate::apps::oauth::refresh(&s, client_id, param(&p, "client_secret"), rt).await? {
+            Ok(t) => issued_reply(&headers, t),
+            Err(code) => oauth_error(&headers, code, "The refresh token or client credentials are incorrect or expired."),
+        });
+    }
     if param(&p, "grant_type") != Some(GRANT_DEVICE) {
         return Ok(oauth_error(&headers, "unsupported_grant_type", "Only the device authorization grant is supported."));
     }
@@ -215,12 +229,29 @@ async fn access_token(State(s): State<AppState>, headers: HeaderMap, body: Bytes
         Poll::Expired => oauth_error(&headers, "expired_token", "The device_code has expired."),
         Poll::Denied => oauth_error(&headers, "access_denied", "The authorization request was denied."),
         Poll::Invalid => oauth_error(&headers, "incorrect_device_code", "The device_code provided is not valid."),
+        Poll::Issued(t) => issued_reply(&headers, t),
         Poll::Token { token, scopes } => reply(
             &headers,
             StatusCode::OK,
             &[("access_token", token), ("token_type", "bearer".into()), ("scope", scopes.split_whitespace().collect::<Vec<_>>().join(","))],
         ),
     })
+}
+
+fn issued_reply(headers: &HeaderMap, t: crate::apps::oauth::IssuedTokens) -> Response {
+    let mut fields = vec![("access_token", t.access_token)];
+    if let Some(e) = t.expires_in {
+        fields.push(("expires_in", e.to_string()));
+    }
+    if let Some(r) = t.refresh_token {
+        fields.push(("refresh_token", r));
+    }
+    if let Some(e) = t.refresh_token_expires_in {
+        fields.push(("refresh_token_expires_in", e.to_string()));
+    }
+    fields.push(("token_type", "bearer".into()));
+    fields.push(("scope", t.scope));
+    reply(headers, StatusCode::OK, &fields)
 }
 
 #[derive(serde::Deserialize)]

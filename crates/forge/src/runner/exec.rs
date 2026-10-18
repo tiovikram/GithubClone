@@ -31,6 +31,9 @@ pub struct Api {
     pub http: reqwest::Client,
     /// forge base URL as seen by the runner (`FORGE_RUNNER_URL`)
     pub base: String,
+    /// runner credential: authenticates the runner protocol calls
+    pub credential: String,
+    /// the job's GITHUB_TOKEN: git and REST calls made for the job
     pub token: String,
     pub job_id: i64,
 }
@@ -40,7 +43,7 @@ impl Api {
         format!("{}/api/forge/runner/jobs/{}{path}", self.base, self.job_id)
     }
     pub async fn post_json(&self, path: &str, body: &Value) -> anyhow::Result<Value> {
-        let r = self.http.post(self.url(path)).bearer_auth(&self.token).json(body).send().await?;
+        let r = self.http.post(self.url(path)).bearer_auth(&self.credential).json(body).send().await?;
         let st = r.status();
         let text = r.text().await.unwrap_or_default();
         if !st.is_success() {
@@ -49,13 +52,13 @@ impl Api {
         Ok(serde_json::from_str(&text).unwrap_or(Value::Null))
     }
     pub async fn post_bytes(&self, path: &str, body: Vec<u8>) -> anyhow::Result<(reqwest::StatusCode, Value)> {
-        let r = self.http.post(self.url(path)).bearer_auth(&self.token).body(body).send().await?;
+        let r = self.http.post(self.url(path)).bearer_auth(&self.credential).body(body).send().await?;
         let st = r.status();
         let text = r.text().await.unwrap_or_default();
         Ok((st, serde_json::from_str(&text).unwrap_or(Value::String(text))))
     }
     pub async fn get(&self, path: &str) -> anyhow::Result<reqwest::Response> {
-        Ok(self.http.get(self.url(path)).bearer_auth(&self.token).send().await?)
+        Ok(self.http.get(self.url(path)).bearer_auth(&self.credential).send().await?)
     }
 }
 

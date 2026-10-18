@@ -15,6 +15,11 @@ pub mod actions;
 pub mod actions_secrets;
 pub mod runner_misc;
 pub mod runner_runners;
+pub mod apps_core;
+pub mod apps_enterprise;
+pub mod apps_forge;
+pub mod apps_migrations;
+pub mod apps_oauth;
 pub mod actions_settings;
 pub mod commit_comments;
 pub mod deployments;
@@ -134,6 +139,10 @@ pub fn routes() -> Router<AppState> {
         .merge(runner_runners::routes())
         .merge(runner_misc::routes())
         .merge(ref_dispatch::routes())
+        .merge(apps_core::routes())
+        .merge(apps_oauth::routes())
+        .merge(apps_enterprise::routes())
+        .merge(apps_migrations::routes())
         .merge(ent_admin::routes())
         .merge(ent_prereceive::routes())
         .merge(ent_actions::routes())

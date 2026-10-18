@@ -56,8 +56,8 @@ pub async fn user_for_token(state: &AppState, token: &str) -> Result<Option<User
     if token.is_empty() {
         return Ok(None);
     }
-    if token.starts_with(crate::runner::token::JOB_TOKEN_PREFIX) {
-        return crate::runner::token::user_for_job_token(&state.db, token).await;
+    if token.starts_with("ghs_") {
+        return crate::apps::scope::bot_for_installation_token(&state.db, token).await;
     }
     let hash = sha256_hex(token);
     let user = sqlx::query_as::<_, User>(

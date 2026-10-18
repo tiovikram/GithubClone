@@ -58,8 +58,27 @@ Severity reflects impact on a multi-tenant instance where anyone can sign up.
   - Deploy keys are scoped to their repo and read-only unless created otherwise.
   - Repo paths come from DB ids, never from URL names. Names like `..` are rejected at creation, and the SSH path parser only allows `[A-Za-z0-9._-]`.
 - **Most user revisions go through `read::safe_rev` and `--end-of-options`**, and commit-search words follow `-e`.
+- **GitHub App credentials** (apps area, `crates/forge/tests/apps.rs`):
+  - App private keys are generated server-side and returned once; only public keys are stored.
+    JWTs must be RS256 (no `none`/HMAC), verify against a stored key, and live ≤ 10 minutes.
+  - Client secrets are stored as sha256 and compared in constant time; app webhook secrets are
+    sealed with the master key (`actions_settings::crypto`).
+  - Installation tokens (`ghs_`) and user-to-server tokens (`ghu_`) are confined to their
+    repositories and permissions on every surface that takes a token (REST, uploads, GraphQL, git
+    smart HTTP, web routes) by one middleware; the bot user never has more than public read
+    outside a token scope (`restrict` is fail-closed). Writes beyond the grant get 403 "Resource
+    not accessible by integration"; private repositories outside the scope stay 404.
+  - App tokens cannot reach `/api/forge` (no minting PATs), `/user` (bots), or the legacy
+    authorizations API, so they cannot be escalated into broader credentials. Manifest codes are
+    single-use, hashed and expire after 1 hour.
+- **Migrations**: archive downloads use short-lived HMAC-signed URLs (`signing_secrets`
+  `migration`); locked repositories refuse REST writes and pushes (HTTP, SSH), answering 404
+  instead of the lock message to callers who can't see the repository.
 
 ## Known gaps / accepted risks (not fixed)
+- **App tokens and GraphQL:** installation and user-to-server tokens get read-only GraphQL (forge
+  can't map arbitrary mutations to app permissions yet); GraphQL mutations also don't check
+  migration locks.
 - **Token scopes:** every token carries all scopes (documented in ARCHITECTURE). There are no fine-grained or read-only tokens.
 - ~~**Org members get Write on every org repo.**~~ Fixed by the orgs build-out: `PATCH /orgs/{org}`
   `default_repository_permission` (`read` default, `write`, `admin`, `none`) is honoured by
@@ -141,22 +160,22 @@ request when a workflow runs on `pull_request`.
   process group, and the whole group is killed on cancel or timeout.
 - **Credentials.**
   - *Registration tokens* (REST, valid 1 h, stored as sha256) register a runner for one
-    repository, organization or the enterprise. They return a *runner credential* (`ghr_…`,
-    sha256 stored). The runner credential can only claim jobs.
-  - *Job tokens* (`GITHUB_TOKEN`, `ghs_…`, sha256 stored) are minted per job when the job is
-    claimed. They expire when the job completes (they are deleted) or at its timeout + 30 min.
-    They authenticate as `github-actions[bot]`. A request made with a job token runs with
-    that token's scope (a task-local set by `runner::token::scope_middleware`), and
-    `db::permission` gives the bot only that scope:
-    - read or write on the job's repository, never admin. Write is the default only when the
-      repository's default workflow permissions say `write` (actions-settings, `read` by
-      default) or when the workflow asks for `contents: write` / `write-all`;
-    - read on public repositories;
-    - nothing elsewhere.
-
-    Without a scope, for example in a spawned task, the bot has no access (fail closed). Job
-    endpoints of the runner protocol only accept the token of their own job.
-  - Events caused by `github-actions[bot]` never trigger workflows (GitHub's recursion guard).
+    repository, organization or the enterprise. They return a *runner credential* (`fgr_…`,
+    sha256 stored). The runner credential can only claim jobs and report on jobs its runner
+    holds.
+  - *Job tokens* (`GITHUB_TOKEN`) are installation access tokens (`ghs_…`) of the built-in
+    `github-actions` app, as on GitHub. One is minted per job when the job is claimed. It
+    covers only the job's repository and acts as `github-actions[bot]`. Its permissions come
+    from the job's or workflow's `permissions:` (GitHub's keys, `read-all`/`write-all`).
+    Without `permissions:` they come from the repository's default workflow permissions:
+    permissive (everything write) or restricted (contents/packages read, the default). Fork
+    pull requests get read-only tokens unless the fork policy allows write. The apps area
+    enforces the token the same way on REST, GraphQL and git smart HTTP (`apps::scope`, 403
+    "Resource not accessible by integration"). The token is revoked when the job completes,
+    and expires at the latest at the job timeout + 30 min. The app's installations are hidden
+    from installation listings.
+  - Events caused by `github-actions[bot]`, such as a push made with `GITHUB_TOKEN`, never
+    trigger workflows (GitHub's recursion guard).
 - **Secrets.** Secrets reach a job only through `runner::settings::secrets_for_job`
   (actions-settings). They go into the job message for the claiming runner. The runner masks
   every secret value, every line of a multi-line secret and every `::add-mask::` value in logs,
@@ -185,4 +204,3 @@ request when a workflow runs on `pull_request`.
     stored.
   - First-time-contributor approval for fork pull requests is not enforced, because there is
     no approval UI.
-  - `GITHUB_TOKEN` scopes are coarse (contents read/write applies to the whole repository API).
