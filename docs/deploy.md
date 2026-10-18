@@ -87,8 +87,8 @@ Run one cluster at a time. Both bind host port 8080, and Docker Desktop has 8 GB
   fails on Docker Desktop's containerd store with multi-arch indexes. The forge image is built
   with `--provenance=false --sbom=false` for the same reason.
 - **Docker build.** One Dockerfile, two targets: `forge` (default: trixie-slim + git 2.47,
-  ca-certificates, tini; 404 MB in the containerd store) and `forge-runner` (the same plus the
-  runner tools; 462 MB). The build stage adds cmake, clang/libclang and perl for aws-lc-rs.
+  ca-certificates, tini; 406 MB in the containerd store) and `forge-runner` (the same plus the
+  runner tools; 464 MB). The build stage adds cmake, clang/libclang and perl for aws-lc-rs.
   The forge crate itself is compiled with one cargo job (`CARGO_BUILD_JOBS=1`, a build arg):
   with the default parallelism rustc grew past the ~7.8 GB of Docker Desktop's VM and was
   OOM-killed, even with LTO off. One jobserver token makes rustc optimise one codegen unit at a
