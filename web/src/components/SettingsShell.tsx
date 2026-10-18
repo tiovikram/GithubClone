@@ -50,8 +50,9 @@ export function SettingsShell<C>({ root, sections, ctx, label, container = true,
   /** Path below `root` (defaults to the route splat). */
   splat?: string;
 }) {
-  const { "*": routeSplat = "" } = useParams();
-  const splat = splatProp ?? routeSplat;
+  const params = useParams();
+  // `settings/*` routes give the splat; `settings/:section` routes only the single segment
+  const splat = splatProp ?? params["*"] ?? params.section ?? "";
   const section = pickSection(sections, ctx, splat);
   const El = section?.element;
   return (

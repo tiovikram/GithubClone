@@ -227,6 +227,7 @@ pub struct CreatePull {
 /// Opens a pull request (or converts an issue). Validates like GitHub (422s), creates
 /// `refs/pull/N/head` (+ `refs/pull/N/merge`) in the base repo.
 pub async fn create_pull(state: &AppState, ctx: &RepoCtx, actor: &User, input: CreatePull) -> ApiResult<Pull> {
+    crate::api::orgs_invitations::require_not_blocked(&state.db, &ctx.owner, actor).await?;
     ctx.require(Perm::Read)?;
     crate::api::social_forge::ensure_not_blocked_by_owner(state, ctx.owner.id, actor).await?;
     if input.head.is_empty() {

@@ -221,15 +221,42 @@ async fn get_org(State(s): State<AppState>, MaybeUser(viewer): MaybeUser, Path(o
     crate::orgs::org_full_json(&s, &o, viewer.as_ref()).await.map(Json)
 }
 
-async fn org_members(State(s): State<AppState>, uri: OriginalUri, Path(org): Path<String>, Query(p): Query<PageParams>) -> ApiResult<Paged> {
+#[derive(Deserialize, Default)]
+struct MembersQuery {
+    role: Option<String>,
+    filter: Option<String>,
+}
+
+/// Members of an organization. `role` = all | admin | member. Like GitHub, only members (and
+/// site admins) see concealed members; everyone else gets the public members.
+async fn org_members(State(s): State<AppState>, uri: OriginalUri, viewer: MaybeUser, Path(org): Path<String>, Query(p): Query<PageParams>, Query(q): Query<MembersQuery>) -> ApiResult<Paged> {
     let o = db::user_by_login(&s.db, &org).await?;
+    let role = match q.role.as_deref() {
+        None | Some("all") => None,
+        Some("admin") => Some("admin"),
+        Some("member") => Some("member"),
+        Some(_) => return Err(ApiError::validation("Member", "role", "invalid")),
+    };
+    if !matches!(q.filter.as_deref(), None | Some("all") | Some("2fa_disabled") | Some("2fa_insecure")) {
+        return Err(ApiError::validation("Member", "filter", "invalid"));
+    }
+    let insider = match &viewer.0 {
+        Some(v) => crate::orgs::is_member(&s.db, &o, v).await?,
+        None => false,
+    };
+    // forge has no 2FA, so the 2FA filters match nobody
+    let none = q.filter.as_deref().is_some_and(|f| f != "all");
     let users: Vec<User> = sqlx::query_as(
         "SELECT u.* FROM org_members m JOIN users u ON u.id = m.user_id WHERE m.org_id = $1
+            AND ($4::text IS NULL OR m.role = $4) AND ($5 OR m.public) AND NOT $6
           ORDER BY u.id LIMIT $2 OFFSET $3",
     )
     .bind(o.id)
     .bind(p.limit())
     .bind(p.offset())
+    .bind(role)
+    .bind(insider)
+    .bind(none)
     .fetch_all(&s.db)
     .await?;
     let items = users.iter().map(|u| json::user::simple(&s.api_url(), s.base_url(), u)).collect();
