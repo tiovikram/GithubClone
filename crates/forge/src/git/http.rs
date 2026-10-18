@@ -233,6 +233,14 @@ async fn receive_pack(
             return plain(StatusCode::INTERNAL_SERVER_ERROR, "push failed");
         }
     };
+    // Enterprise pre-receive hooks (run after branch protection, before the storage commit).
+    let ent_hooks = match crate::enterprise::prereceive::hook_guard(&state, &ctx, &pusher, "git push", crate::security::client_ip(&parts)).await {
+        Ok(g) => g,
+        Err(e) => {
+            tracing::error!(error = %format!("{e:#}"), "pre-receive hook setup failed");
+            return plain(StatusCode::INTERNAL_SERVER_ERROR, "push failed");
+        }
+    };
     let mut reader = body_reader(&parts.headers, body, crate::security::max_push_bytes());
     let git = state.git.git.clone();
     let repo_id = ctx.repo.id;
@@ -252,6 +260,9 @@ async fn receive_pack(
             }
             if let Some(g) = &guard {
                 g.apply(&mut cmd);
+            }
+            if let Some(h) = &ent_hooks {
+                h.apply(&mut cmd);
             }
             let mut child = cmd.spawn()?;
             let mut stdin = child.stdin.take().unwrap();

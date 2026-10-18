@@ -396,9 +396,9 @@ pub fn enterprise_json(s: &AppState) -> Value {
     })
 }
 
-/// The enterprise slug (`FORGE_ENTERPRISE_SLUG`, default `forge`), as in the enterprise area.
+/// The enterprise slug (`FORGE_ENTERPRISE_SLUG`, default `forge`; see `crate::enterprise`).
 pub fn enterprise_slug() -> String {
-    std::env::var("FORGE_ENTERPRISE_SLUG").ok().map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).unwrap_or_else(|| "forge".into())
+    crate::enterprise::slug()
 }
 
 /// `integration` schema.
