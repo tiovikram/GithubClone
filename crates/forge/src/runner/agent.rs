@@ -149,16 +149,41 @@ pub async fn main(a: RunnerArgs) -> anyhow::Result<()> {
         let (http, reg, work, keep) = (http.clone(), reg.clone(), work.clone(), a.keep);
         set.spawn(async move { worker(http, reg, executor, work, keep).await });
     }
+    // SIGTERM/ctrl-c: stop taking jobs, let running jobs finish (FORGE_RUNNER_DRAIN_SECS).
+    let term = async {
+        #[cfg(unix)]
+        if let Ok(mut t) = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate()) {
+            tokio::select! { _ = t.recv() => {}, _ = tokio::signal::ctrl_c() => {} }
+            return;
+        }
+        let _ = tokio::signal::ctrl_c().await;
+    };
     tokio::select! {
-        r = set.join_next() => { if let Some(Ok(Err(e))) = r { return Err(e); } }
-        _ = tokio::signal::ctrl_c() => { tracing::info!("shutting down"); }
+        r = set.join_next() => {
+            if let Some(Ok(Err(e))) = r { return Err(e); }
+            while let Some(r) = set.join_next().await {
+                if let Ok(Err(e)) = r { return Err(e); }
+            }
+        }
+        _ = term => {
+            DRAINING.store(true, std::sync::atomic::Ordering::SeqCst);
+            let secs = std::env::var("FORGE_RUNNER_DRAIN_SECS").ok().and_then(|v| v.parse().ok()).unwrap_or(600u64);
+            tracing::info!(secs, "shutting down: finishing running jobs");
+            let _ = tokio::time::timeout(Duration::from_secs(secs), async { while set.join_next().await.is_some() {} }).await;
+        }
     }
     Ok(())
 }
 
+/// Set on SIGTERM: workers finish their current job and stop polling.
+static DRAINING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
 async fn worker(http: reqwest::Client, reg: Registered, executor: Executor, work: PathBuf, keep: bool) -> anyhow::Result<()> {
     let mut backoff = 1u64;
     loop {
+        if DRAINING.load(std::sync::atomic::Ordering::SeqCst) {
+            return Ok(());
+        }
         let r = http
             .post(format!("{}/api/forge/runner/acquire", reg.url))
             .bearer_auth(&reg.credential)

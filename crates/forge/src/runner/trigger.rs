@@ -245,7 +245,7 @@ fn check_inputs(declared: &Map<String, Value>, given: &Map<String, Value>) -> Ap
 /// `workflow_dispatch`: runs the workflow file as it is at `rev` (a commit on `git_ref`).
 pub async fn dispatch(s: &AppState, ctx: &RepoCtx, actor: &User, path: &str, branch: Option<String>, git_ref: &str, sha: &str, inputs: Option<Value>) -> ApiResult<RunRow> {
     if !super::settings::actions_allowed(s, ctx.repo.id).await {
-        return Err(ApiError::forbidden("Actions are disabled for this repository."));
+        return Err(ApiError::unprocessable("Actions are disabled for this repository."));
     }
     let files = workflow_files(s, ctx.repo.id, sha).await;
     let Some((_, text)) = files.into_iter().find(|(p, _)| p == path) else {
@@ -401,6 +401,15 @@ pub async fn tick(s: &AppState) -> anyhow::Result<bool> {
         super::storage::expire_artifacts(s).await.map_err(|e| anyhow::anyhow!(e.message))?;
         sqlx::query("DELETE FROM actions_job_tokens WHERE expires_at < now()").execute(&s.db).await?;
         sqlx::query("DELETE FROM actions_runner_tokens WHERE expires_at < now() - interval '1 day'").execute(&s.db).await?;
+        // GitHub removes self-hosted runners that have been offline for 14 days.
+        let days: i32 = std::env::var("FORGE_ACTIONS_RUNNER_OFFLINE_DAYS").ok().and_then(|v| v.parse().ok()).unwrap_or(14);
+        sqlx::query(
+            "DELETE FROM actions_runners r WHERE COALESCE(r.last_seen_at, r.created_at) < now() - make_interval(days => $1)
+               AND NOT EXISTS (SELECT 1 FROM actions_jobs j WHERE j.runner_id = r.id AND j.status = 'in_progress')",
+        )
+        .bind(days)
+        .execute(&s.db)
+        .await?;
         Ok(())
     }
     .await;
@@ -412,6 +421,9 @@ pub async fn tick(s: &AppState) -> anyhow::Result<bool> {
 /// Starts the scheduler loop (every replica; only the lock holder works).
 pub fn spawn_scheduler(s: AppState) -> tokio::task::JoinHandle<()> {
     tokio::spawn(async move {
+        if let Err(e) = super::token::seed_static_registration_token(&s.db).await {
+            tracing::warn!(error = %e.message, "could not install FORGE_RUNNER_REGISTRATION_TOKEN");
+        }
         loop {
             if let Err(e) = tick(&s).await {
                 tracing::warn!(error = %format!("{e:#}"), "actions scheduler tick failed");

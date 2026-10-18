@@ -94,6 +94,9 @@ spec:
               valueFrom: {secretKeyRef: {name: forge-secrets, key: AWS_ACCESS_KEY_ID}}
             - name: AWS_SECRET_ACCESS_KEY
               valueFrom: {secretKeyRef: {name: forge-secrets, key: AWS_SECRET_ACCESS_KEY}}
+            # Instance-wide runner registration token shared with deploy/base/forge-runner.yaml.
+            - name: FORGE_RUNNER_REGISTRATION_TOKEN
+              valueFrom: {secretKeyRef: {name: forge-secrets, key: FORGE_RUNNER_REGISTRATION_TOKEN}}
             - name: TMPDIR
               value: /tmp
           ports:

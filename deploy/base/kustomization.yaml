@@ -17,6 +17,7 @@ resources:
   - forge.yaml
   - forge-hpa.yaml
   - forge-gc-cronjob.yaml
+  - forge-runner.yaml
 configMapGenerator:
   - name: forge-config
     literals:
@@ -41,3 +42,5 @@ secretGenerator:
       - MINIO_ROOT_USER=forge-minio
       - MINIO_ROOT_PASSWORD=forge-minio-dev-secret
       - MC_HOST_minio=http://forge-minio:forge-minio-dev-secret@minio:9000
+      # Actions runner registration (server + forge-runner pods); replace for real deployments.
+      - FORGE_RUNNER_REGISTRATION_TOKEN=forge-dev-runner-registration-token

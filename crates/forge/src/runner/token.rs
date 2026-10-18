@@ -207,3 +207,23 @@ pub async fn runner_token_scope(db: &sqlx::PgPool, kind: &str, token: &str) -> A
             .await?;
     Ok(row.map(|(r, o)| RunnerScope::of(r, o)))
 }
+
+/// `FORGE_RUNNER_REGISTRATION_TOKEN`: a long-lived, instance-wide registration token shared by
+/// the server and runner pods through a Secret (Kubernetes runners register on start without
+/// database access or a human creating a token). Re-seeded at every server start.
+pub async fn seed_static_registration_token(db: &sqlx::PgPool) -> ApiResult<()> {
+    let Ok(t) = std::env::var("FORGE_RUNNER_REGISTRATION_TOKEN") else { return Ok(()) };
+    let t = t.trim();
+    if t.len() < 16 {
+        tracing::warn!("FORGE_RUNNER_REGISTRATION_TOKEN is shorter than 16 characters; ignored");
+        return Ok(());
+    }
+    sqlx::query(
+        "INSERT INTO actions_runner_tokens (token_hash, kind, expires_at) VALUES ($1, 'registration', now() + interval '100 years')
+         ON CONFLICT (token_hash) DO UPDATE SET expires_at = EXCLUDED.expires_at",
+    )
+    .bind(sha256_hex(t))
+    .execute(db)
+    .await?;
+    Ok(())
+}

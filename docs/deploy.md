@@ -9,7 +9,8 @@ block in `scripts/k8s/up.sh` differs. Everything runs locally: no registry, no c
 ```
 Dockerfile, .dockerignore     multi-stage: node (web/dist) -> rust (cargo build --release) -> debian-slim + git
 deploy/base/                  namespace forge; postgres + minio StatefulSets, bucket Job, forge Deployment,
-                              NodePort Service, PDB, HPA, gc CronJob, ConfigMap + Secret generators
+                              NodePort Service, PDB, HPA, gc CronJob, forge-runner Deployment (Actions),
+                              ConfigMap + Secret generators
 deploy/overlays/{k3d,kind}/   both are just `resources: [../../base]` (identical on purpose)
 scripts/k8s/up.sh <flavor>    create cluster, build, import images, apply -k, wait, admin user + token, smoke test
 scripts/k8s/down.sh <flavor>  delete the cluster
@@ -189,6 +190,55 @@ Findings:
   chaos scripts wrap every git call in a 120 s process-group watchdog (`tmo`).
 
 Full reports: `tests/chaos/results/{k3d-20261012-175322,kind-20261012-180816}.md`.
+
+## GitHub Actions runners (`deploy/base/forge-runner.yaml`)
+
+Workflow jobs run in `forge runner` pods, never in the forge API pods (jobs run untrusted
+code). The runner is the same image (`args: ["runner"]`), as a separate Deployment that
+scales independently (`kubectl -n forge scale deployment/forge-runner --replicas=N`).
+
+```
+forge pods ── scheduler (one pod at a time, Postgres advisory lock): cron triggers, lost-job reaping
+   │  queued jobs in Postgres (claimed with FOR UPDATE SKIP LOCKED)
+   ▼
+forge-runner pods ──HTTP──> Service forge: /api/forge/runner/{register,acquire,jobs/{id}/...}
+   │  checkout over git smart HTTP with the job's GITHUB_TOKEN
+   └─ job work dir on an emptyDir (/work), HOME per job, shell executor (the pod is the sandbox)
+```
+
+- **Registration.** Pods register at start with the instance-wide registration token
+  `FORGE_RUNNER_REGISTRATION_TOKEN` from the `forge-secrets` Secret. The server seeds the same
+  token on start, so no one has to create one. The pod name is the runner name, so a restarted
+  pod replaces its registration. The server prunes runners that have been offline for
+  `FORGE_ACTIONS_RUNNER_OFFLINE_DAYS` (default 14). Repository, organization and enterprise runners can
+  also be registered by hand with tokens from the REST API, or with
+  `forge admin runner-token [--repo o/r | --org o] [--hours N]`.
+- **No backend credentials.** The runner Deployment mounts only the registration token: no
+  `DATABASE_URL` and no object storage keys. It does not mount a service account token
+  (`automountServiceAccountToken: false`), it runs as non-root with a read-only root
+  filesystem, and it writes only to `emptyDir` volumes (`/work`, `/tmp`).
+- **Shutdown.** On SIGTERM a runner stops taking jobs and lets running jobs finish
+  (`FORGE_RUNNER_DRAIN_SECS`, 600, within the pod's 660 s grace period). If a pod dies anyway,
+  the scheduler marks its job failed after 3 minutes without heartbeats.
+- **Labels.** Each runner has `self-hosted`, its OS (`Linux`), its architecture (`X64`/`ARM64`) and
+  `FORGE_RUNNER_LABELS` (`kubernetes`). forge has no GitHub-hosted runners, so a
+  `runs-on: ubuntu-latest` (or another `ubuntu-*`/`macos-*`/`windows-*` label) matches any runner.
+  Every other label must be one of the runner's labels.
+- **Executors.** `shell` (default) runs steps directly in the pod. `docker` runs every job in a
+  container: the image comes from `container:`, or is mapped from `runs-on` (`ubuntu-24.04` ->
+  `ubuntu:24.04`, otherwise `FORGE_RUNNER_DEFAULT_IMAGE`). The job directory is bind-mounted at the
+  same path. The docker executor needs a Docker daemon, so on Kubernetes it needs a DinD sidecar
+  (not shipped, because it requires privileged pods).
+
+Outside Kubernetes:
+
+```sh
+TOKEN=$(gh api -X POST repos/OWNER/REPO/actions/runners/registration-token --jq .token)
+forge runner --url http://forge.example:3000 --token "$TOKEN" --name my-runner \
+  [--labels gpu,linux] [--executor docker] [--slots 2] [--config ~/.forge-runner.json]
+forge runner --jitconfig "$ENCODED_JIT_CONFIG"     # one job, then exit (generate-jitconfig)
+forge runner --url ... --config ~/.forge-runner.json --remove-token "$REMOVE_TOKEN"
+```
 
 ## Uninstall
 
