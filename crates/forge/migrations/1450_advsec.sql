@@ -35,6 +35,7 @@ CREATE TABLE advisories (
     github_reviewed_at   TIMESTAMPTZ,
     nvd_published_at     TIMESTAMPTZ,
     withdrawn_at         TIMESTAMPTZ,
+    source_id            TEXT NOT NULL DEFAULT '',   -- OSV id the record came from (GHSA-... or e.g. RUSTSEC-...)
     imported_at          TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX advisories_cve ON advisories (cve_id);
@@ -62,7 +63,8 @@ CREATE TABLE dependabot_alerts (
     repo_id           BIGINT NOT NULL REFERENCES repositories(id) ON DELETE CASCADE,
     number            BIGINT NOT NULL,
     advisory_id       BIGINT NOT NULL REFERENCES advisories(id) ON DELETE CASCADE,
-    vulnerability_id  BIGINT NOT NULL REFERENCES advisory_vulnerabilities(id) ON DELETE CASCADE,
+    -- NULL when a re-import dropped the matched range (the next match repoints or fixes it).
+    vulnerability_id  BIGINT REFERENCES advisory_vulnerabilities(id) ON DELETE SET NULL,
     ecosystem         TEXT NOT NULL,
     package           TEXT NOT NULL,
     manifest_path     TEXT NOT NULL,

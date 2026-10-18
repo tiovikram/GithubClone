@@ -33,6 +33,7 @@ Configuration is environment only:
 | `FORGE_SSH_HOST_KEY` | OpenSSH private host key file | unset = shared ed25519 key in Postgres |
 | `FORGE_SSH_URL_HOST`, `FORGE_SSH_URL_PORT` | host (`host` or `host:port`) / port used in `ssh_url` | base URL host, `FORGE_SSH_LISTEN` port |
 | `FORGE_SECRET_KEY` | master key (any string; X25519 secret = sha256 of it) sealing the Actions secret private keys; same value on every pod | unset = random master key stored in `signing_secrets` |
+| `FORGE_HOOK_BIN` | forge executable that the `pre-receive` hook runs for secret scanning push protection | the running binary when it is named `forge` |
 
 ## URL layout (mirrors GitHub Enterprise Server)
 - `/api/v3/...` — REST API (GitHub shapes).
@@ -144,6 +145,18 @@ An embedded `russh` server, started by `forge serve` when `FORGE_SSH_LISTEN` is 
 - **Runner groups** (`actions_runner_groups`): per org and for the enterprise, with a `Default`
   group each; membership in `actions_runner_group_runners` (no row = default group). forge has no
   GitHub-hosted runner fleet: jobs run on self-hosted runners (`forge runner`).
+
+## Advanced security (`advsec/`, see docs/advsec.md)
+- Features (secret scanning, push protection, Dependabot alerts, code scanning) act only when
+  enabled per repository (`repo_security_products`, `repo_settings.vulnerability_alerts`); push
+  protection is off by default.
+- Scans run as Postgres jobs (`advsec.*` queues): secret scans of the commits a push adds (queued by
+  `hooks::after_refs_changed`) and backfills; Dependabot matching of the default branch's
+  dependency graph against the advisory database (`advisories`, imported from OSV records with
+  `forge advisories sync`); SARIF processing (files in object storage under `advsec/sarif/`).
+- Push protection runs inside `git receive-pack` as a `pre-receive` hook that executes
+  `forge hook pre-receive` (no database access; a per-push rules file), chained after branch
+  protection. Contents API writes are checked in-process (409 with placeholder ids).
 
 ## Crate layout (`crates/forge/src`)
 ```

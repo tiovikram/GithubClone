@@ -187,6 +187,6 @@ mod tests {
         assert_eq!(scan(conn, true)[0].secret_type, "postgres_connection_string");
         let stripe = format!("{}{}", "sk_live_", "4eC39HqLyjWDarjtT1zdp7dc");
         assert_eq!(scan(&stripe, false)[0].secret_type, "stripe_api_key");
-        assert_eq!(scan("const k = \"AIzaSyA1234567890abcdefghijklmnopqrstu\";", false)[0].secret_type, "google_api_key");
+        assert_eq!(scan("const k = \"AIzaSyA1234567890abcdefghijklmnopqrstuv\";", false)[0].secret_type, "google_api_key");
     }
 }

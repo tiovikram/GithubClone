@@ -70,7 +70,7 @@ pub struct AlertRow {
     pub repo_id: i64,
     pub number: i64,
     pub advisory_id: i64,
-    pub vulnerability_id: i64,
+    pub vulnerability_id: Option<i64>,
     pub ecosystem: String,
     pub package: String,
     pub manifest_path: String,
@@ -228,7 +228,7 @@ pub async fn render(s: &AppState, rows: &[AlertRow], with_repo: bool) -> ApiResu
     for r in rows {
         let (Some(ctx), Some(adv)) = (repos.get(&r.repo_id), advs.iter().find(|a| a.id == r.advisory_id)) else { continue };
         let full = ctx.full_name();
-        let vuln = vulns.iter().find(|v| v.id == r.vulnerability_id);
+        let vuln = r.vulnerability_id.and_then(|vid| vulns.iter().find(|v| v.id == vid));
         let req = reqs.iter().find(|q| q.repo_id == r.repo_id && q.alert_number == Some(r.number));
         let dreq = req.map(|q| {
             let st = match q.effective_status() {
@@ -256,7 +256,12 @@ pub async fn render(s: &AppState, rows: &[AlertRow], with_repo: bool) -> ApiResu
                 "relationship": if r.manifest_path.ends_with(".lock") || r.manifest_path.ends_with("-lock.json") { "inconclusive" } else { "direct" },
             },
             "security_advisory": advisories::dependabot_advisory_json(adv, &vulns),
-            "security_vulnerability": vuln.map(advisories::dependabot_vuln_json(adv)).unwrap_or(Value::Null),
+            "security_vulnerability": vuln.map(advisories::dependabot_vuln_json(adv)).unwrap_or_else(|| json!({
+                "package": { "ecosystem": r.ecosystem, "name": r.package },
+                "severity": advisories::alert_severity(&adv.severity),
+                "vulnerable_version_range": "",
+                "first_patched_version": null,
+            })),
             "url": format!("{}/repos/{full}/dependabot/alerts/{}", s.api_url(), r.number),
             "html_url": format!("{}/{full}/security/dependabot/{}", s.base_url(), r.number),
             "created_at": crate::json::ts(r.created_at),
@@ -310,7 +315,7 @@ async fn list(s: &AppState, uri: &OriginalUri, repo_scope: &str, scope_id: i64, 
     let order = if q.sort.as_deref() == Some("updated") { "d.updated_at" } else { "d.created_at" };
     let dir = super::dir(q.direction.as_deref());
     let rows: Vec<AlertRow> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
-        "SELECT d.* FROM dependabot_alerts d JOIN advisories a ON a.id = d.advisory_id JOIN advisory_vulnerabilities v ON v.id = d.vulnerability_id
+        "SELECT d.* FROM dependabot_alerts d JOIN advisories a ON a.id = d.advisory_id LEFT JOIN advisory_vulnerabilities v ON v.id = d.vulnerability_id
           WHERE d.repo_id IN {repo_scope}
             AND ($2::text[] IS NULL OR d.state = ANY($2))
             AND ($3::text[] IS NULL OR (CASE WHEN a.severity = 'unknown' THEN 'low' ELSE a.severity END) = ANY($3))

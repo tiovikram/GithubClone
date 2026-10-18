@@ -233,6 +233,8 @@ pub async fn security_and_analysis_json(db: &PgPool, repo_id: i64) -> Value {
         "secret_scanning_push_protection": st(get("secret_scanning_push_protection")),
         "secret_scanning_non_provider_patterns": st(get("secret_scanning_non_provider_patterns")),
         "secret_scanning_validity_checks": st(get("secret_scanning_validity_checks")),
+        "secret_scanning_delegated_alert_dismissal": st(get("secret_scanning_delegated_alert_dismissal")),
+        "secret_scanning_delegated_bypass": st(get("secret_scanning_delegated_bypass")),
     })
 }
 

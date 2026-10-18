@@ -187,14 +187,14 @@ export class Oracle {
     // A response documented with several media types (e.g. application/json and
     // application/sarif+json) is validated against the one the server actually sent.
     const ctype = (res.headers.get('content-type') || '').split(';')[0].trim();
-    const media = resp && (resp.content?.[ctype] ? { type: ctype, ...resp.content[ctype] } : jsonMedia(resp.content));
+    const media = resp && (/json/.test(ctype) && resp.content?.[ctype] ? { type: ctype, ...resp.content[ctype] } : jsonMedia(resp.content));
     if (media?.schema) {
       const ct = res.headers.get('content-type') || '';
       if (!/json/.test(ct)) errors.push(`content-type "${ct}" is not JSON`);
       body = tryJson(res.text);
       if (body === undefined) errors.push(`body is not valid JSON: ${res.text.slice(0, 80)}`);
       else {
-        const v = this.v.compile(`res:${op.operationId}:${res.status}`, media.schema);
+        const v = this.v.compile(`res:${op.operationId}:${res.status}${media.type === 'application/json' ? '' : `:${media.type}`}`, media.schema);
         if (!v(body)) errors.push(...formatErrors(pruneErrors(v.errors), 6).map((e) => `schema: ${e}`));
       }
     } else {

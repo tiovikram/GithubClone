@@ -123,9 +123,15 @@ pub struct Interval {
     pub last_affected: Option<String>,
 }
 
+/// `0`, `0.0.0`, `0.0.0-0`: "all versions".
+fn is_zero(v: &str) -> bool {
+    let main = v.split('-').next().unwrap_or(v);
+    !main.is_empty() && main.split('.').all(|p| p == "0") && v.split_once('-').is_none_or(|(_, pre)| pre == "0")
+}
+
 impl Interval {
     pub fn contains(&self, v: &str) -> bool {
-        if let Some(i) = self.introduced.as_deref().filter(|i| *i != "0") {
+        if let Some(i) = self.introduced.as_deref().filter(|i| !is_zero(i)) {
             if cmp_versions(v, i) == Ordering::Less {
                 return false;
             }
@@ -141,7 +147,7 @@ impl Interval {
     /// GitHub's `vulnerable_version_range` notation.
     pub fn github_range(&self) -> String {
         let mut parts = Vec::new();
-        if let Some(i) = self.introduced.as_deref().filter(|i| *i != "0") {
+        if let Some(i) = self.introduced.as_deref().filter(|i| !is_zero(i)) {
             parts.push(format!(">= {i}"));
         }
         if let Some(f) = &self.fixed {
@@ -388,15 +394,17 @@ pub async fn import_osv(s: &AppState, rec: &Value) -> ApiResult<bool> {
     let published = ts(rec.get("published")).unwrap_or_else(Utc::now);
     let modified = ts(rec.get("modified")).unwrap_or(published);
     let mut tx = s.db.begin().await?;
-    let adv_id: i64 = sqlx::query_scalar(
+    let adv_id: Option<i64> = sqlx::query_scalar(
         "INSERT INTO advisories (ghsa_id, cve_id, kind, summary, description, severity, cvss_v3_vector, cvss_v3_score, cvss_v4_vector,
                                  cwes, identifiers, refs, source_code_location, published_at, updated_at, github_reviewed_at,
-                                 nvd_published_at, withdrawn_at, imported_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18, now())
+                                 nvd_published_at, withdrawn_at, source_id, imported_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19, now())
          ON CONFLICT (ghsa_id) DO UPDATE SET cve_id = $2, kind = $3, summary = $4, description = $5, severity = $6,
              cvss_v3_vector = $7, cvss_v3_score = $8, cvss_v4_vector = $9, cwes = $10, identifiers = $11, refs = $12,
              source_code_location = $13, published_at = $14, updated_at = $15, github_reviewed_at = $16, nvd_published_at = $17,
-             withdrawn_at = $18, imported_at = now()
+             withdrawn_at = $18, source_id = $19, imported_at = now()
+           -- GitHub's own record wins over an alias record (e.g. RUSTSEC) of the same advisory.
+           WHERE advisories.source_id NOT LIKE 'GHSA-%' OR EXCLUDED.source_id LIKE 'GHSA-%'
          RETURNING id",
     )
     .bind(&ghsa)
@@ -417,8 +425,12 @@ pub async fn import_osv(s: &AppState, rec: &Value) -> ApiResult<bool> {
     .bind(ts(dbs.get("github_reviewed_at")))
     .bind(ts(dbs.get("nvd_published_at")))
     .bind(ts(rec.get("withdrawn")))
-    .fetch_one(&mut *tx)
+    .bind(id)
+    .fetch_optional(&mut *tx)
     .await?;
+    let Some(adv_id) = adv_id else {
+        return Ok(true);
+    };
     // Vulnerabilities are replaced as a whole; alerts that referenced old rows are re-matched.
     let old: Vec<i64> = sqlx::query_scalar("SELECT id FROM advisory_vulnerabilities WHERE advisory_id = $1").bind(adv_id).fetch_all(&mut *tx).await?;
     let mut kept = Vec::new();
@@ -502,6 +514,16 @@ pub async fn import_osv(s: &AppState, rec: &Value) -> ApiResult<bool> {
     }
     let stale: Vec<i64> = old.into_iter().filter(|o| !kept.contains(o)).collect();
     if !stale.is_empty() {
+        // Alerts follow the advisory's new ranges for the same package.
+        sqlx::query(
+            "UPDATE dependabot_alerts d SET vulnerability_id = (
+                 SELECT v.id FROM advisory_vulnerabilities v WHERE v.id = ANY($2) AND v.ecosystem = d.ecosystem AND v.package = d.package ORDER BY v.id LIMIT 1)
+              WHERE d.vulnerability_id = ANY($1)",
+        )
+        .bind(&stale)
+        .bind(&kept)
+        .execute(&mut *tx)
+        .await?;
         sqlx::query("DELETE FROM advisory_vulnerabilities WHERE id = ANY($1)").bind(&stale).execute(&mut *tx).await?;
     }
     tx.commit().await?;

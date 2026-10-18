@@ -247,6 +247,9 @@ async fn import_fixture(s: &TestServer, admin: &TestUser) {
         .await
         .unwrap();
     assert_eq!(res.status().as_u16(), 200);
+    // The import queues a re-match of every enabled repository in the (shared) test database;
+    // tests match their own repositories through `drain`.
+    sqlx::query("DELETE FROM jobs WHERE queue = $1").bind(forge::advsec::Q_ADVISORY_RESCAN).execute(&s.state.db).await.unwrap();
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]

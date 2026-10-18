@@ -240,6 +240,7 @@ async fn process(state: &AppState, ctx: &RepoCtx, id: &str) -> anyhow::Result<()
     let doc: Value = serde_json::from_slice(&raw)?;
     let repo_path = state.git.sync(ctx.repo.id).await.ok();
     let mut file_cache: HashMap<String, Option<Vec<String>>> = HashMap::new();
+    let mut created: Vec<i64> = Vec::new();
     for (run_index, run) in doc["runs"].as_array().into_iter().flatten().enumerate() {
         let driver = run.pointer("/tool/driver").cloned().unwrap_or(json!({}));
         let tool_name = tool_override.clone().or_else(|| text(&driver, "/name")).unwrap_or_else(|| "unknown".into());
@@ -355,6 +356,7 @@ async fn process(state: &AppState, ctx: &RepoCtx, id: &str) -> anyhow::Result<()
                     .fetch_one(&mut *tx)
                     .await?;
                     tx.commit().await?;
+                    created.push(a);
                     a
                 }
             };
@@ -376,6 +378,9 @@ async fn process(state: &AppState, ctx: &RepoCtx, id: &str) -> anyhow::Result<()
             .await?;
         }
         recompute_set(state, ctx, &git_ref, &tool_name, &category).await?;
+    }
+    for id in created {
+        emit_webhook(state, ctx, id, "created").await;
     }
     Ok(())
 }

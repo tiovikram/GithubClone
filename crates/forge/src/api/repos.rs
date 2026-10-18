@@ -270,6 +270,10 @@ pub async fn full_json(s: &AppState, viewer: Option<&User>, ctx: &RepoCtx) -> Ap
     }
     let mut v = json::repo::full(&s.api_url(), s.base_url(), ctx, parent.as_ref(), source.as_ref());
     v["subscribers_count"] = serde_json::json!(subscribers_count(s, ctx.repo.id).await?);
+    // advsec: the security settings, shown to admins (as on GitHub).
+    if ctx.perm >= Perm::Admin {
+        v["security_and_analysis"] = crate::advsec::security_and_analysis_json(&s.db, ctx.repo.id).await;
+    }
     Ok(v)
 }
 
