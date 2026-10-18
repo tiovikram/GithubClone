@@ -362,6 +362,13 @@ async fn exec(
         stderr(write, format!("ERROR: Permission to {}.git denied to {who}.\n", ctx.full_name())).await;
         return Ok(1);
     }
+    if gc.service == Service::UploadPack {
+        let user = match owner {
+            KeyOwner::User { user, .. } => Some(user),
+            KeyOwner::Deploy(_) => None,
+        };
+        crate::api::repo_traffic::record_clone(state, ctx.repo.id, user, None).await;
+    }
     match gc.service {
         Service::UploadPack | Service::UploadArchive => serve_read(state, &ctx, gc.service, read, write, proto).await,
         Service::ReceivePack => {

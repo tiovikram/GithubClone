@@ -314,7 +314,7 @@ pub async fn repo_rulesets(s: &AppState, ctx: &RepoCtx) -> ApiResult<Vec<Ruleset
     if all.is_empty() {
         return Ok(all);
     }
-    let props: HashMap<String, Value> = if all.iter().any(|r| r.org_id.is_some()) {
+    let props: HashMap<String, Value> = if all.iter().any(|r| r.org_id.is_some() || r.enterprise) {
         sqlx::query_as::<_, (String, Value)>("SELECT property_name, value FROM repo_custom_property_values WHERE repo_id = $1")
             .bind(ctx.repo.id)
             .fetch_all(&s.db)
@@ -324,7 +324,18 @@ pub async fn repo_rulesets(s: &AppState, ctx: &RepoCtx) -> ApiResult<Vec<Ruleset
     } else {
         HashMap::new()
     };
-    Ok(all.into_iter().filter(|r| r.org_id.is_none() || repo_condition(r, ctx, &props)).collect())
+    Ok(all
+        .into_iter()
+        .filter(|r| (r.org_id.is_none() && !r.enterprise) || (repo_condition(r, ctx, &props) && (!r.enterprise || org_condition(r, ctx))))
+        .collect())
+}
+
+/// Whether an enterprise ruleset's `organization_name` condition selects `ctx`'s owner (no
+/// condition selects every organization).
+fn org_condition(r: &RulesetRow, ctx: &RepoCtx) -> bool {
+    let Some(on) = r.conditions.as_ref().and_then(|c| c.get("organization_name")) else { return true };
+    let name = &ctx.owner.login;
+    str_list(on.get("include")).iter().any(|p| name_matches(p, name)) && !str_list(on.get("exclude")).iter().any(|p| name_matches(p, name))
 }
 
 /// Whether ruleset `r` applies to an update of `refname`.
@@ -943,7 +954,7 @@ pub async fn evaluate(
                 let rule_type = rule.get("type").and_then(Value::as_str).unwrap_or("unknown").to_string();
                 let failed = eval_rule(&sub, rule, &mut f).await?;
                 let mut e = json!({
-                    "rule_source": {"type": if r.org_id.is_some() { "Organization" } else { "Repository" }, "id": r.id, "name": r.name},
+                    "rule_source": {"type": if r.enterprise { "Enterprise" } else if r.org_id.is_some() { "Organization" } else { "Repository" }, "id": r.id, "name": r.name},
                     "enforcement": r.enforcement,
                     "result": if failed.is_some() { "fail" } else { "pass" },
                     "rule_type": rule_type,

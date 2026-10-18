@@ -987,6 +987,7 @@ pub async fn merge_pull(state: &AppState, ctx: &RepoCtx, actor: &User, number: i
     let delete_head = !cross && r.delete_branch_on_merge && pull.pr.head_ref != r.default_branch;
 
     let git = state.git.git.clone();
+    let opts = crate::api::repo_merge_opts::load(state, ctx.repo.id).await?;
     let committer = identity(actor);
     let pr_author = author.as_ref().map(identity).unwrap_or_else(|| committer.clone());
     let p = pull.clone();
@@ -1029,7 +1030,8 @@ pub async fn merge_pull(state: &AppState, ctx: &RepoCtx, actor: &User, number: i
                     let tree = git::merge_tree(&git, &path, &base_sha, &head_sha, None)
                         .await?
                         .ok_or_else(|| halt(not_mergeable("Pull Request is not mergeable")))?;
-                    let msg = message(format!("Merge pull request #{n} from {head_label}"), p.issue.title.clone());
+                    let (t, b) = crate::api::repo_merge_opts::merge_message(&opts, n, &head_label, &p.issue.title, p.issue.body.as_deref().unwrap_or(""));
+                    let msg = message(t, b);
                     git::commit_tree(&git, &path, &tree, &[&base_sha, &head_sha], &msg, &committer, &committer).await?
                 }
                 MergeMethod::Squash => {
@@ -1042,8 +1044,9 @@ pub async fn merge_pull(state: &AppState, ctx: &RepoCtx, actor: &User, number: i
                         None => head_sha.clone(),
                     };
                     let commits = git::list_commits(&git, &path, &range, 250).await?;
-                    let body = commits.iter().map(|c| format!("* {}", c.message.trim_end())).collect::<Vec<_>>().join("\n\n");
-                    let msg = message(format!("{} (#{n})", p.issue.title), body);
+                    let msgs: Vec<String> = commits.iter().map(|c| c.message.clone()).collect();
+                    let (t, b) = crate::api::repo_merge_opts::squash_message(&opts, n, &p.issue.title, p.issue.body.as_deref().unwrap_or(""), &msgs);
+                    let msg = message(t, b);
                     git::commit_tree(&git, &path, &tree, &[&base_sha], &msg, &pr_author, &committer).await?
                 }
                 MergeMethod::Rebase => {

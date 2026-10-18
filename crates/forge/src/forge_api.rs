@@ -24,6 +24,8 @@ pub fn routes() -> Router<AppState> {
         .route("/orgs", post(create_org))
         .route("/healthz", axum::routing::get(|| async { "ok" }))
         .route("/announcement", axum::routing::get(announcement))
+        // web UI helpers of the repoadmin area (traffic beacon, LFS state, enterprise slug)
+        .merge(crate::api::repo_traffic::forge_routes())
         .layer(axum::middleware::from_fn(require_csrf_header))
 }
 

@@ -345,7 +345,7 @@ fn version_json(v: &VersionRow, with_state: bool) -> Value {
     out
 }
 
-async fn versions_page(s: &AppState, uri: &OriginalUri, level: &Level, id: i64, p: PageParams) -> ApiResult<Paged> {
+pub(crate) async fn versions_page(s: &AppState, uri: &OriginalUri, level: &Level, id: i64, p: PageParams) -> ApiResult<Paged> {
     let r = rulesets::get_ruleset(s, level, id).await?;
     let rows: Vec<VersionRow> = sqlx::query_as(
         "SELECT id AS version_id, actor_id, state, created_at AS updated_at FROM ruleset_versions WHERE ruleset_id = $1 ORDER BY id DESC LIMIT $2 OFFSET $3",
@@ -359,7 +359,7 @@ async fn versions_page(s: &AppState, uri: &OriginalUri, level: &Level, id: i64, 
     Ok(Paged::new(uri, s, p, Some(total), rows.iter().map(|v| version_json(v, false)).collect()))
 }
 
-async fn one_version(s: &AppState, level: &Level, id: i64, version: i64) -> ApiResult<Value> {
+pub(crate) async fn one_version(s: &AppState, level: &Level, id: i64, version: i64) -> ApiResult<Value> {
     let r = rulesets::get_ruleset(s, level, id).await?;
     let v: VersionRow = sqlx::query_as("SELECT id AS version_id, actor_id, state, created_at AS updated_at FROM ruleset_versions WHERE ruleset_id = $1 AND id = $2")
         .bind(r.id)

@@ -94,6 +94,14 @@ async fn info_refs(
         Ok(c) => c,
         Err(r) => return r,
     };
+    if service == "git-upload-pack" {
+        // Repository traffic: one clone per fetch negotiation start.
+        let user = match crate::auth::authenticate(&mut parts, &state).await {
+            Ok(AuthResult::User(u)) => Some(u),
+            _ => None,
+        };
+        crate::api::repo_traffic::record_clone(&state, ctx.repo.id, user.as_ref(), crate::security::client_ip(&parts)).await;
+    }
     let path = match state.git.sync(ctx.repo.id).await {
         Ok(p) => p,
         Err(e) => {

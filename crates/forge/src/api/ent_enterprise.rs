@@ -757,17 +757,22 @@ async fn set_org_values(State(s): State<AppState>, SiteAdmin(u): SiteAdmin, Path
 }
 
 // ---------------------------------------------------------------------------------------------
-// Ruleset history: forge has no enterprise-level rulesets (GHES 3.22 has no REST API to create
-// them), so every enterprise ruleset id is unknown.
+// Ruleset history of enterprise rulesets (`/enterprises/{e}/rulesets`, see `api::rulesets`).
 
-async fn ruleset_history(SiteAdmin(_): SiteAdmin, Path((e, _id)): Path<(String, i64)>) -> ApiResult<Response> {
+async fn ruleset_history(
+    State(s): State<AppState>,
+    SiteAdmin(_): SiteAdmin,
+    uri: OriginalUri,
+    Path((e, id)): Path<(String, i64)>,
+    Query(p): Query<PageParams>,
+) -> ApiResult<Paged> {
     ent::check_enterprise(&e)?;
-    Err(ApiError::not_found())
+    super::repos_rules::versions_page(&s, &uri, &super::rulesets::Level::Enterprise, id, p).await
 }
 
-async fn ruleset_version(SiteAdmin(_): SiteAdmin, Path((e, _id, _v)): Path<(String, i64, i64)>) -> ApiResult<Response> {
+async fn ruleset_version(State(s): State<AppState>, SiteAdmin(_): SiteAdmin, Path((e, id, v)): Path<(String, i64, i64)>) -> ApiResult<Json<Value>> {
     ent::check_enterprise(&e)?;
-    Err(ApiError::not_found())
+    Ok(Json(super::repos_rules::one_version(&s, &super::rulesets::Level::Enterprise, id, v).await?))
 }
 
 // ---------------------------------------------------------------------------------------------
