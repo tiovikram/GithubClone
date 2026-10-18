@@ -65,6 +65,9 @@ pub mod invitations;
 pub mod activity_extra;
 pub mod dependency_graph;
 pub mod events_emit;
+// packages build-out area
+pub mod packages;
+pub mod projects_v2_rest;
 
 use axum::extract::{OriginalUri, Request};
 use axum::http::{header, HeaderMap, HeaderName, HeaderValue, StatusCode, Uri};
@@ -136,6 +139,9 @@ pub fn routes() -> Router<AppState> {
         .merge(invitations::routes())
         .merge(activity_extra::routes())
         .merge(dependency_graph::routes())
+        // packages build-out area
+        .merge(packages::routes())
+        .merge(projects_v2_rest::routes())
         .fallback(|| async { crate::error::ApiError::not_found() })
 }
 

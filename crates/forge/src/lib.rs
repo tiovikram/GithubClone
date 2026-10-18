@@ -17,6 +17,7 @@ pub mod jobs;
 pub mod json;
 pub mod oauth_device;
 pub mod orgs;
+pub mod packages;
 pub mod ssh;
 pub mod pulls;
 pub mod security;
@@ -96,6 +97,7 @@ pub fn app(state: AppState) -> Router {
         .merge(api::branches::web_routes())
         .merge(api::repos_pages::web_routes())
         .merge(api::activity_extra::web_routes())
+        .merge(packages::routes())
         .fallback(web::spa)
         .layer(middleware::from_fn_with_state(state.clone(), api::keys::dot_keys_middleware))
         .layer(middleware::from_fn(security::nosniff))
