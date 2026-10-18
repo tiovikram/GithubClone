@@ -90,5 +90,34 @@ export const scenarios = [
       }
     },
   },
-  // push bypass requests: added by parent
+  {
+    // Push rulesets with bypass actors use delegated bypass: a blocked write by a non-bypasser
+    // creates a push bypass request (crate::rules::bypass).
+    name: 'finish: push ruleset delegated bypass requests',
+    requires: ['rp'],
+    run: async (t, s) => {
+      if (!s.collaborator || !s.collaboratorToken) return;
+      await t.call('repos/add-collaborator', { params: { ...s.rp, username: s.collaborator }, body: { permission: 'push' }, expect: [201, 204], fixture: true });
+      const rs = await t.call('repos/create-repo-ruleset', {
+        params: s.rp, expect: [201], fixture: true,
+        body: {
+          name: `conf-push-${s.runId}`, target: 'push', enforcement: 'active',
+          bypass_actors: [{ actor_id: 5, actor_type: 'RepositoryRole', bypass_mode: 'always' }],
+          rules: [{ type: 'file_extension_restriction', parameters: { restricted_file_extensions: ['*.confblocked'] } }],
+        },
+      });
+      try {
+        await t.call('repos/create-or-update-file-contents', {
+          params: { ...s.rp, path: `bypass-${s.runId}.confblocked` }, token: s.collaboratorToken, expect: [409],
+          body: { message: 'blocked by a push ruleset', content: Buffer.from('x\n').toString('base64') },
+        });
+        const list = await t.call('repos/list-repo-push-bypass-requests', { params: s.rp, minItems: 1 });
+        const num = list?.body?.[0]?.number;
+        if (num) await t.call('repos/get-repo-push-bypass-request', { params: { ...s.rp, bypass_request_number: num } });
+      } finally {
+        if (rs?.body?.id) await t.call('repos/delete-repo-ruleset', { params: { ...s.rp, ruleset_id: rs.body.id }, fixture: true });
+        await t.call('repos/remove-collaborator', { params: { ...s.rp, username: s.collaborator }, fixture: true });
+      }
+    },
+  },
 ];

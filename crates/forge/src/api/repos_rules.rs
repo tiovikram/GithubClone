@@ -424,7 +424,9 @@ fn suite_json(r: &SuiteRow, repo_name: &str, detail: bool) -> Value {
         "before_sha": r.before_sha, "after_sha": r.after_sha, "ref": r.git_ref,
         "repository_id": r.repo_id, "repository_name": repo_name,
         "pushed_at": crate::json::ts(r.pushed_at),
-        "result": r.result, "evaluation_result": r.evaluation_result,
+        // The list schema has no null evaluation_result (rule-suites); the single one does.
+        "result": r.result,
+        "evaluation_result": if detail { json!(r.evaluation_result) } else { json!(r.evaluation_result.clone().unwrap_or_else(|| r.result.clone())) },
     });
     if detail {
         v["rule_evaluations"] = r.rule_evaluations.clone();
