@@ -67,6 +67,8 @@ pub enum Via {
     Commit,
     /// Merging a pull request (method unknown when only computing the merge state).
     Merge(Option<MergeMethod>),
+    /// Syncing a fork branch with its upstream (`merge-upstream`).
+    Upstream,
 }
 
 impl Via {
@@ -74,7 +76,7 @@ impl Via {
         matches!(self, Via::Merge(_))
     }
     fn forge_commits(self) -> bool {
-        matches!(self, Via::Commit | Via::Merge(_))
+        matches!(self, Via::Commit | Via::Merge(_) | Via::Upstream)
     }
 }
 
@@ -250,7 +252,9 @@ pub fn path_matches(pattern: &str, path: &str) -> bool {
     }
     if !p.contains('/') {
         let name = path.rsplit('/').next().unwrap_or(path);
-        return glob(p.as_bytes(), name.as_bytes());
+        if glob(p.as_bytes(), name.as_bytes()) {
+            return true;
+        }
     }
     // `dir/` or `dir` restricts everything below it.
     let dir = p.trim_end_matches('/');
@@ -605,7 +609,10 @@ async fn eval_rule(sub: &Subject<'_>, rule: &Value, f: &mut Facts<'_>) -> ApiRes
     let ty = rule.get("type").and_then(Value::as_str).unwrap_or("");
     Ok(match ty {
         "creation" => created.then(|| "Cannot create ref due to creations being restricted.".into()),
-        "update" => updated.then(|| "Cannot update this protected ref.".into()),
+        "update" => {
+            let fetch_ok = sub.via == Via::Upstream && params.get("update_allows_fetch_and_merge").and_then(Value::as_bool).unwrap_or(false);
+            (updated && !fetch_ok).then(|| "Cannot update this protected ref.".into())
+        }
         "deletion" => deleted.then(|| "Cannot delete this protected ref.".into()),
         "non_fast_forward" => {
             if !updated || f.view.is_none() {
@@ -649,7 +656,7 @@ async fn eval_rule(sub: &Subject<'_>, rule: &Value, f: &mut Facts<'_>) -> ApiRes
                 None
             } else {
                 let checks = checks_of(&params);
-                let missing = if sub.via == Via::Commit { checks.iter().map(|c| c.0.clone()).collect() } else { missing_checks(sub.s, sub.ctx.repo.id, &check_sha, &checks).await? };
+                let missing = if matches!(sub.via, Via::Commit | Via::Upstream) { checks.iter().map(|c| c.0.clone()).collect() } else { missing_checks(sub.s, sub.ctx.repo.id, &check_sha, &checks).await? };
                 if !missing.is_empty() {
                     Some(crate::protection::status_message(&missing, checks.len()))
                 } else if let (Via::Merge(_), Some(pull), true) = (sub.via, sub.pull, params.get("strict_required_status_checks_policy").and_then(Value::as_bool).unwrap_or(false)) {
@@ -668,7 +675,7 @@ async fn eval_rule(sub: &Subject<'_>, rule: &Value, f: &mut Facts<'_>) -> ApiRes
             if deleted || envs.is_empty() {
                 None
             } else {
-                let missing = if sub.via == Via::Commit { envs.clone() } else { missing_deployments(sub.s, sub.ctx.repo.id, &check_sha, &envs).await? };
+                let missing = if matches!(sub.via, Via::Commit | Via::Upstream) { envs.clone() } else { missing_deployments(sub.s, sub.ctx.repo.id, &check_sha, &envs).await? };
                 (!missing.is_empty()).then(|| format!("Changes must be successfully deployed to {} before they can be merged.", missing.join(", ")))
             }
         }

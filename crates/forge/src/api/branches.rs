@@ -322,6 +322,7 @@ pub async fn merge_upstream(s: &AppState, ctx: &RepoCtx, actor: &User, branch: &
     let git = s.git.git.clone();
     let me = user_signature(actor);
     let bb = base_branch.clone();
+    let (st, rctx, ractor) = (s.clone(), ctx.clone(), crate::rules::Actor::new(ctx, actor));
     let (res, updates) = s
         .git
         .write(ctx.repo.id, |path| async move {
@@ -334,6 +335,8 @@ pub async fn merge_upstream(s: &AppState, ctx: &RepoCtx, actor: &User, branch: &
                 return Ok((format!("This branch is not behind the upstream {bb}."), "none".to_string()));
             }
             if read::is_ancestor(&git, &path, &mine, &up_sha).await? {
+                let upd = crate::rules::RefUpdate::new(&upstream_ref, Some(&mine), Some(&up_sha));
+                crate::rules::enforce_api(&st, &rctx, &ractor, &path, &[upd], crate::rules::Via::Upstream, None).await.map_err(reject)?;
                 crate::git::plumbing::update_ref(&git, &path, &upstream_ref, &up_sha, Some(&mine)).await?;
                 return Ok((format!("Successfully fetched and fast-forwarded from upstream {bb}."), "fast-forward".to_string()));
             }
@@ -342,6 +345,8 @@ pub async fn merge_upstream(s: &AppState, ctx: &RepoCtx, actor: &User, branch: &
             };
             let msg = format!("Merge branch '{}' of {bb}", upstream_ref.trim_start_matches("refs/heads/"));
             let sha = objects::write_commit(&git, &path, &tree, &[mine.clone(), up_sha.clone()], &me, &me, &msg, None).await?;
+            let upd = crate::rules::RefUpdate::new(&upstream_ref, Some(&mine), Some(&sha));
+            crate::rules::enforce_api(&st, &rctx, &ractor, &path, &[upd], crate::rules::Via::Upstream, None).await.map_err(reject)?;
             crate::git::plumbing::update_ref(&git, &path, &upstream_ref, &sha, Some(&mine)).await?;
             Ok((format!("Successfully fetched and merged from upstream {bb}."), "merge".to_string()))
         })

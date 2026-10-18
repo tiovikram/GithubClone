@@ -238,6 +238,18 @@ An embedded `russh` server, started by `forge serve` when `FORGE_SSH_LISTEN` is 
   `forge hook pre-receive` (no database access; a per-push rules file), chained after branch
   protection. Contents API writes are checked in-process (409 with placeholder ids).
 
+## Branch protection and rulesets (`protection.rs`, `rules/`)
+- One generated `pre-receive` hook (`$FORGE_CACHE_DIR/.forge-hooks/pre-receive`) enforces branch
+  protection (GH006) and rulesets (GH013) on git pushes. It is the base of the hook chain that
+  enterprise pre-receive hooks and push protection extend.
+  - Protection is checked inside the hook, from a per-push rules file.
+  - For rulesets, the hook writes the ref updates and git's quarantine variables to a per-push
+    directory. The pod serving the push evaluates them in-process (`rules::hook`, with database
+    access) and writes the verdict back.
+- API ref writes call `rules::enforce_api` inside `GitStore::write`, before the ref moves.
+- The evaluator records rule suites and push bypass requests. See docs/security.md (Repository
+  rulesets).
+
 ## Crate layout (`crates/forge/src`)
 ```
 main.rs          CLI entry
@@ -253,6 +265,8 @@ api/<area>.rs    one file per area: users, repos, contents, git_data, issues, co
 graphql/         async-graphql schema (gh subset)
 git/             storage sync, smart HTTP, plumbing helpers
 ssh/             embedded SSH server (git over SSH), SSH/deploy key service layer
+protection.rs    branch protection enforcement (push hook, API writes, PR merges)
+rules/           ruleset enforcement, signature verification, push bypass requests
 web.rs           SPA static assets (rust-embed of web/dist)
 forge_api.rs     /api/forge endpoints (signup, session)
 ```

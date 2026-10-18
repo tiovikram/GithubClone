@@ -295,3 +295,71 @@ async fn required_signatures_verify_ssh_signing_keys() {
     let (st, e) = s.call(Some(&u), "PUT", &format!("{rp}/contents/api.txt"), Some(json!({"message": "api", "content": b64(b"x")}))).await;
     assert_eq!(st, 201, "{e}");
 }
+
+// ---------------------------------------------------------------------------------------------
+// SSH pushes (user key blocked, deploy key bypass actor allowed)
+
+fn keygen(dir: &Path, name: &str) -> (PathBuf, String) {
+    let path = dir.join(name);
+    let st = std::process::Command::new("ssh-keygen").args(["-q", "-t", "ed25519", "-N", "", "-C", name, "-f"]).arg(&path).status().unwrap();
+    assert!(st.success());
+    (path.clone(), std::fs::read_to_string(path.with_extension("pub")).unwrap().trim().to_string())
+}
+
+fn git_ssh(cwd: &Path, key: &Path, args: &[&str]) -> (bool, String) {
+    let ssh = format!(
+        "ssh -F /dev/null -i {} -o IdentitiesOnly=yes -o IdentityAgent=none -o BatchMode=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR",
+        key.display()
+    );
+    let out = std::process::Command::new("git")
+        .current_dir(cwd)
+        .args(args)
+        .env("GIT_CONFIG_NOSYSTEM", "1")
+        .env("GIT_CONFIG_GLOBAL", "/dev/null")
+        .env("GIT_TERMINAL_PROMPT", "0")
+        .env("GIT_SSH_COMMAND", ssh)
+        .env_remove("SSH_AUTH_SOCK")
+        .env("GIT_AUTHOR_NAME", "Test")
+        .env("GIT_AUTHOR_EMAIL", "test@example.com")
+        .env("GIT_COMMITTER_NAME", "Test")
+        .env("GIT_COMMITTER_EMAIL", "test@example.com")
+        .output()
+        .unwrap();
+    (out.status.success(), format!("{}{}", String::from_utf8_lossy(&out.stdout), String::from_utf8_lossy(&out.stderr)))
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn ssh_pushes_and_deploy_key_bypass() {
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let port = listener.local_addr().unwrap().port();
+    let s = TestServer::start_with(|c| {
+        c.ssh_listen = Some(format!("127.0.0.1:{port}"));
+        c.ssh_url_host = Some("127.0.0.1".into());
+    })
+    .await;
+    forge::ssh::serve_listener(s.state.clone(), listener).await.unwrap();
+    let (u, repo, c) = setup(&s).await;
+    let rp = format!("/repos/{}/{}", u.login, repo);
+    let keys = s.work_dir(&unique("k"));
+    let (ukey, upub) = keygen(&keys, "user");
+    let (dkey, dpub) = keygen(&keys, "deploy");
+    let (st, _) = s.call(Some(&u), "POST", "/user/keys", Some(json!({"title": "me", "key": upub}))).await;
+    assert_eq!(st, 201);
+    let (st, _) = s.call(Some(&u), "POST", &format!("{rp}/keys"), Some(json!({"title": "deployer", "key": dpub, "read_only": false}))).await;
+    assert_eq!(st, 201);
+    ruleset(&s, &u, &rp, json!({
+        "name": "no-updates", "target": "branch", "enforcement": "active",
+        "conditions": {"ref_name": {"include": ["~DEFAULT_BRANCH"], "exclude": []}},
+        "bypass_actors": [{"actor_id": null, "actor_type": "DeployKey", "bypass_mode": "always"}],
+        "rules": [{"type": "update"}]})).await;
+    let url = format!("ssh://git@127.0.0.1:{port}/{}/{repo}.git", u.login);
+    commit(&s, &c, "a.txt", b"a\n", "over ssh");
+    let (ok, out) = git_ssh(&c, &ukey, &["push", &url, "HEAD:main"]);
+    assert!(!ok, "{out}");
+    assert!(out.contains("GH013") && out.contains("Cannot update this protected ref."), "{out}");
+    let (ok, out) = git_ssh(&c, &dkey, &["push", &url, "HEAD:main"]);
+    assert!(ok, "{out}");
+    let all = suites(&s, &u, &rp).await;
+    assert_eq!(all[0]["result"], "bypass", "{all:?}");
+    assert_eq!(all[1]["result"], "fail", "{all:?}");
+}
