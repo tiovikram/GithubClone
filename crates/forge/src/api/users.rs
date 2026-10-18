@@ -174,12 +174,13 @@ pub async fn org_json(s: &AppState, o: &User) -> ApiResult<Value> {
     Ok(v)
 }
 
-async fn get_org(State(s): State<AppState>, Path(org): Path<String>) -> ApiResult<Json<Value>> {
+async fn get_org(State(s): State<AppState>, MaybeUser(viewer): MaybeUser, Path(org): Path<String>) -> ApiResult<Json<Value>> {
     let o = db::user_by_login(&s.db, &org).await?;
     if o.kind != "Organization" {
         return Err(ApiError::not_found());
     }
-    org_json(&s, &o).await.map(Json)
+    // organization-full; owners also see the private settings (crate::orgs)
+    crate::orgs::org_full_json(&s, &o, viewer.as_ref()).await.map(Json)
 }
 
 async fn org_members(State(s): State<AppState>, uri: OriginalUri, Path(org): Path<String>, Query(p): Query<PageParams>) -> ApiResult<Paged> {

@@ -60,8 +60,9 @@ pub async fn create_reaction(state: &AppState, subject_type: &str, subject_id: i
     Ok((existing, false))
 }
 
-/// Deletes a reaction of the subject. Users may delete their own; admins any.
-pub async fn delete_reaction(state: &AppState, ctx: &RepoCtx, actor: &User, subject_type: &str, subject_id: i64, reaction_id: i64) -> ApiResult<()> {
+/// Deletes a reaction of the subject. Only the reaction's author may (GitHub: a reaction is
+/// the user's own; repository admins cannot remove other users' reactions).
+pub async fn delete_reaction(state: &AppState, _ctx: &RepoCtx, actor: &User, subject_type: &str, subject_id: i64, reaction_id: i64) -> ApiResult<()> {
     let r: ReactionRow = sqlx::query_as("SELECT * FROM reactions WHERE id = $1 AND subject_type = $2 AND subject_id = $3")
         .bind(reaction_id)
         .bind(subject_type)
@@ -69,7 +70,7 @@ pub async fn delete_reaction(state: &AppState, ctx: &RepoCtx, actor: &User, subj
         .fetch_optional(&state.db)
         .await?
         .ok_or_else(ApiError::not_found)?;
-    if r.user_id != actor.id && ctx.perm < Perm::Admin {
+    if r.user_id != actor.id {
         return Err(ApiError::forbidden("You can only delete your own reactions."));
     }
     sqlx::query("DELETE FROM reactions WHERE id = $1").bind(r.id).execute(&state.db).await?;
@@ -144,6 +145,25 @@ async fn comment_id(s: &AppState, u: Option<&User>, owner: &str, repo: &str, id:
     Ok((ctx, c.id))
 }
 
+/// Locked conversations only accept reactions from users with Write (GitHub). `subject_type`
+/// is a reactions subject (`issue`, `issue_comment`, `review_comment`).
+pub async fn check_unlocked(s: &AppState, ctx: &RepoCtx, subject_type: &str, subject_id: i64) -> ApiResult<()> {
+    if ctx.perm >= Perm::Write {
+        return Ok(());
+    }
+    let sql = match subject_type {
+        "issue" => "SELECT locked FROM issues WHERE id = $1",
+        "issue_comment" => "SELECT i.locked FROM issue_comments c JOIN issues i ON i.id = c.issue_id WHERE c.id = $1",
+        "review_comment" => "SELECT i.locked FROM review_comments c JOIN issues i ON i.id = c.issue_id WHERE c.id = $1",
+        _ => return Ok(()),
+    };
+    let locked: Option<bool> = sqlx::query_scalar(sql).bind(subject_id).fetch_optional(&s.db).await?;
+    if locked == Some(true) {
+        return Err(ApiError::forbidden("Unable to react because the issue is locked."));
+    }
+    Ok(())
+}
+
 async fn list_issue(
     State(s): State<AppState>,
     uri: OriginalUri,
@@ -196,7 +216,8 @@ async fn create_comment(
     Path((owner, repo, cid)): Path<(String, String, i64)>,
     Json(b): Json<CreateBody>,
 ) -> ApiResult<Response> {
-    let (_, id) = comment_id(&s, Some(&u), &owner, &repo, cid).await?;
+    let (ctx, id) = comment_id(&s, Some(&u), &owner, &repo, cid).await?;
+    check_unlocked(&s, &ctx, "issue_comment", id).await?;
     let (row, new) = create_reaction(&s, "issue_comment", id, &u, b.content.as_deref().unwrap_or("")).await?;
     created_response(&s, row, new, &u).await
 }

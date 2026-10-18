@@ -17,6 +17,7 @@ pub mod ids;
 pub mod jobs;
 pub mod json;
 pub mod oauth_device;
+pub mod orgs;
 pub mod ssh;
 pub mod pulls;
 pub mod security;

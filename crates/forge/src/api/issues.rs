@@ -646,6 +646,7 @@ pub struct UpdateIssue {
 /// labels/assignees/milestone for triagers only (silently ignored otherwise, like GitHub).
 pub async fn update_issue(state: &AppState, ctx: &RepoCtx, actor: &User, number: i64, input: UpdateIssue) -> ApiResult<IssueRow> {
     let triage = ctx.perm >= Perm::Triage;
+    let input = pull_request_rules(state, ctx, actor, number, input).await?;
     let mut tx = state.db.begin().await?;
     let cur: IssueRow = sqlx::query_as("SELECT * FROM issues WHERE repo_id = $1 AND number = $2 FOR UPDATE")
         .bind(ctx.repo.id)
@@ -915,6 +916,46 @@ async fn get_handler(
     let ctx = load_ctx(&s, u.as_ref(), &owner, &repo).await?;
     let row = get_issue(&s, &ctx, number).await?;
     Ok(Json(issue_json(&s, &ctx, row).await?))
+}
+
+/// The issues endpoint also edits pull requests (GitHub allows it), but with the pull request
+/// rules: title/body need the author or Write, and a state change goes through
+/// `pulls::close_pull` / `pulls::reopen_pull` (a merged PR can't be reopened, nor one whose head
+/// branch is gone; PR events/webhooks fire). Returns the input left for the issue update.
+async fn pull_request_rules(state: &AppState, ctx: &RepoCtx, actor: &User, number: i64, mut input: UpdateIssue) -> ApiResult<UpdateIssue> {
+    let cur: Option<IssueRow> = sqlx::query_as("SELECT * FROM issues WHERE repo_id = $1 AND number = $2 AND is_pull")
+        .bind(ctx.repo.id)
+        .bind(number)
+        .fetch_optional(&state.db)
+        .await?;
+    let Some(cur) = cur else { return Ok(input) };
+    if ctx.perm < Perm::Triage && cur.user_id != Some(actor.id) {
+        return Err(ApiError::forbidden("Must have triage access or be the author to update this issue."));
+    }
+    let content_change = input.title.as_ref().is_some_and(|t| *t != cur.title) || input.body.as_ref().is_some_and(|b| *b != cur.body);
+    if content_change && cur.user_id != Some(actor.id) {
+        ctx.require(Perm::Write)?;
+    }
+    if let Some(s) = &input.state {
+        if s != "open" && s != "closed" {
+            return Err(invalid("Issue", "state", s.as_str()));
+        }
+    }
+    let reopen_by_reason = matches!(input.state_reason, Some(Some(ref r)) if r == "reopened");
+    let target = input.state.clone().or_else(|| reopen_by_reason.then(|| "open".to_string()));
+    match (cur.state.as_str(), target.as_deref()) {
+        ("open", Some("closed")) => {
+            crate::pulls::close_pull(state, ctx, actor, number).await?;
+        }
+        ("closed", Some("open")) => {
+            crate::pulls::reopen_pull(state, ctx, actor, number).await?;
+        }
+        _ => {}
+    }
+    // Pull requests have no state_reason; the state change (if any) is done.
+    input.state = None;
+    input.state_reason = None;
+    Ok(input)
 }
 
 #[derive(Deserialize)]

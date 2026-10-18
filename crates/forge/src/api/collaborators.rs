@@ -80,9 +80,17 @@ async fn all_collaborators(s: &AppState, ctx: &RepoCtx) -> ApiResult<Vec<(User, 
             .await?;
         let ids: Vec<i64> = members.iter().map(|m| m.0).collect();
         let users = json::issue::users_by_ids(&s.db, &ids).await?;
-        for (id, role) in members {
+        // effective permission: owner, base permission, teams, org roles (crate::orgs::perm)
+        let perms = crate::orgs::perm::org_repo_permissions(&s.db, ctx.owner.id, ctx.repo.id, &ids).await?;
+        for (id, _role) in members {
+            let mut p = perms.get(&id).copied().unwrap_or(Perm::None);
+            if !ctx.repo.private {
+                p = p.max(Perm::Read);
+            }
+            if p == Perm::None {
+                continue;
+            }
             if let Some(u) = users.get(&id) {
-                let p = if role == "admin" { Perm::Admin } else { Perm::Write };
                 out.push((u.clone(), p, Source::OrgMember));
             }
         }
@@ -94,7 +102,12 @@ async fn all_collaborators(s: &AppState, ctx: &RepoCtx) -> ApiResult<Vec<(User, 
     let ids: Vec<i64> = collabs.iter().map(|c| c.0).collect();
     let users = json::issue::users_by_ids(&s.db, &ids).await?;
     for (id, perm) in collabs {
-        let p = Perm::from_str(&perm);
+        let p = match Perm::from_str(&perm) {
+            Perm::None if ctx.owner.kind == "Organization" => {
+                crate::orgs::perm::resolve_grant(&perm, &crate::orgs::perm::custom_roles(&s.db, ctx.owner.id).await?)
+            }
+            p => p,
+        };
         if let Some(existing) = out.iter_mut().find(|e| e.0.id == id) {
             existing.1 = existing.1.max(p);
             continue;

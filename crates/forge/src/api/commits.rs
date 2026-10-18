@@ -162,11 +162,11 @@ async fn get_commit(
         Some("sha") => return Ok(gitapi::typed("application/vnd.github.sha", sha.into_bytes())),
         Some("diff") => {
             let c = read::read_commit(git, &path, &sha).await.api()?.ok_or_else(ApiError::not_found)?;
-            let d = read::diff_text(git, &path, c.parents.first().map(String::as_str), &sha).await.api()?;
+            let d = read::diff_text(git, &path, c.parents.first().map(String::as_str), &sha).await.map_err(|e| crate::security::diff_api_error(e, "Commit"))?;
             return Ok(gitapi::typed("application/vnd.github.diff; charset=utf-8", d));
         }
         Some("patch") => {
-            let p = read::format_patch(git, &path, &["-1", &sha]).await.api()?;
+            let p = read::format_patch(git, &path, &["-1", &sha]).await.map_err(|e| crate::security::diff_api_error(e, "Commit"))?;
             return Ok(gitapi::typed("application/vnd.github.patch; charset=utf-8", p));
         }
         _ => {}
@@ -312,10 +312,10 @@ async fn compare(
         let h = read::resolve_commit(git, &path, head).await.api()?.ok_or_else(ApiError::not_found)?;
         let mb = read::merge_base(git, &path, &b, &h).await.api()?.ok_or_else(ApiError::not_found)?;
         return Ok(if media == Some("diff") {
-            gitapi::typed("application/vnd.github.diff; charset=utf-8", read::diff_text(git, &path, Some(&mb), &h).await.api()?)
+            gitapi::typed("application/vnd.github.diff; charset=utf-8", read::diff_text(git, &path, Some(&mb), &h).await.map_err(|e| crate::security::diff_api_error(e, "Comparison"))?)
         } else {
             let range = format!("{b}..{h}");
-            gitapi::typed("application/vnd.github.patch; charset=utf-8", read::format_patch(git, &path, &[&range]).await.api()?)
+            gitapi::typed("application/vnd.github.patch; charset=utf-8", read::format_patch(git, &path, &[&range]).await.map_err(|e| crate::security::diff_api_error(e, "Comparison"))?)
         });
     }
     let page = (q.page.is_some() || q.per_page.is_some()).then_some(PageParams { page: q.page, per_page: q.per_page });
