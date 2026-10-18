@@ -1,13 +1,13 @@
 # gh compatibility report
 
-gh: `gh version 2.102.0 (2026-09-30)`, host `forge.localhost` (GHES path, http_unix_socket). Generated 2026-10-13T04:42:14Z.
+gh: `gh version 2.102.0 (2026-09-30)`, host `forge.localhost` (GHES path, http_unix_socket). Generated 2026-10-18T04:03:50Z.
 Denominator: see docs/gh-coverage.md (catalogue: tests/gh/commands.tsv).
 
 **PASS 166/166 forge-relevant gh commands (100%)**
 
 **166/197 of all gh commands (84%)**
 
-**Cases: PASS 349/349 (100%)**
+**Cases: PASS 363/363 (100%)**
 
 ## Commands
 
@@ -178,19 +178,19 @@ Denominator: see docs/gh-coverage.md (catalogue: tests/gh/commands.tsv).
 | `gh ruleset view` | a | PASS | 1/1 |  |
 | `gh run cancel` | a | PASS | 1/1 | Actions runs |
 | `gh run delete` | a | PASS | 1/1 | Actions runs |
-| `gh run download` | a | PASS | 1/1 | Actions runs |
-| `gh run list` | a | PASS | 2/2 | Actions runs |
-| `gh run rerun` | a | PASS | 1/1 | Actions runs |
-| `gh run view` | a | PASS | 2/2 | Actions runs |
-| `gh run watch` | a | PASS | 1/1 | Actions runs |
+| `gh run download` | a | PASS | 3/3 | Actions runs |
+| `gh run list` | a | PASS | 3/3 | Actions runs |
+| `gh run rerun` | a | PASS | 2/2 | Actions runs |
+| `gh run view` | a | PASS | 7/7 | Actions runs |
+| `gh run watch` | a | PASS | 3/3 | Actions runs |
 | `gh search code` | a | PASS | 2/2 |  |
 | `gh search commits` | a | PASS | 2/2 |  |
 | `gh search issues` | a | PASS | 2/2 |  |
 | `gh search prs` | a | PASS | 2/2 |  |
 | `gh search repos` | a | PASS | 2/2 |  |
-| `gh secret delete` | a | PASS | 2/2 | Actions secrets |
+| `gh secret delete` | a | PASS | 3/3 | Actions secrets |
 | `gh secret list` | a | PASS | 2/2 | Actions secrets |
-| `gh secret set` | a | PASS | 1/1 | Actions secrets |
+| `gh secret set` | a | PASS | 2/2 | Actions secrets |
 | `gh skill install` | b | n/a | 0/0 | gh refuses non-github.com hosts (source.ValidateSupportedHost: "GitHub Skills does not currently support GitHub Enterprise Server") |
 | `gh skill list` | a | PASS | 1/1 | local-only (lists installed skills) |
 | `gh skill preview` | b | n/a | 0/0 | gh refuses non-github.com hosts (source.ValidateSupportedHost: "GitHub Skills does not currently support GitHub Enterprise Server") |
@@ -208,7 +208,7 @@ Denominator: see docs/gh-coverage.md (catalogue: tests/gh/commands.tsv).
 | `gh workflow disable` | a | PASS | 2/2 | Actions workflows |
 | `gh workflow enable` | a | PASS | 2/2 | Actions workflows |
 | `gh workflow list` | a | PASS | 2/2 | Actions workflows |
-| `gh workflow run` | a | PASS | 1/1 | Actions workflows |
+| `gh workflow run` | a | PASS | 2/2 | Actions workflows |
 | `gh workflow view` | a | PASS | 1/1 | Actions workflows |
 
 ## Cases
@@ -499,68 +499,82 @@ Denominator: see docs/gh-coverage.md (catalogue: tests/gh/commands.tsv).
 | 282 | variable set (update) | variable set | PASS | 0 |  |
 | 283 | variable set result | variable set | PASS | 0 |  |
 | 284 | variable delete | variable delete | PASS | 0 |  |
-| 285 | alias set | alias set | PASS | 0 |  |
-| 286 | alias set (use) | alias set | PASS | 0 |  |
-| 287 | alias list | alias list | PASS | 0 |  |
-| 288 | alias import | alias import | PASS | 0 |  |
-| 289 | alias import (use) | alias import | PASS | 0 |  |
-| 290 | alias delete | alias delete | PASS | 0 |  |
-| 291 | config set | config set | PASS | 0 |  |
-| 292 | config get | config get | PASS | 0 |  |
-| 293 | config list | config list | PASS | 0 |  |
-| 294 | config clear-cache | config clear-cache | PASS | 0 |  |
-| 295 | completion | completion | PASS | 0 |  |
-| 296 | licenses | licenses | PASS | 0 |  |
-| 297 | extension install | extension install | PASS | 0 |  |
-| 298 | extension list | extension list | PASS | 0 |  |
-| 299 | extension exec | extension exec | PASS | 0 |  |
-| 300 | extension upgrade | extension upgrade | PASS | 0 |  |
-| 301 | extension upgrade result | extension upgrade | PASS | 0 |  |
-| 302 | extension search | extension search | PASS | 0 |  |
-| 303 | extension remove | extension remove | PASS | 0 |  |
-| 304 | extension create | extension create | PASS | 0 |  |
-| 305 | extension create result | extension create | PASS | 0 |  |
-| 306 | skill list | skill list | PASS | 0 |  |
-| 307 | repo edit --enable-discussions | repo edit | PASS | 0 |  |
-| 308 | discussion create | discussion create | PASS | 0 |  |
-| 309 | discussion create (Q&A) | discussion create | PASS | 0 |  |
-| 310 | discussion list | discussion list | PASS | 0 |  |
-| 311 | discussion list --json | discussion list | PASS | 0 |  |
-| 312 | discussion list --category | discussion list | PASS | 0 |  |
-| 313 | discussion view | discussion view | PASS | 0 |  |
-| 314 | discussion comment | discussion comment | PASS | 0 |  |
-| 315 | discussion view --comments | discussion view | PASS | 0 |  |
-| 316 | discussion edit | discussion edit | PASS | 0 |  |
-| 317 | discussion edit result | discussion edit | PASS | 0 |  |
-| 318 | project create | project create | PASS | 0 |  |
-| 319 | project list | project list | PASS | 0 |  |
-| 320 | project list --format json | project list | PASS | 0 |  |
-| 321 | project view | project view | PASS | 0 |  |
-| 322 | project edit | project edit | PASS | 0 |  |
-| 323 | project field-create | project field-create | PASS | 0 |  |
-| 324 | project field-create (text) | project field-create | PASS | 0 |  |
-| 325 | project field-list | project field-list | PASS | 0 |  |
-| 326 | project item-create | project item-create | PASS | 0 |  |
-| 327 | project item-add | project item-add | PASS | 0 |  |
-| 328 | project item-list | project item-list | PASS | 0 |  |
-| 329 | project item-edit (draft) | project item-edit | PASS | 0 |  |
-| 330 | project item-edit (field by name) | project item-edit | PASS | 0 |  |
-| 331 | project item-edit result | project item-edit | PASS | 0 |  |
-| 332 | project item-list --query | project item-list | PASS | 0 |  |
-| 333 | project item-archive | project item-archive | PASS | 0 |  |
-| 334 | project item-archive result | project item-archive | PASS | 0 |  |
-| 335 | project item-delete | project item-delete | PASS | 0 |  |
-| 336 | project item-delete result | project item-delete | PASS | 0 |  |
-| 337 | project field-delete | project field-delete | PASS | 0 |  |
-| 338 | project field-delete result | project field-delete | PASS | 1 |  |
-| 339 | project link | project link | PASS | 0 |  |
-| 340 | project link result | project link | PASS | 0 |  |
-| 341 | project unlink | project unlink | PASS | 0 |  |
-| 342 | project unlink result | project unlink | PASS | 0 |  |
-| 343 | project copy | project copy | PASS | 0 |  |
-| 344 | project mark-template | project mark-template | PASS | 0 |  |
-| 345 | project mark-template result | project mark-template | PASS | 0 |  |
-| 346 | project close | project close | PASS | 0 |  |
-| 347 | project close --undo | project close | PASS | 0 |  |
-| 348 | project delete | project delete | PASS | 0 |  |
-| 349 | project delete result | project delete | PASS | 1 |  |
+| 285 | secret set (for a job) | secret set | PASS | 0 |  |
+| 286 | workflow run (runner) | workflow run | PASS | 0 |  |
+| 287 | run watch --exit-status (failure) | run watch | PASS | 1 |  |
+| 288 | run view (completed jobs) | run view | PASS | 0 |  |
+| 289 | run view --log | run view | PASS | 0 |  |
+| 290 | run view --log (secret masked) | run view | PASS | 0 |  |
+| 291 | run view --log-failed | run view | PASS | 0 |  |
+| 292 | run download (artifact) | run download | PASS | 0 |  |
+| 293 | run download result | run download | PASS | 0 |  |
+| 294 | run rerun --failed | run rerun | PASS | 0 |  |
+| 295 | run watch --exit-status (rerun succeeds) | run watch | PASS | 0 |  |
+| 296 | run list --json (completed) | run list | PASS | 0 |  |
+| 297 | run view --json jobs (attempt 2) | run view | PASS | 0 |  |
+| 298 | secret delete (job secret) | secret delete | PASS | 0 |  |
+| 299 | alias set | alias set | PASS | 0 |  |
+| 300 | alias set (use) | alias set | PASS | 0 |  |
+| 301 | alias list | alias list | PASS | 0 |  |
+| 302 | alias import | alias import | PASS | 0 |  |
+| 303 | alias import (use) | alias import | PASS | 0 |  |
+| 304 | alias delete | alias delete | PASS | 0 |  |
+| 305 | config set | config set | PASS | 0 |  |
+| 306 | config get | config get | PASS | 0 |  |
+| 307 | config list | config list | PASS | 0 |  |
+| 308 | config clear-cache | config clear-cache | PASS | 0 |  |
+| 309 | completion | completion | PASS | 0 |  |
+| 310 | licenses | licenses | PASS | 0 |  |
+| 311 | extension install | extension install | PASS | 0 |  |
+| 312 | extension list | extension list | PASS | 0 |  |
+| 313 | extension exec | extension exec | PASS | 0 |  |
+| 314 | extension upgrade | extension upgrade | PASS | 0 |  |
+| 315 | extension upgrade result | extension upgrade | PASS | 0 |  |
+| 316 | extension search | extension search | PASS | 0 |  |
+| 317 | extension remove | extension remove | PASS | 0 |  |
+| 318 | extension create | extension create | PASS | 0 |  |
+| 319 | extension create result | extension create | PASS | 0 |  |
+| 320 | skill list | skill list | PASS | 0 |  |
+| 321 | repo edit --enable-discussions | repo edit | PASS | 0 |  |
+| 322 | discussion create | discussion create | PASS | 0 |  |
+| 323 | discussion create (Q&A) | discussion create | PASS | 0 |  |
+| 324 | discussion list | discussion list | PASS | 0 |  |
+| 325 | discussion list --json | discussion list | PASS | 0 |  |
+| 326 | discussion list --category | discussion list | PASS | 0 |  |
+| 327 | discussion view | discussion view | PASS | 0 |  |
+| 328 | discussion comment | discussion comment | PASS | 0 |  |
+| 329 | discussion view --comments | discussion view | PASS | 0 |  |
+| 330 | discussion edit | discussion edit | PASS | 0 |  |
+| 331 | discussion edit result | discussion edit | PASS | 0 |  |
+| 332 | project create | project create | PASS | 0 |  |
+| 333 | project list | project list | PASS | 0 |  |
+| 334 | project list --format json | project list | PASS | 0 |  |
+| 335 | project view | project view | PASS | 0 |  |
+| 336 | project edit | project edit | PASS | 0 |  |
+| 337 | project field-create | project field-create | PASS | 0 |  |
+| 338 | project field-create (text) | project field-create | PASS | 0 |  |
+| 339 | project field-list | project field-list | PASS | 0 |  |
+| 340 | project item-create | project item-create | PASS | 0 |  |
+| 341 | project item-add | project item-add | PASS | 0 |  |
+| 342 | project item-list | project item-list | PASS | 0 |  |
+| 343 | project item-edit (draft) | project item-edit | PASS | 0 |  |
+| 344 | project item-edit (field by name) | project item-edit | PASS | 0 |  |
+| 345 | project item-edit result | project item-edit | PASS | 0 |  |
+| 346 | project item-list --query | project item-list | PASS | 0 |  |
+| 347 | project item-archive | project item-archive | PASS | 0 |  |
+| 348 | project item-archive result | project item-archive | PASS | 0 |  |
+| 349 | project item-delete | project item-delete | PASS | 0 |  |
+| 350 | project item-delete result | project item-delete | PASS | 0 |  |
+| 351 | project field-delete | project field-delete | PASS | 0 |  |
+| 352 | project field-delete result | project field-delete | PASS | 1 |  |
+| 353 | project link | project link | PASS | 0 |  |
+| 354 | project link result | project link | PASS | 0 |  |
+| 355 | project unlink | project unlink | PASS | 0 |  |
+| 356 | project unlink result | project unlink | PASS | 0 |  |
+| 357 | project copy | project copy | PASS | 0 |  |
+| 358 | project mark-template | project mark-template | PASS | 0 |  |
+| 359 | project mark-template result | project mark-template | PASS | 0 |  |
+| 360 | project close | project close | PASS | 0 |  |
+| 361 | project close --undo | project close | PASS | 0 |  |
+| 362 | project delete | project delete | PASS | 0 |  |
+| 363 | project delete result | project delete | PASS | 1 |  |
