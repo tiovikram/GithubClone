@@ -10,15 +10,21 @@ fn node_kind(u: &User) -> &str {
 
 /// `simple-user` schema.
 pub fn simple(api: &str, base: &str, u: &User) -> Value {
-    let url = format!("{api}/users/{}", u.login);
+    // App bot logins (`slug[bot]`) are percent-encoded in URLs, like GitHub.
+    let seg = u.login.replace('[', "%5B").replace(']', "%5D");
+    let url = format!("{api}/users/{seg}");
+    let html = match u.login.strip_suffix("[bot]") {
+        Some(slug) if u.kind == "Bot" => format!("{base}/apps/{slug}"),
+        _ => format!("{base}/{seg}"),
+    };
     json!({
         "login": u.login,
         "id": u.id,
         "node_id": ids::encode(node_kind(u), u.id),
-        "avatar_url": format!("{base}/avatars/{}", u.login),
+        "avatar_url": format!("{base}/avatars/{seg}"),
         "gravatar_id": "",
         "url": url,
-        "html_url": format!("{base}/{}", u.login),
+        "html_url": html,
         "followers_url": format!("{url}/followers"),
         "following_url": format!("{url}/following{{/other_user}}"),
         "gists_url": format!("{url}/gists{{/gist_id}}"),

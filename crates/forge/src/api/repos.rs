@@ -248,6 +248,7 @@ pub async fn create_organization(s: &AppState, login: &str, profile_name: Option
         .execute(&mut *tx)
         .await?;
     tx.commit().await?;
+    crate::enterprise::org_created(s, &org, Some(admin)).await;
     Ok(org)
 }
 

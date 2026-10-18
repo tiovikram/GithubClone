@@ -244,7 +244,7 @@ async fn ensure_suite_by(s: &AppState, ctx: &RepoCtx, creator: Option<i64>, sha:
          ON CONFLICT (repo_id, head_sha, app_id) DO NOTHING RETURNING *",
     )
     .bind(ctx.repo.id)
-    .bind(FORGE_APP_ID)
+    .bind(acting_app())
     .bind(sha)
     .bind(&branch)
     .bind(creator)
@@ -256,7 +256,7 @@ async fn ensure_suite_by(s: &AppState, ctx: &RepoCtx, creator: Option<i64>, sha:
     let row: SuiteRow = sqlx::query_as("SELECT * FROM check_suites WHERE repo_id = $1 AND head_sha = $2 AND app_id = $3")
         .bind(ctx.repo.id)
         .bind(sha)
-        .bind(FORGE_APP_ID)
+        .bind(acting_app())
         .fetch_one(&s.db)
         .await?;
     Ok((row, false))
@@ -473,6 +473,27 @@ pub fn suite_state(suite: &SuiteRow, runs: &[&CheckRunRow]) -> (String, Option<S
 // ---------------------------------------------------------------------------------------------
 // JSON
 
+/// The app a check suite/run is created for: the GitHub App behind an installation token, else
+/// the built-in forge app.
+fn acting_app() -> i64 {
+    crate::apps::scope::current_app_id().unwrap_or(FORGE_APP_ID)
+}
+
+/// `integration` JSON per app id of `suite_ids` (real GitHub Apps; the built-in app otherwise).
+async fn apps_for_suites(s: &AppState, suite_ids: &[i64]) -> ApiResult<HashMap<i64, Value>> {
+    let rows: Vec<(i64, i64)> = sqlx::query_as("SELECT id, app_id FROM check_suites WHERE id = ANY($1)").bind(suite_ids).fetch_all(&s.db).await?;
+    let mut by_app: HashMap<i64, Value> = HashMap::new();
+    let mut out = HashMap::new();
+    for (suite, app) in rows {
+        if !by_app.contains_key(&app) {
+            let v = if app == FORGE_APP_ID { None } else { crate::apps::integration_json_by_id(s, app).await };
+            by_app.insert(app, v.unwrap_or_else(|| app_json(s)));
+        }
+        out.insert(suite, by_app[&app].clone());
+    }
+    Ok(out)
+}
+
 /// The synthetic "forge" app (`integration` schema).
 pub fn app_json(s: &AppState) -> Value {
     let api = s.api_url();
@@ -556,7 +577,9 @@ pub async fn render_runs(s: &AppState, ctx: &RepoCtx, rows: &[CheckRunRow]) -> A
     let api = s.api_url();
     let base = s.base_url();
     let full = ctx.full_name();
-    let app = app_json(s);
+    let suite_ids: Vec<i64> = rows.iter().map(|r| r.suite_id).collect();
+    let apps = apps_for_suites(s, &suite_ids).await?;
+    let fallback = app_json(s);
     Ok(rows
         .iter()
         .map(|r| {
@@ -583,7 +606,7 @@ pub async fn render_runs(s: &AppState, ctx: &RepoCtx, rows: &[CheckRunRow]) -> A
                 },
                 "name": r.name,
                 "check_suite": { "id": r.suite_id },
-                "app": app,
+                "app": apps.get(&r.suite_id).unwrap_or(&fallback),
                 "pull_requests": pulls.get(&r.head_sha).cloned().unwrap_or_default(),
             })
         })
@@ -606,7 +629,8 @@ pub async fn render_suites(s: &AppState, ctx: &RepoCtx, suites: &[SuiteRow]) -> 
     let api = s.api_url();
     let full = ctx.full_name();
     let repo = crate::json::repo::repo(&api, s.base_url(), ctx);
-    let app = app_json(s);
+    let apps = apps_for_suites(s, &ids).await?;
+    let fallback = app_json(s);
     let mut out = Vec::with_capacity(suites.len());
     for x in suites {
         let mine: Vec<&CheckRunRow> = runs.iter().filter(|r| r.suite_id == x.id).collect();
@@ -624,7 +648,7 @@ pub async fn render_suites(s: &AppState, ctx: &RepoCtx, suites: &[SuiteRow]) -> 
             "before": null,
             "after": x.head_sha,
             "pull_requests": pulls.get(&x.head_sha).cloned().unwrap_or_default(),
-            "app": app,
+            "app": apps.get(&x.id).unwrap_or(&fallback),
             "repository": repo,
             "created_at": crate::json::ts(x.created_at),
             "updated_at": crate::json::ts(x.updated_at),
@@ -670,14 +694,12 @@ async fn list_runs(s: &AppState, ctx: &RepoCtx, uri: &OriginalUri, sha: Option<&
         }
     }
     let latest = !matches!(q.filter.as_deref(), Some("all"));
-    if q.app_id.is_some_and(|a| a != FORGE_APP_ID) {
-        return Ok(envelope(s, uri, p, "check_runs", vec![], 0));
-    }
     let cte = "WITH r AS (
         SELECT DISTINCT ON (CASE WHEN $4 THEN name ELSE id::text END) * FROM check_runs
          WHERE repo_id = $1 AND ($2::text IS NULL OR head_sha = $2) AND ($3::bigint IS NULL OR suite_id = $3)
          ORDER BY CASE WHEN $4 THEN name ELSE id::text END, id DESC)
-        SELECT %s FROM r WHERE ($5::text IS NULL OR name = $5) AND ($6::text IS NULL OR status = $6)";
+        SELECT %s FROM r WHERE ($5::text IS NULL OR name = $5) AND ($6::text IS NULL OR status = $6)
+           AND ($7::bigint IS NULL OR suite_id IN (SELECT id FROM check_suites WHERE app_id = $7))";
     let name = q.check_name.filter(|x| !x.is_empty());
     let status = q.status.filter(|x| !x.is_empty());
     let total: i64 = sqlx::query_scalar(sqlx::AssertSqlSafe(cte.replace("%s", "count(*)")))
@@ -687,15 +709,17 @@ async fn list_runs(s: &AppState, ctx: &RepoCtx, uri: &OriginalUri, sha: Option<&
         .bind(latest)
         .bind(&name)
         .bind(&status)
+        .bind(q.app_id)
         .fetch_one(&s.db)
         .await?;
-    let rows: Vec<CheckRunRow> = sqlx::query_as(sqlx::AssertSqlSafe(format!("{} ORDER BY id DESC LIMIT $7 OFFSET $8", cte.replace("%s", "*"))))
+    let rows: Vec<CheckRunRow> = sqlx::query_as(sqlx::AssertSqlSafe(format!("{} ORDER BY id DESC LIMIT $8 OFFSET $9", cte.replace("%s", "*"))))
         .bind(ctx.repo.id)
         .bind(sha)
         .bind(suite)
         .bind(latest)
         .bind(&name)
         .bind(&status)
+        .bind(q.app_id)
         .bind(p.limit())
         .bind(p.offset())
         .fetch_all(&s.db)
@@ -865,7 +889,7 @@ pub async fn set_suite_preferences(s: &AppState, ctx: &RepoCtx, input: SuitePref
     for a in input.auto_trigger_checks.unwrap_or_default() {
         let app = a.app_id.ok_or_else(|| ApiError::validation("CheckSuitePreference", "app_id", "missing_field"))?;
         let setting = a.setting.ok_or_else(|| ApiError::validation("CheckSuitePreference", "setting", "missing_field"))?;
-        if app != FORGE_APP_ID {
+        if app != FORGE_APP_ID && crate::apps::app_by_id(&s.db, app).await.is_err() {
             return Err(ApiError::unprocessable(format!("Invalid app_id: {app}")));
         }
         sqlx::query(

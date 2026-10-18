@@ -32,6 +32,8 @@ Configuration is environment only:
 | `FORGE_SSH_LISTEN` | start the git-over-SSH server on this address (e.g. `0.0.0.0:2222`) | unset (no SSH) |
 | `FORGE_SSH_HOST_KEY` | OpenSSH private host key file | unset = shared ed25519 key in Postgres |
 | `FORGE_SSH_URL_HOST`, `FORGE_SSH_URL_PORT` | host (`host` or `host:port`) / port used in `ssh_url` | base URL host, `FORGE_SSH_LISTEN` port |
+| `FORGE_ENTERPRISE_SLUG` | slug of the single enterprise (`/enterprises/{slug}`, SCIM); site admins are its owners | `forge` |
+| `FORGE_HOOK_EXEC_BIN` | binary that runs enterprise pre-receive hooks (`forge pre-receive-hooks`) | the running `forge` executable |
 | `FORGE_SECRET_KEY` | master key (any string; X25519 secret = sha256 of it) sealing the Actions secret private keys; same value on every pod | unset = random master key stored in `signing_secrets` |
 | `FORGE_HOOK_BIN` | forge executable that the `pre-receive` hook runs for secret scanning push protection | the running binary when it is named `forge` |
 
@@ -40,6 +42,8 @@ Configuration is environment only:
 - `/api/graphql` — GraphQL (subset of GitHub schema needed by gh; see docs/research/gh-protocol.md).
 - `/{owner}/{repo}(.git)?/info/refs`, `/git-upload-pack`, `/git-receive-pack` — git smart HTTP.
 - `/api/forge/...` — forge-only endpoints (signup, login/session, admin). Not GitHub API.
+- `/v2/...` — OCI container registry (GHCR equivalent; images `{host}/{owner}/{name}`), token
+  endpoint `/v2/token`. `/npm/...` — npm registry for `@owner/name`. See "Packages" below.
 - `/login`, `/logout` handled by the SPA + `/api/forge/session`.
 - everything else — the web UI (SPA, embedded static assets, `index.html` fallback).
 
@@ -53,6 +57,48 @@ Configuration is environment only:
 - Every authenticated API response includes `X-OAuth-Scopes: repo, read:org, gist, workflow, admin:org, user, delete_repo`
   and `X-Accepted-OAuth-Scopes`. All responses include `X-GitHub-Request-Id`, and
   `X-GitHub-Enterprise-Version` (we claim `3.14.0`).
+
+### GitHub Apps and OAuth apps (`crate::apps`, `api/apps_*.rs`)
+- **Registration** is forge-only: `POST /api/forge/apps` (a GitHub App manifest, optional `owner`
+  org) or the manifest flow (`POST /api/forge/app-manifests` returns a one-time `code`, exchanged
+  without auth at `POST /api/v3/app-manifests/{code}/conversions`). Both return the app with
+  `client_secret`, `webhook_secret` and an RSA-2048 private key `pem` (PKCS#1), shown once: only
+  the public key (`app_keys`) and a sha256 of the client secret are stored. App ids start at 2
+  (id 1 is the built-in checks app). Each app has a bot user `<slug>[bot]` (kind `Bot`).
+  `POST /api/forge/oauth-apps` registers an OAuth app (client id/secret only).
+- **App JWT**: `Authorization: Bearer <jwt>`, RS256 signed by one of the app's keys, `iss` = app id
+  or client id, `iat`/`exp` with `exp - iat` ≤ 10 min (60 s drift). Required by `/app`,
+  `/app/installations*`, `/app/hook/*`, `/{orgs,users,repos,enterprises}/…/installation`.
+  Failures are 401 with GitHub's messages.
+- **Installations**: `POST /api/forge/apps/{slug}/installations` (own account, an org the caller
+  owns, or `enterprise: true` for site admins) or `POST /enterprises/{e}/apps/organizations/{org}/installations`.
+  Private apps install only on their owner's account. An installation copies the app's
+  permissions/events and covers `all` or `selected` repositories of the account.
+- **Installation access tokens** (`POST /app/installations/{id}/access_tokens`): `ghs_` + 36,
+  sha256-stored, 1 h, optionally narrowed to repositories and a permission subset. They
+  authenticate as the bot user and are confined by `apps::scope::middleware` (mounted on the
+  whole app): the request is mapped to a GitHub App permission (`issues`, `contents`,
+  `pull_requests`, `checks`, `administration`, …; git push = `contents:write`) and refused with 403
+  "Resource not accessible by integration" when not granted; otherwise it runs in a task-local
+  scope and `db::permission` → `apps::scope::restrict` gives covered repositories exactly the
+  level the request needs and every other repository at most public read (private ones 404).
+  `/user*`, `/api/forge`, gists and admin endpoints are refused. GraphQL is read-only for app
+  tokens. Suspended installations' tokens stop working. Check runs/suites created with an
+  installation token belong to that app (`app` in check JSON).
+- **User-to-server tokens**: the device flow with a GitHub App's client id issues `ghu_` (8 h) +
+  `ghr_` refresh (6 months; `grant_type=refresh_token` rotates both). They act as the user,
+  restricted (min of user permission and the app's permission) to the app's installations'
+  repositories. OAuth apps get classic `gho_` tokens with the requested scopes.
+  `/applications/{client_id}/token*` (Basic `client_id:client_secret`) check, reset, delete and
+  scope them.
+- **Legacy OAuth Authorizations API** (`/authorizations*`, `/applications/grants*`): HTTP Basic
+  only (`login:password`, or a classic token as the password; app tokens refused); creates
+  classic tokens with scopes, grouped per user and application in `oauth_grants`.
+- **App webhooks**: one `webhooks` row per app (`app_id`), delivered by the standard queue with
+  `X-GitHub-Hook-Installation-Target-Type: integration`. Apps receive `installation` /
+  `installation_repositories` events, and repository events of their installations' repos for
+  subscribed events. The webhook secret is stored sealed with the app's key
+  (`api::actions_settings::crypto`, master key).
 
 ## Data model
 Postgres, migrations in `crates/forge/migrations` (sqlx). Ranges: `0001-0099` core (lead),
@@ -145,6 +191,31 @@ An embedded `russh` server, started by `forge serve` when `FORGE_SSH_LISTEN` is 
 - **Runner groups** (`actions_runner_groups`): per org and for the enterprise, with a `Default`
   group each; membership in `actions_runner_group_runners` (no row = default group). forge has no
   GitHub-hosted runner fleet: jobs run on self-hosted runners (`forge runner`).
+
+## Packages (`packages/`, `api/packages.rs`)
+- **Storage.** Every package object (layer, image config, manifest, npm tarball) is a blob at
+  `packages/blobs/sha256/<hex>` in object storage, shared between packages (`package_blobs`).
+  Postgres holds `packages` (owner, type `container`/`npm`, name, visibility, linked repo),
+  `package_versions` (container: name = manifest digest; npm: the version), `package_tags`
+  (container tags, npm dist-tags), `package_version_blobs` (what each version references) and
+  `package_repo_blobs` (blobs pushed into `owner/name` before a manifest references them).
+- **Uploads** (`package_uploads`): each PATCH chunk is its own object
+  (`packages/uploads/<id>/<n>-<rand>`), appended with a compare-and-swap on the part count; the
+  final PUT re-hashes (or, for a single chunk, reuses the hash), verifies the digest and copies
+  into the blob store. Any pod can take any chunk.
+- **Auth.** `/v2/` answers 401 + `WWW-Authenticate: Bearer realm="{base}/v2/token"`; the token
+  endpoint (GET with Basic, or docker's POST `grant_type=password|refresh_token`) returns an
+  HMAC-signed identity token (`fgr_<uid>.<exp>.<mac>`, key `signing_secrets.registry`). PATs and
+  Basic work directly too. Permissions are checked per request (`packages::package_perm`).
+- **Permissions** (GitHub's granular model): the owning user, the owners of the owning org and
+  the publisher administer; a package linked to a repository (`org.opencontainers.image.source`
+  label/annotation, package.json `repository`, same owner only) inherits its access (read/write/
+  admin); public packages are world-readable. New packages are private unless linked to a public
+  repository at creation. Publishing a new package needs the namespace (the user, or org
+  membership).
+- **Deletes are soft** (REST API, `DELETE manifests/<digest>`, `npm unpublish`); restorable for
+  30 days; `forge gc` (`packages::gc::run`) purges them and deletes blobs nothing references
+  (1 h grace, refreshed whenever a client is told a blob exists).
 
 ## Advanced security (`advsec/`, see docs/advsec.md)
 - Features (secret scanning, push protection, Dependabot alerts, code scanning) act only when

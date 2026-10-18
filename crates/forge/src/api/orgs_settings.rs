@@ -754,7 +754,12 @@ async fn audit_log(State(s): State<AppState>, uri: OriginalUri, AuthUser(u): Aut
 async fn installations(State(s): State<AppState>, AuthUser(u): AuthUser, Path(org): Path<String>, Query(_p): Query<PageParams>) -> ApiResult<Json<Value>> {
     let o = org_by_login(&s, &org).await?;
     require_owner(&s, &o, &u).await?;
-    Ok(Json(json!({ "total_count": 0, "installations": [] })))
+    let rows: Vec<crate::apps::InstallationRow> = sqlx::query_as("SELECT * FROM app_installations WHERE target_id = $1 ORDER BY id")
+        .bind(o.id)
+        .fetch_all(&s.db)
+        .await?;
+    let items = crate::apps::installations_json(&s, &rows).await?;
+    Ok(Json(json!({ "total_count": items.len(), "installations": items })))
 }
 
 // ---------------------------------------------------------------------------------------------

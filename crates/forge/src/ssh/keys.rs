@@ -243,7 +243,8 @@ pub async fn owner_by_fingerprint(db: &PgPool, fp: &str) -> anyhow::Result<Optio
         .fetch_optional(db)
         .await?;
     if let Some((key_id, user_id)) = user {
-        let u: Option<User> = sqlx::query_as("SELECT * FROM users WHERE id = $1").bind(user_id).fetch_optional(db).await?;
+        // Suspended users cannot authenticate (enterprise admin suspension).
+        let u: Option<User> = sqlx::query_as("SELECT * FROM users WHERE id = $1 AND suspended_at IS NULL").bind(user_id).fetch_optional(db).await?;
         return Ok(u.map(|user| KeyOwner::User { key_id, user }));
     }
     let dk: Option<DeployKeyRow> = sqlx::query_as("SELECT * FROM deploy_keys WHERE fingerprint = $1")
