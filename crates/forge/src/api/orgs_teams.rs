@@ -158,7 +158,7 @@ async fn team_by_id(s: &AppState, id: i64) -> ApiResult<(User, TeamRow)> {
 }
 
 /// Direct role of `user_id` in the team (`maintainer`/`member`).
-async fn direct_role(s: &AppState, team_id: i64, user_id: i64) -> ApiResult<Option<String>> {
+pub async fn direct_role(s: &AppState, team_id: i64, user_id: i64) -> ApiResult<Option<String>> {
     Ok(sqlx::query_scalar("SELECT role FROM team_members WHERE team_id = $1 AND user_id = $2")
         .bind(team_id)
         .bind(user_id)

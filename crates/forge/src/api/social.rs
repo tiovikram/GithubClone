@@ -469,6 +469,9 @@ pub async fn follow_user(s: &AppState, follower: &User, target: &User) -> ApiRes
     if follower.id == target.id {
         return Ok(());
     }
+    if super::social_forge::is_blocked(&s.db, target.id, follower.id).await? {
+        return Err(ApiError::forbidden("You can't follow this user because they have blocked you."));
+    }
     sqlx::query("INSERT INTO follows (follower_id, followee_id) VALUES ($1, $2) ON CONFLICT DO NOTHING")
         .bind(follower.id)
         .bind(target.id)

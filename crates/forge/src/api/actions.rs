@@ -54,6 +54,22 @@ pub fn routes() -> Router<AppState> {
     // `{r}/permissions*` lives in actions_settings::policy; runners in runner_runners.
 }
 
+/// Forge-only endpoints for the web UI (mounted under `/api/forge`): per-step job logs, so the
+/// run page can show each step's log (live while the job runs) without parsing the whole log.
+pub fn forge_routes() -> Router<AppState> {
+    Router::new().route("/repos/{owner}/{repo}/actions/jobs/{job_id}/steps", get(job_step_logs))
+}
+
+/// `{"job_id", "status", "steps": [{"number", "log"}]}`: the log of each step so far (finished
+/// jobs from the compacted log's step ranges, running jobs from the live chunks).
+async fn job_step_logs(State(s): State<AppState>, MaybeUser(u): MaybeUser, Path((owner, name, id)): RunPath) -> ApiResult<Json<Value>> {
+    let ctx = repo(&s, u.as_ref(), &owner, &name).await?;
+    let (j, _) = job_by_id(&s, &ctx, &id).await?;
+    let per = if j.started_at.is_some() { crate::runner::logs::step_logs(&s, &j).await.map_err(ApiError::internal)? } else { Default::default() };
+    let steps: Vec<Value> = per.into_iter().map(|(n, b)| json!({ "number": n, "log": String::from_utf8_lossy(&b) })).collect();
+    Ok(Json(json!({ "job_id": j.id, "status": j.status, "steps": steps })))
+}
+
 /// Signed downloads (followed without credentials after the API's 302, like GitHub's
 /// blob-storage redirects). Mounted outside `/api/v3`.
 pub fn download_routes() -> Router<AppState> {

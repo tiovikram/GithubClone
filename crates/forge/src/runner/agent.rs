@@ -330,11 +330,13 @@ pub async fn run_job(api: Api, msg: Value, executor: Executor, work: &std::path:
     // flush logs before completing (the job token stops working afterwards)
     let steps = job.steps_json();
     let annotations = job.annotations.lock().unwrap().clone();
+    // the job summary (GITHUB_STEP_SUMMARY), shown on the run's summary page
+    let summary = job.log.mask(&job.summary);
     let dir = job.dir.clone();
     drop(job);
     let _ = uploader.await;
     for _ in 0..5 {
-        match api.post_json("/complete", &json!({ "conclusion": conclusion, "outputs": outputs, "steps": steps, "annotations": annotations })).await {
+        match api.post_json("/complete", &json!({ "conclusion": conclusion, "outputs": outputs, "steps": steps, "annotations": annotations, "summary": summary })).await {
             Ok(_) => break,
             Err(e) => {
                 tracing::warn!(error = %e, "could not report completion; retrying");

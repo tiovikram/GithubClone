@@ -196,7 +196,19 @@ async fn notify(s: &AppState, ctx: &RepoCtx, event: &str, action: &str, p: &Valu
         }
     }
     // Watchers.
-    let watchers: Vec<i64> = sqlx::query_scalar("SELECT user_id FROM watches WHERE repo_id = $1 AND subscribed AND NOT ignored").bind(ctx.repo.id).fetch_all(&s.db).await?;
+    // "Custom" watchers only get the subject kinds they picked.
+    let kind = match subj.kind {
+        "Issue" => "issues",
+        "PullRequest" => "pulls",
+        "Release" => "releases",
+        _ => "",
+    };
+    let watchers: Vec<i64> =
+        sqlx::query_scalar("SELECT user_id FROM watches WHERE repo_id = $1 AND subscribed AND NOT ignored AND (custom_events IS NULL OR $2 = ANY(custom_events))")
+            .bind(ctx.repo.id)
+            .bind(kind)
+            .fetch_all(&s.db)
+            .await?;
     for w in watchers {
         put(&mut reasons, w, "subscribed");
     }

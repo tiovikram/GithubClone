@@ -463,6 +463,8 @@ struct CompleteBody {
     outputs: Option<Value>,
     steps: Option<Value>,
     annotations: Option<Vec<crate::api::checks::AnnotationInput>>,
+    /// The job summary (markdown written to GITHUB_STEP_SUMMARY), already masked by the runner.
+    summary: Option<String>,
 }
 
 async fn complete(State(s): State<AppState>, headers: HeaderMap, Path(id): Path<i64>, Json(b): Json<CompleteBody>) -> ApiResult<Response> {
@@ -477,8 +479,11 @@ async fn complete(State(s): State<AppState>, headers: HeaderMap, Path(id): Path<
         _ => json!({}),
     });
     engine::finish_job(&s, job.id, &concl, outputs, b.steps).await?;
-    // annotations on the job's check run (what `gh run view` lists under ANNOTATIONS)
-    if let Some(list) = b.annotations.filter(|l| !l.is_empty()) {
+    // Annotations on the job's check run (what `gh run view` lists under ANNOTATIONS), and the
+    // job summary (GITHUB_STEP_SUMMARY markdown) as the check run's output text.
+    let list = b.annotations.unwrap_or_default();
+    let summary: Option<String> = b.summary.filter(|t| !t.trim().is_empty()).map(|t| t.chars().take(65_000).collect());
+    if !list.is_empty() || summary.is_some() {
         let repo = db::repo_by_id(&s.db, job.repo_id).await?;
         let owner = db::user_by_id(&s.db, repo.owner_id).await?;
         let ctx = RepoCtx { repo, owner, perm: Perm::Admin };
@@ -487,7 +492,8 @@ async fn complete(State(s): State<AppState>, headers: HeaderMap, Path(id): Path<
             output: Some(crate::api::checks::OutputInput {
                 title: Some(format!("{} {concl}", job.name)),
                 summary: Some(format!("Job `{}` finished with conclusion `{concl}`.", job.name)),
-                annotations: Some(list.into_iter().take(50).collect()),
+                text: summary,
+                annotations: (!list.is_empty()).then(|| list.into_iter().take(50).collect()),
                 ..Default::default()
             }),
             ..Default::default()
