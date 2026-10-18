@@ -240,6 +240,52 @@ forge runner --jitconfig "$ENCODED_JIT_CONFIG"     # one job, then exit (generat
 forge runner --url ... --config ~/.forge-runner.json --remove-token "$REMOVE_TOKEN"
 ```
 
+## Packages: container and npm registries behind the Service
+
+The OCI registry (`/v2/`) and the npm registry (`/npm/`) are served by the same `forge` pods
+and the same Service as the API, so they need no extra Deployment or port. All registry state
+lives in Postgres (packages, versions, tags, upload sessions) and object storage (content-addressed
+blobs under `packages/blobs/sha256/`, upload chunks under `packages/uploads/`). Any pod serves
+any request, including the chunks of one upload landing on different pods
+(`uploads_hop_between_pods` in `crates/forge/tests/packages.rs`). `forge gc` (the CronJob) also
+purges packages deleted more than 30 days ago and deletes unreferenced blobs and stale uploads.
+
+Things a proxy or Ingress in front of the Service must allow:
+- **Request bodies.** Layer uploads stream through forge into object storage; forge itself caps a
+  blob at `FORGE_PACKAGES_MAX_BLOB_BYTES` (default 10 GiB) and an npm publish document at
+  `FORGE_NPM_MAX_PUBLISH_BYTES` (default 512 MiB; it holds the base64 tarball). Raise or disable
+  the proxy's limit, e.g. ingress-nginx `nginx.ingress.kubernetes.io/proxy-body-size: "0"`, and
+  turn off request buffering (`proxy-request-buffering: "off"`) so large pushes stream instead of
+  spooling to the proxy's disk. traefik has no default limit.
+- **Timeouts.** A monolithic layer upload is one long request; use read/send timeouts of several
+  minutes (`proxy-read-timeout`, `proxy-send-timeout`). Docker pushes in one PUT per layer by
+  default.
+- **Paths and headers.** Route `/v2/` and `/npm/` to forge unchanged (no prefix stripping) and
+  pass `Authorization`, `Range`, `Content-Range` and the `WWW-Authenticate`, `Location`,
+  `Docker-Content-Digest`, `Docker-Upload-UUID` and `OCI-Subject` response headers through.
+- **`FORGE_BASE_URL` must be the externally visible URL.** The token realm in
+  `WWW-Authenticate: Bearer realm="{base}/v2/token"` and the npm tarball URLs are built from it,
+  and images are named `{host}/{owner}/{name}` after its host.
+- **TLS.** docker only talks plain HTTP to `localhost`/`127.0.0.0/8` registries (or ones listed in
+  `insecure-registries`). Anything else needs HTTPS at the LB/Ingress.
+
+Clients:
+
+```sh
+docker login forge.example.com -u <login> --password-stdin <<< "$PAT"
+docker push forge.example.com/<owner>/<image>:<tag>      # owner = user or organization
+# .npmrc
+@<owner>:registry=https://forge.example.com/npm/
+//forge.example.com/npm/:_authToken=<PAT>
+```
+
+Local development note: Docker Desktop's daemon runs in a VM and cannot reach a forge listening on
+the Mac's `localhost`. The packages area validated docker against a dev server by running a
+socat container (`alpine/socat`, published on host port 3213 and forwarding to
+`host.docker.internal:3211`) and setting `FORGE_BASE_URL=http://localhost:3213`, so the daemon's
+`localhost:3213` reaches forge and the token realm points back through the same proxy. The k8s
+NodePort (`localhost:8080`) is reachable from the daemon directly.
+
 ## Uninstall
 
 `scripts/uninstall-deps.sh` deletes `forge*` k3d/kind clusters, forge images and volumes,
