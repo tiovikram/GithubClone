@@ -1,25 +1,25 @@
-  [skipped] contents API: requires rp
-  [skipped] git data & refs: requires rp, baseSha
-  [skipped] branches, merges, protection, archives: requires rp, featureSha
-  [skipped] commits, compare, statuses, checks, commit comments: requires rp, featureSha
-  [skipped] labels & milestones: requires rp
-  [skipped] issues: requires rp, login, label, milestone
-  [skipped] issue comments & reactions: requires rp, issue
-  [skipped] pull requests: create, review comments, reviews: requires rp, featureSha
-  [skipped] pull requests: update-branch & close: requires rp, baseSha
-  [skipped] pull requests: merge: requires rp, pr
-  [skipped] releases & assets: requires rp
-  [skipped] deployments & webhooks: requires rp
-  [skipped] stars, watching, notifications, events: requires rp, login
-  [skipped] collaborators: requires rp, login
-  [skipped] template & fork: requires rp, login
-  [skipped] users & ssh keys: requires login
-  [skipped] organizations: requires login
-  [skipped] gists: requires login
-  [skipped] actions (read): requires rp
-  [skipped] search: requires rp, login
+  [skipped] repos: environments, branch policies, deployment statuses: requires rp, me
+  [skipped] repos: security & feature toggles: requires rp
+  [skipped] repos: properties, dispatch, CODEOWNERS, teams, caches, public list: requires rp, login
+  [skipped] repos: statistics: requires rp
+  [skipped] repos: branch protection sub-resources: requires rp, baseSha, login
+  [skipped] repos: rulesets, history, rule suites: requires rp
+  [skipped] repos: pages (legacy builds and artifact deployments): requires rp, def
+  [skipped] repos: webhooks extras, deploy keys, autolinks, transfer: requires rp, login
+  [skipped] users: emails, social accounts, follows, signing keys, hovercard: requires login, me
+  [skipped] issues: pinned comments, dependencies, field values: requires rp, login
+  [skipped] gists: comments, stars, forks, revisions: requires login
+  [skipped] activity: notifications, feeds, events, codes of conduct: requires rp, login
+  [skipped] dependency graph: SBOM, compare, snapshots: requires rp, def, baseSha
+  [skipped] runner: fixture repository and runner process: requires login
+  [skipped] runner: push workflow, runs, jobs, logs, artifacts, caches, re-runs: requires runnerRepo, runnerReady
+  [skipped] runner: dispatch, cancel, force-cancel: requires runnerRepo, runnerReady
+  [skipped] runner: environment reviews and deployment protection rules: requires runnerRepo, runnerReady, me
+  [blocked] runner: organization runners, OIDC, cache usage: fixture step actions/generate-runner-jitconfig-for-org returned 404: Not found.
+
+  [skipped] runner: enterprise runners and cache policy: requires login
   [skipped] cleanup: requires rp
 
-HTTP requests: 7
+HTTP requests: 31
 report: ../../tests/baseline/results/compat/conformance-forgejo-v3.json
 summary: ../../tests/baseline/results/compat/conformance-forgejo-v3.md

@@ -1,26 +1,27 @@
+time="2026-10-18T02:35:03-05:00" level=warning msg="Request Failed" error="Post \"http://localhost:8088/bench/loadfix-2.git/git-upload-pack\": EOF"
 checks: 100.00%
   threshold rate>0.99: PASS
-data_received: 1865120119 (16952124.8/s)
-data_sent: 17522884 (159265.9/s)
-git_clone_duration: avg=32.7 p50=31.0 p95=51.0 p99=62.0 max=105.0
+data_received: 2035180040 (18498300.6/s)
+data_sent: 19049446 (173145.6/s)
+git_clone_duration: avg=30.1 p50=30.0 p95=43.0 p99=54.0 max=111.0
   threshold p(95)<2000: PASS
-git_pack_bytes: 1780461314 (16182658.8/s)
-http_req_blocked: avg=0.0 p50=0.0 p95=0.0 p99=0.0 max=1.8
-http_req_connecting: avg=0.0 p50=0.0 p95=0.0 p99=0.0 max=0.2
-http_req_duration: avg=9.2 p50=7.1 p95=20.1 p99=29.8 max=77.9
-http_req_duration{expected_response:true}: avg=9.2 p50=7.1 p95=20.1 p99=29.8 max=77.9
-http_req_duration{step:fetch}: avg=13.8 p50=12.5 p95=25.6 p99=35.1 max=77.9
+git_pack_bytes: 1942843424 (17659028.2/s)
+http_req_blocked: avg=0.0 p50=0.0 p95=0.0 p99=0.0 max=1.7
+http_req_connecting: avg=0.0 p50=0.0 p95=0.0 p99=0.0 max=0.6
+http_req_duration: avg=8.3 p50=6.7 p95=16.8 p99=23.9 max=83.4
+http_req_duration{expected_response:true}: avg=8.3 p50=6.7 p95=16.8 p99=23.9 max=83.4
+http_req_duration{step:fetch}: avg=12.5 p50=12.0 p95=20.7 p99=28.7 max=83.4
   threshold p(95)<1500: PASS
-http_req_duration{step:info_refs}: avg=7.0 p50=5.9 p95=15.0 p99=23.3 max=63.3
+http_req_duration{step:info_refs}: avg=6.2 p50=5.6 p95=10.5 p99=16.4 max=70.7
   threshold p(95)<300: PASS
-http_req_duration{step:ls_refs}: avg=6.8 p50=6.0 p95=13.1 p99=21.5 max=51.1
+http_req_duration{step:ls_refs}: avg=6.2 p50=5.7 p95=10.5 p99=16.2 max=74.9
   threshold p(95)<300: PASS
 http_req_failed: 0.00%
   threshold rate<0.01: PASS
-http_req_receiving: avg=3.2 p50=1.0 p95=12.3 p99=21.7 max=57.9
-http_req_sending: avg=0.0 p50=0.0 p95=0.0 p99=0.0 max=1.8
+http_req_receiving: avg=2.9 p50=0.9 p95=10.6 p99=16.5 max=54.5
+http_req_sending: avg=0.0 p50=0.0 p95=0.0 p99=0.0 max=2.8
 http_req_tls_handshaking: avg=0.0 p50=0.0 p95=0.0 p99=0.0 max=0.0
-http_req_waiting: avg=6.0 p50=5.1 p95=12.2 p99=20.9 max=63.3
-http_reqs: 40308 (366.4/s)
-iteration_duration: avg=32.7 p50=31.4 p95=51.0 p99=62.3 max=105.1
-iterations: 13436 (122.1/s)
+http_req_waiting: avg=5.4 p50=5.0 p95=9.4 p99=14.8 max=77.8
+http_reqs: 43824 (398.3/s)
+iteration_duration: avg=30.1 p50=29.8 p95=43.3 p99=54.4 max=110.8
+iterations: 14608 (132.8/s)

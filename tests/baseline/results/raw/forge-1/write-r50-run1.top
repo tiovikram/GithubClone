@@ -1,4 +1,4 @@
-20:42  up 23 days,  5:25, 5 users, load averages: 2.65 7.94 12.83
-forge-5456bf96d8-mwj47   135m   16Mi    
-minio-0                  1m     109Mi   
-postgres-0               174m   131Mi   
+ 1:34  up 28 days, 10:17, 2 users, load averages: 2.86 4.41 4.90
+forge-7d8c59b98c-b6tb8   345m   19Mi    
+minio-0                  1m     157Mi   
+postgres-0               286m   187Mi   

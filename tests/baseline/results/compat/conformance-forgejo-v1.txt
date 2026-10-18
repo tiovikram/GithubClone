@@ -1,25 +1,25 @@
-  activity           7/32 (21.9%), tested 13, nonconf 5, n/i 1
-  gists              0/20 (0%), tested 2, nonconf 0, n/i 2
-  reactions          0/15 (0%), tested 6, nonconf 4, n/i 2
-  git                0/13 (0%), tested 5, nonconf 1, n/i 4
-  search             0/7 (0%), tested 7, nonconf 0, n/i 7
-  meta               0/4 (0%), tested 4, nonconf 0, n/i 4
-  licenses           0/3 (0%), tested 2, nonconf 1, n/i 1
-  gitignore          1/2 (50%), tested 1, nonconf 0, n/i 0
-  markdown           1/2 (50%), tested 1, nonconf 0, n/i 0
-  emojis             0/1 (0%), tested 1, nonconf 0, n/i 1
-  rate-limit         0/1 (0%), tested 1, nonconf 0, n/i 1
+  [blocked] enterprise: live migrations: fixture step enterprise-admin/live-migration-create returned 404: 404 page not found
 
-scenarios not completed:
-  [blocked] contents API: fixture step repos/create-or-update-file-contents returned 422: {"message":"[SHA]: Required","url":"http://localhost:3320/api/swagger"}
+  [blocked] finish: repository invitations: fixture step enterprise-admin/get-manage-settings returned 404: 404 page not found
 
-  [blocked] git data & refs: fixture step git/create-ref returned 405: 
-  [skipped] branches, merges, protection, archives: requires featureSha
-  [skipped] commits, compare, statuses, checks, commit comments: requires featureSha
-  [skipped] pull requests: create, review comments, reviews: requires featureSha
-  [blocked] pull requests: update-branch & close: fixture step git/create-ref returned 405: 
-  [skipped] pull requests: merge: requires pr
+  [blocked] finish: enterprise runner group membership: fixture step actions/generate-runner-jitconfig-for-enterprise returned 404: 404 page not found
 
-HTTP requests: 174
+  [blocked] finish: push ruleset delegated bypass requests: fixture step repos/create-repo-ruleset returned 404: 404 page not found
+
+  [errored] packages: container images and npm packages (user namespace): start upload: HTTP 401 {"errors":[{"code":"UNAUTHORIZED","message":""}]}
+ @ 
+  [errored] packages: organization packages: start upload: HTTP 401 {"errors":[{"code":"UNAUTHORIZED","message":""}]}
+ @ 
+  [errored] projects: Projects (v2) REST for the authenticated user: Cannot read properties of undefined (reading 'createProjectV2') @ at createProject (file:///Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tools/conformance/scenarios/write-packages.mjs:122:12)
+  [errored] projects: Projects (v2) REST for an organization: Cannot read properties of undefined (reading 'createProjectV2') @ at createProject (file:///Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tools/conformance/scenarios/write-packages.mjs:122:12)
+  [blocked] runner: fixture repository and runner process: fixture step actions/generate-runner-jitconfig-for-repo returned 405: 
+  [skipped] runner: push workflow, runs, jobs, logs, artifacts, caches, re-runs: requires runnerReady
+  [skipped] runner: dispatch, cancel, force-cancel: requires runnerReady
+  [skipped] runner: environment reviews and deployment protection rules: requires runnerReady
+  [blocked] runner: organization runners, OIDC, cache usage: fixture step actions/generate-runner-jitconfig-for-org returned 405: 
+  [blocked] runner: enterprise runners and cache policy: fixture step actions/generate-runner-jitconfig-for-enterprise returned 404: 404 page not found
+
+
+HTTP requests: 598
 report: ../../tests/baseline/results/compat/conformance-forgejo-v1.json
 summary: ../../tests/baseline/results/compat/conformance-forgejo-v1.md

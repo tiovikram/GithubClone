@@ -1,26 +1,26 @@
 checks: 100.00%
   threshold rate>0.99: PASS
-data_received: 2782815982 (46362868.7/s)
-data_sent: 26076274 (434441.5/s)
-git_clone_duration: avg=24.0 p50=22.0 p95=43.0 p99=49.0 max=92.0
+data_received: 3130939820 (52169954.8/s)
+data_sent: 29449320 (490705.6/s)
+git_clone_duration: avg=21.2 p50=22.0 p95=28.0 p99=32.0 max=61.0
   threshold p(95)<2000: PASS
-git_pack_bytes: 2656467641 (44257852.9/s)
+git_pack_bytes: 2988705460 (49799944.3/s)
 http_req_blocked: avg=0.0 p50=0.0 p95=0.0 p99=0.0 max=2.5
 http_req_connecting: avg=0.0 p50=0.0 p95=0.0 p99=0.0 max=0.4
-http_req_duration: avg=6.3 p50=4.2 p95=19.8 p99=29.2 max=60.6
-http_req_duration{expected_response:true}: avg=6.3 p50=4.2 p95=19.8 p99=29.2 max=60.6
-http_req_duration{step:fetch}: avg=9.6 p50=8.1 p95=26.3 p99=32.7 max=60.6
+http_req_duration: avg=5.4 p50=4.3 p95=10.4 p99=13.0 max=38.0
+http_req_duration{expected_response:true}: avg=5.4 p50=4.3 p95=10.4 p99=13.0 max=38.0
+http_req_duration{step:fetch}: avg=8.3 p50=8.3 p95=12.0 p99=15.2 max=36.2
   threshold p(95)<1500: PASS
-http_req_duration{step:info_refs}: avg=5.0 p50=3.6 p95=17.4 p99=24.3 max=46.9
+http_req_duration{step:info_refs}: avg=3.9 p50=3.7 p95=5.8 p99=7.7 max=38.0
   threshold p(95)<300: PASS
-http_req_duration{step:ls_refs}: avg=4.3 p50=3.6 p95=9.9 p99=23.9 max=48.8
+http_req_duration{step:ls_refs}: avg=3.9 p50=3.7 p95=5.8 p99=7.4 max=23.0
   threshold p(95)<300: PASS
 http_req_failed: 0.00%
   threshold rate<0.01: PASS
-http_req_receiving: avg=2.3 p50=0.5 p95=7.7 p99=24.1 max=58.0
-http_req_sending: avg=0.0 p50=0.0 p95=0.0 p99=0.1 max=4.6
+http_req_receiving: avg=1.9 p50=0.5 p95=6.9 p99=9.0 max=31.2
+http_req_sending: avg=0.0 p50=0.0 p95=0.0 p99=0.1 max=2.5
 http_req_tls_handshaking: avg=0.0 p50=0.0 p95=0.0 p99=0.0 max=0.0
-http_req_waiting: avg=4.0 p50=3.1 p95=11.7 p99=23.2 max=48.7
-http_reqs: 59988 (999.4/s)
-iteration_duration: avg=24.0 p50=22.4 p95=42.7 p99=48.9 max=91.7
-iterations: 19996 (333.1/s)
+http_req_waiting: avg=3.5 p50=3.3 p95=5.3 p99=7.0 max=38.0
+http_reqs: 67740 (1128.7/s)
+iteration_duration: avg=21.3 p50=22.2 p95=27.6 p99=31.9 max=60.2
+iterations: 22580 (376.2/s)

@@ -1,25 +1,25 @@
 checks: 100.00%
-data_received: 1586560102 (26418259.2/s)
-data_sent: 16975875 (282670.1/s)
-http_req_blocked: avg=0.0 p50=0.0 p95=0.0 p99=0.0 max=4.4
+data_received: 2316058898 (38575270.6/s)
+data_sent: 24710795 (411572.3/s)
+http_req_blocked: avg=0.0 p50=0.0 p95=0.0 p99=0.0 max=3.1
 http_req_connecting: avg=0.0 p50=0.0 p95=0.0 p99=0.0 max=1.0
-http_req_duration: avg=51.3 p50=39.8 p95=114.5 p99=167.9 max=562.0
-http_req_duration{expected_response:true}: avg=51.3 p50=39.8 p95=114.5 p99=167.9 max=562.0
-http_req_duration{name:get_contents}: avg=39.2 p50=38.1 p95=63.5 p99=98.6 max=375.1
-http_req_duration{name:get_repo}: avg=27.0 p50=25.4 p95=44.9 p99=68.8 max=358.9
-http_req_duration{name:get_user}: avg=20.7 p50=18.7 p95=36.0 p99=54.4 max=339.4
-http_req_duration{name:list_issues}: avg=72.8 p50=70.0 p95=113.4 p99=200.6 max=476.3
-http_req_duration{name:list_user_repos}: avg=96.4 p50=94.7 p95=147.8 p99=260.4 max=562.0
+http_req_duration: avg=35.2 p50=31.9 p95=70.3 p99=80.8 max=150.6
+http_req_duration{expected_response:true}: avg=35.2 p50=31.9 p95=70.3 p99=80.8 max=150.6
+http_req_duration{name:get_contents}: avg=25.7 p50=23.1 p95=39.6 p99=44.2 max=89.0
+http_req_duration{name:get_repo}: avg=25.9 p50=23.2 p95=39.9 p99=45.0 max=86.8
+http_req_duration{name:get_user}: avg=13.5 p50=10.9 p95=27.4 p99=31.9 max=75.5
+http_req_duration{name:list_issues}: avg=47.5 p50=47.6 p95=62.2 p99=72.1 max=143.5
+http_req_duration{name:list_user_repos}: avg=63.2 p50=62.5 p95=80.6 p99=88.4 max=150.6
 http_req_failed: 0.00%
 http_req_failed{name:get_contents}: 0.00%
 http_req_failed{name:get_repo}: 0.00%
 http_req_failed{name:get_user}: 0.00%
 http_req_failed{name:list_issues}: 0.00%
 http_req_failed{name:list_user_repos}: 0.00%
-http_req_receiving: avg=0.1 p50=0.0 p95=0.4 p99=1.2 max=121.4
-http_req_sending: avg=0.0 p50=0.0 p95=0.0 p99=0.0 max=2.1
+http_req_receiving: avg=0.1 p50=0.0 p95=0.3 p99=0.5 max=8.0
+http_req_sending: avg=0.0 p50=0.0 p95=0.0 p99=0.0 max=0.7
 http_req_tls_handshaking: avg=0.0 p50=0.0 p95=0.0 p99=0.0 max=0.0
-http_req_waiting: avg=51.2 p50=39.8 p95=114.1 p99=166.3 max=561.9
-http_reqs: 74768 (1245.0/s)
-iteration_duration: avg=51.4 p50=39.9 p95=114.5 p99=168.0 max=562.2
-iterations: 74768 (1245.0/s)
+http_req_waiting: avg=35.1 p50=31.9 p95=70.2 p99=80.8 max=150.6
+http_reqs: 108843 (1812.8/s)
+iteration_duration: avg=35.3 p50=32.0 p95=70.3 p99=80.9 max=150.7
+iterations: 108843 (1812.8/s)

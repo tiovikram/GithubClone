@@ -8,45 +8,58 @@ Raw outputs are in `tests/baseline/results/`.
 
 ## Summary
 
+Rerun 2026-10-18 on `main` at `284dbe1` (Checks, orgs, enterprise, Actions + runner, GitHub
+Apps, packages, advanced security, rulesets, OIDC). The first run (2026-10-12, `main` at
+`15977d4`) is summarised under [History](#history-2026-10-12-run).
+
 | | **Forgejo 16.0.6** (1 replica) | **forge** (1 replica) | **forge** (3 replicas) |
 |---|---:|---:|---:|
-| **REST conformance**, GitHub GHES 3.22 spec, tier 1 (gh core, 104 ops) | 10/104 (9.6%) at `/api/v1`; 0/104 at `/api/v3` | **102/104 (98.1%)** | (same binary) |
-| REST conformance, tier 2 (octokit common, 129 ops) | 19/129 (14.7%) | **120/129 (93.0%)** | |
-| REST conformance, all 1105 ops (conforming / of tested) | 29 (2.6%) / 20% of 145 tested | **224 (20.3%) / 99.1% of 226 tested** | |
-| **gh CLI suite** (`tests/gh/run.sh`, gh as enterprise host) | 0/88 | **88/88** | |
+| **REST conformance**, GitHub GHES 3.22 spec, tier 1 (gh core, 104 ops) | 10/104 (9.6%) at `/api/v1`; 0/104 at `/api/v3` | **104/104 (100%)** | (same image) |
+| REST conformance, tier 2 (octokit common, 129 ops) | 18/129 (14.0%) | **129/129 (100%)** | |
+| REST conformance, all 1105 ops (conforming / of tested) | 45 (4.1%) / 10% of 440 tested | **1105 (100%) / 100% of 1105 tested** | |
+| **gh CLI suite** (`tests/gh/run.sh`, gh as enterprise host): forge-relevant gh commands / cases | 11/166, 17/349 | **166/166, 349/349** | |
 | stock git smart HTTP (clone, fetch, push, tags, shallow, v2) | 17/17 | 17/17 | |
-| **API reads, saturation** (64 VUs closed loop), throughput | 273 req/s | **1,900 req/s (7.0x)** | **2,894 req/s (10.6x)** |
-| API reads, saturation, p50 / p95 / p99 | 75 / 951 / 1,046 ms | 29 / 71 / 82 ms | 19 / 50 / 64 ms |
-| API reads @ 100 req/s, p50 / p95 / p99 | 5.5 / 18.4 / 29.1 ms | 3.9 / 5.1 / 5.8 ms | 3.8 / 5.8 / 6.5 ms |
-| API reads @ 500 req/s | **not sustained**: 258 req/s done, 14.3k dropped, p95 6.3 s | 500 req/s, p95 2.7 ms | 500 req/s, p95 3.6 ms |
-| API reads @ 1000 req/s | **not sustained**: 258 req/s done, 44.3k dropped | 1,000 req/s, p95 3.1 ms | 1,000 req/s, p95 4.2 ms |
+| **API reads, saturation** (64 VUs closed loop), throughput | 268 req/s | **1,805 req/s (6.7x)** | **2,817 req/s (10.5x)** |
+| API reads, saturation, p50 / p95 / p99 | 75 / 936 / 1,016 ms | 32 / 70 / 82 ms | 20 / 50 / 64 ms |
+| API reads @ 100 req/s, p50 / p95 / p99 | 5.6 / 19.5 / 30.8 ms | 3.8 / 5.1 / 6.0 ms | 3.8 / 5.7 / 6.5 ms |
+| API reads @ 500 req/s | **not sustained**: 257 req/s done, 14.4k dropped, p95 6.4 s | 500 req/s, p95 2.8 ms | 500 req/s, p95 3.6 ms |
+| API reads @ 1000 req/s | **not sustained**: 257 req/s done, 44.3k dropped | 1,000 req/s, p95 3.1 ms | 1,000 req/s, p95 4.3 ms |
 | git clone (protocol v2), 1 VU: full clone p50 / p95 | 21 / 22 ms | 12 / 13 ms | 12 / 13 ms |
-| git clone/fetch, 32 VUs: clones+fetches/s | 132 | 249 (1.9x) | 485 (3.7x) |
-| git clone/fetch, 32 VUs: full clone p50 / p95 | 240 / 303 ms | 122 / 182 ms | 64 / 96 ms |
-| write mix (create issue + comment) @ 50 it/s, p50 / p95 / p99 | 10.1 / 40.5 / 59.6 ms | 3.0 / 4.2 / 4.5 ms | 3.1 / 4.4 / 5.0 ms |
-| **chaos A1**, graceful pod delete x6: longest / total outage | 4.1 s / 11.5 s | **0 s / 0 s** | **0 s / 0 s** |
-| chaos A1: git loop pushes failed / clones failed | 50 / 50 of 122 | 0 / 0 of 100 | 0 / 0 of 95 |
-| **chaos A2**, `--force --grace-period=0` x6: longest / total outage | 3.0 s / 4.0 s | 3.0 s / 3.5 s | **0 s / 0 s** |
-| chaos A2: git loop pushes failed / clones failed | 6 / 4 of 82 | 5 / 3 of 92 | 0 / 0 of 96 |
+| git clone/fetch, 32 VUs: clones+fetches/s | 130 | 244 (1.9x) | 478 (3.7x) |
+| git clone/fetch, 32 VUs: full clone p50 / p95 | 243 / 305 ms | 127 / 184 ms | 66 / 98 ms |
+| write mix (create issue + comment) @ 50 it/s, p50 / p95 / p99 | 9.9 / 38.8 / 59.1 ms | 5.6 / 6.6 / 7.6 ms | 5.8 / 6.8 / 8.3 ms |
+| **chaos A1**, graceful pod delete x6: longest / total outage | 4.6 s / 14.5 s | **0 s / 0 s** | **0 s / 0 s** |
+| chaos A1: git loop pushes failed / clones failed | 51 / 49 of 121 | 0 / 0 of 96 | 0 / 0 of 90 |
+| **chaos A2**, `--force --grace-period=0` x6: longest / total outage | 0.5 s / 3.0 s | 3.1 s / 5.5 s | **0 s / 0 s** |
+| chaos A2: git loop pushes failed / clones failed | 6 / 4 of 79 | 7 / 4 of 89 | 0 / 0 of 91 |
 | chaos: acknowledged pushes lost, `fsck --strict` failures | 0, 0 | 0, 0 | 0, 0 |
 
 Performance figures are medians of 3 runs of 60 s each. Every scenario was run 3 times,
 interleaved. Errors were 0.00% in every performance run on all three configurations.
 
-**Verdict:** forge beats Forgejo on every axis measured here. On REST compatibility with GitHub's
-own spec it scores 98% of tier 1 to Forgejo's 10%. Under gh, forge passes 88/88 and Forgejo 0/88;
-gh cannot even authenticate against it. At one replica each with identical limits, forge sustains
-7x the API read throughput and 1.9x the git clone/fetch throughput, with lower latency at every
-fixed rate. Under pod kills, forge loses no availability on graceful deletes even at one replica.
-forge also scales horizontally, which Forgejo cannot do on RWO storage. Stock git works the same
-on both.
+**Verdict:** forge beats Forgejo on every axis measured here except one chaos number (A2 at one
+replica, below). On REST compatibility with GitHub's own spec it now conforms on all 1105 GHES
+operations, against Forgejo's 45. Under gh, forge passes all 166 forge-relevant commands
+(349/349 cases) and Forgejo 11 (gh cannot authenticate against it, so only commands that need no
+API work). At one replica each with identical limits, forge sustains 6.7x the API read
+throughput and 1.9x the git clone/fetch throughput, with lower latency at every fixed rate.
+Under pod kills, forge loses no availability on graceful deletes even at one replica, and none
+at all at 3 replicas. forge also scales horizontally, which Forgejo cannot do on RWO storage.
+Stock git works the same on both.
+
+Compared with the first run, forge's numbers are unchanged within noise for reads and git
+(read-sat 1,900 -> 1,805 req/s at 1 replica, 2,894 -> 2,817 at 3; git and fixed-rate reads
+within 0.5 ms) despite everything that merged since. Writes got slower: the issue + comment mix
+went from p50 3.0 to 5.6 ms at 50 it/s and from 7.2 to 11.7 ms at 10 it/s (more work per write:
+webhooks/events, rulesets, Checks and Actions triggers); still 1.8x faster than Forgejo at
+p50 and 5.9x at p95. Forgejo's numbers reproduced within a few percent.
 
 ## What was compared
 
 | | forge | Forgejo |
 |---|---|---|
-| version | `main` at `15977d4` + the Dockerfile fix below, image `forge:dev` built with the repo's Dockerfile (`sha256:4dba300d8a34…`) | `codeberg.org/forgejo/forgejo:16.0.6` (latest stable on 2026-10-12, image `sha256:e2c34a699543…`, Go 1.26.9, `+gitea-1.22.0`) |
-| manifests | `tests/baseline/forge/`: `deploy/overlays/k3d` minus HPA and gc CronJob, `FORGE_BASE_URL` on :8088 | `tests/baseline/forgejo/`: Deployment (Recreate) + RWO PVC + Postgres |
+| version | `main` at `284dbe1` + this branch's `list_rows` fix (see Findings), image `forge:dev` built with the repo's Dockerfile (host id `sha256:0959ac9da698…`, config `sha256:e4ceea76db89…`, the same image as the 2026-10-18 k3d/kind runs in deploy.md) | `codeberg.org/forgejo/forgejo:16.0.6` (still the latest stable, image `sha256:e2c34a699543…`, Go 1.26.9, `+gitea-1.22.0`) |
+| manifests | `tests/baseline/forge/`: `deploy/overlays/k3d` minus HPA, gc CronJob and the forge-runner Deployment (Forgejo runs no runner either), `FORGE_BASE_URL` on :8088 | `tests/baseline/forgejo/`: Deployment (Recreate) + RWO PVC + Postgres |
 | app pod requests / limits | 250m / 256Mi, **2 CPU / 1 GiB** | 250m / 256Mi, **2 CPU / 1 GiB** |
 | replicas | 1 and 3 (fixed, no HPA) | 1 (RWO volume, see below) |
 | Postgres | `postgres:16` (16.15), 500m/512Mi request, **4 CPU / 1.5 GiB** limit, same args (`max_connections=300`, `shared_buffers=256MB`, keepalives) | identical manifest (`tests/baseline/forgejo/postgres.yaml` differs only in DB and secret name) |
@@ -197,44 +210,45 @@ the offered rate.
 
 | scenario | metric | Forgejo, 1 replica | forge, 1 replica | forge, 3 replicas |
 |---|---|---:|---:|---:|
-| API reads @ 100 req/s | p50 / p95 / p99 ms | 5.5 / 18.4 / 29.1 | 3.9 / 5.1 / 5.8 | 3.8 / 5.8 / 6.5 |
-| API reads @ 500 req/s | achieved req/s | **258** (14,291 dropped) | 500 | 500 |
-| | p50 / p95 / p99 ms | 330 / 6,310 / 6,787 | 2.4 / 2.7 / 3.0 | 2.5 / 3.6 / 3.8 |
-| API reads @ 1000 req/s | achieved req/s | **258** (44,301 dropped) | 1,000 | 1,000 |
-| | p50 / p95 / p99 ms | 345 / 6,348 / 6,842 | 2.5 / 3.1 / 3.6 | 2.8 / 4.2 / 4.8 |
-| API reads, saturation (64 VUs) | req/s | 273 | 1,900 | 2,894 |
-| | p50 / p95 / p99 ms | 75 / 951 / 1,046 | 29.1 / 70.6 / 81.5 | 19.1 / 50.4 / 64.2 |
-| git clone/fetch, 1 VU | clones+fetches/s (HTTP req/s) | 51.7 (155) | 94.4 (283) | 91.7 (275) |
-| | full clone p50 / p95 / p99 ms | 21 / 22 / 24 | 12 / 13 / 14 | 12 / 13 / 14 |
-| git clone/fetch, 8 VUs | clones+fetches/s (HTTP req/s) | 134 (403) | 225 (676) | 380 (1,140) |
-| | full clone p50 / p95 / p99 ms | 59 / 86 / 96 | 34 / 57 / 64 | 22 / 27 / 30 |
-| git clone/fetch, 32 VUs | clones+fetches/s (HTTP req/s) | 132 (396) | 249 (747) | 485 (1,454) |
-| | full clone p50 / p95 / p99 ms | 240 / 303 / 328 | 122 / 182 / 200 | 64 / 96 / 113 |
-| write mix @ 10 it/s (20 req/s) | p50 / p95 / p99 ms | 12.9 / 26.8 / 37.3 | 7.2 / 9.4 / 10.8 | 7.4 / 10.1 / 12.3 |
-| write mix @ 25 it/s (50 req/s) | p50 / p95 / p99 ms | 9.5 / 30.1 / 46.0 | 4.2 / 7.2 / 7.9 | 4.3 / 6.9 / 7.8 |
-| write mix @ 50 it/s (100 req/s) | p50 / p95 / p99 ms | 10.1 / 40.5 / 59.6 | 3.0 / 4.2 / 4.5 | 3.1 / 4.4 / 5.0 |
+| API reads @ 100 req/s | p50 / p95 / p99 ms | 5.6 / 19.5 / 30.8 | 3.8 / 5.1 / 6.0 | 3.8 / 5.7 / 6.5 |
+| API reads @ 500 req/s | achieved req/s | **257** (14,360 dropped) | 500 | 500 |
+| | p50 / p95 / p99 ms | 335 / 6,383 / 6,858 | 2.3 / 2.8 / 3.2 | 2.6 / 3.6 / 3.9 |
+| API reads @ 1000 req/s | achieved req/s | **257** (44,346 dropped) | 1,000 | 1,000 |
+| | p50 / p95 / p99 ms | 356 / 6,389 / 6,902 | 2.6 / 3.1 / 3.8 | 2.8 / 4.3 / 5.3 |
+| API reads, saturation (64 VUs) | req/s | 268 | 1,805 | 2,817 |
+| | p50 / p95 / p99 ms | 75 / 936 / 1,016 | 31.9 / 70.3 / 81.5 | 20.1 / 50.2 / 64.0 |
+| git clone/fetch, 1 VU | clones+fetches/s (HTTP req/s) | 51.8 (155) | 92.9 (279) | 92.3 (277) |
+| | full clone p50 / p95 / p99 ms | 21 / 22 / 25 | 12 / 13 / 14 | 12 / 13 / 14 |
+| git clone/fetch, 8 VUs | clones+fetches/s (HTTP req/s) | 134 (403) | 224 (671) | 374 (1,122) |
+| | full clone p50 / p95 / p99 ms | 59 / 85 / 94 | 37 / 56 / 66 | 22 / 28 / 32 |
+| git clone/fetch, 32 VUs | clones+fetches/s (HTTP req/s) | 130 (391) | 244 (731) | 478 (1,435) |
+| | full clone p50 / p95 / p99 ms | 243 / 305 / 330 | 127 / 184 / 202 | 66 / 98 / 119 |
+| write mix @ 10 it/s (20 req/s) | p50 / p95 / p99 ms | 12.9 / 28.5 / 40.0 | 11.7 / 15.5 / 16.9 | 11.8 / 16.5 / 18.8 |
+| write mix @ 25 it/s (50 req/s) | p50 / p95 / p99 ms | 9.5 / 28.1 / 39.4 | 7.0 / 8.3 / 9.7 | 7.2 / 8.9 / 10.0 |
+| write mix @ 50 it/s (100 req/s) | p50 / p95 / p99 ms | 9.9 / 38.8 / 59.1 | 5.6 / 6.6 / 7.6 | 5.8 / 6.8 / 8.3 |
 
 Per-endpoint p95 at saturation (ms):
 
 | endpoint | Forgejo, 1 replica | forge, 1 replica | forge, 3 replicas |
 |---|---:|---:|---:|
-| get repo | 79.5 | 33.4 | 19.2 |
-| list issues (30) | 1,046 | 63.3 | 42.2 |
-| get contents | 109 | 41.4 | 34.7 |
-| get user | 38.9 | 29.2 | 15.8 |
-| list user repos | 208 | 81.4 | 63.9 |
+| get repo | 77.9 | 39.9 | 25.1 |
+| list issues (30) | 1,015 | 62.2 | 42.1 |
+| get contents | 108 | 39.6 | 34.8 |
+| get user | 38.2 | 27.4 | 15.7 |
+| list user repos | 204 | 81.4 | 63.7 |
 
-At low load (100 req/s) Forgejo's list-issues p50 is 17 ms and get-contents 10 ms, against 2 to
-6 ms for forge.
+At 500 req/s forge answers every endpoint with p95 0.9 to 3.8 ms; Forgejo, already overloaded,
+takes 226 ms (get user) to 6.9 s (list issues).
 
 Where the CPU went, from `kubectl top` during saturation:
 
 | | app pods | Postgres |
 |---|---|---|
-| Forgejo, read-sat | 1.6 to 1.7 CPU (of 2) | 0.4 to 0.5 CPU |
-| forge 1x, read-sat | 2.0 CPU (at the limit) | 1.8 to 2.0 CPU |
-| forge 3x, read-sat | 3 x 1.2 to 1.3 CPU | **3.0 CPU** (of 4) |
+| Forgejo, read-sat | 1.9 CPU (of 2) | 0.6 CPU |
+| forge 1x, read-sat | 2.0 CPU (at the limit) | 2.0 CPU |
+| forge 3x, read-sat | 3 x 1.2 to 1.4 CPU | **2.9 to 3.0 CPU** (of 4) |
 | forge 1x, git-c32 | 2.0 CPU | 0.5 CPU |
+| Forgejo, git-c32 | 1.6 CPU | 0.2 CPU |
 
 Forgejo is bound by its own CPU. forge at one replica is bound by its 2-CPU limit, and at 3
 replicas it is bound by Postgres plus the shared host (see the findings below).
@@ -243,14 +257,14 @@ replicas it is bound by Postgres plus the shared host (see the findings below).
 
 | | Forgejo, 1 replica | forge, 1 replica | forge, 3 replicas |
 |---|---|---|---|
-| A1 graceful: replacement ready after | 9 to 10 s | 3 to 6 s | 3 to 6 s |
-| A1: availability probe, longest / total outage | 4.1 s / 11.5 s | 0 / 0 | 0 / 0 |
-| A1: k6 failed requests | 43,694 / 66,045 (66%)* | 2 / 114,804 | 0 / 164,538 |
-| A1: git loop pushes ok/failed, clones ok/failed | 72/50, 72/50 | 100/0, 100/0 | 95/0, 95/0 |
-| A2 force: replacement ready after | 4 to 5 s | 3 to 6 s | 3 to 6 s |
-| A2: availability probe, longest / total outage | 3.0 s / 4.0 s | 3.0 s / 3.5 s | 0 / 0 |
-| A2: k6 failed requests | 436 / 23,305 (1.9%) | 948 / 93,652 (1.0%) | 2 / 151,259 |
-| A2: git loop pushes ok/failed, clones ok/failed | 76/6, 78/4 | 87/5, 89/3 | 96/0, 96/0 |
+| A1 graceful: replacement ready after | 8 to 10 s | 3 to 4 s | 4 to 5 s |
+| A1: availability probe, longest / total outage | 4.6 s / 14.5 s | 0 / 0 | 0 / 0 |
+| A1: k6 failed requests | 42,302 / 65,122 (65%)* | 2 / 109,212 | 1 / 156,198 |
+| A1: git loop pushes ok/failed, clones ok/failed | 70/51, 72/49 | 96/0, 96/0 | 90/0, 90/0 |
+| A2 force: replacement ready after | 4 to 5 s | 3 to 5 s | 3 to 5 s |
+| A2: availability probe, longest / total outage | 0.5 s / 3.0 s | 3.1 s / 5.5 s | 0 / 0 |
+| A2: k6 failed requests | 541 / 23,396 (2.3%) | 685 / 87,773 (0.78%) | 0 / 150,832 |
+| A2: git loop pushes ok/failed, clones ok/failed | 73/6, 75/4 | 82/7, 85/4 | 91/0, 91/0 |
 | acknowledged pushes missing later, `fsck` failures | 0, 0 | 0, 0 | 0, 0 |
 
 \* **Read failed-request counts with care.** During an outage, the k3d load balancer (nginx,
@@ -273,11 +287,44 @@ forge's replacement is Ready in about 3 s, inside the old pod's preStop window, 
 replica hands over with no gap.
 
 A forced delete removes the endpoint at once, so a single replica of either app is down until
-its replacement is Ready: 3 to 4 s for both. At 3 replicas forge has no outage at all.
+its replacement is Ready. This time Forgejo's probe saw shorter gaps (6 failed probes, at most
+0.5 s in a row) than forge's (11 failed probes, at most 3.1 s), while Forgejo failed a larger
+share of k6 requests (2.3% against 0.78%) and both lost a similar number of git-loop pushes. With
+one replica neither app can avoid a gap on a forced delete; at 3 replicas forge has no outage at
+all. (In the first run the two single-replica A2 outages were 3.0 s / 4.0 s and 3.0 s / 3.5 s.)
 
 Neither app lost an acknowledged push or produced a corrupt repository.
 
 ## Findings
+
+### 2026-10-18 rerun
+
+- **Docker build of current main (fixed).** The Rust stage was OOM-killed in the 7.8 GB
+  Docker VM while compiling the forge crate (rustc frontend plus 4 parallel LLVM codegen units;
+  also with LTO off). The Dockerfile now builds that one crate with `CARGO_BUILD_JOBS=1` (same
+  profile and binary, peak ~6.8 GB, ~9 min) and installs cmake/clang/libclang/perl for
+  aws-lc-rs. See docs/deploy.md.
+- **`GET /user/repos` and `/users/{u}/repos` were O(repos) per page (fixed).** The list query
+  called `forge_repo_readable()` (a non-inlinable SQL function) for every candidate row in both
+  the page and the count query: ~35 ms per 30-repo page at ~630 owned repos. Found by the
+  deploy.md load suite (api-write creates repos for the token's user). `list_rows` now checks
+  the two cases the function accepts first (public repo, owned by the viewer) inline; page query
+  14.7 ms -> 0.26 ms. The baseline fixtures own only 6 repos, so this did not affect the table.
+- **Writes are ~2x slower than on 2026-10-12** (issue + comment p50 3.0 -> 5.6 ms at 50 it/s,
+  7.2 -> 11.7 ms at 10 it/s), with reads and git unchanged. Not investigated further; the
+  likely cost is the extra per-write work that has merged since (events and webhooks, rulesets,
+  Checks/Actions triggers). Still well ahead of Forgejo, especially at the tail.
+- **Harness fixes.** `tests/baseline/forge/` drops the new forge-runner Deployment (Forgejo
+  runs no runner, and an idle runner long-polls the API). `compat.sh` now creates `collab` as a
+  regular user (as a site admin it was allowed what conformance expects a collaborator to be
+  refused, e.g. bypassing push protection: 9 false "nonconforming" results), passes
+  `--collaborator-token`, and sets `FORGE_BIN` for the runner scenarios (a local `forge runner`
+  against the container). Without the token and `FORGE_BIN`, 52 operations stayed untested.
+  `tests/gh/run.sh` in `GH_SUITE_EXTERNAL=1` mode aborted at the org cases (`SUFFIX: unbound
+  variable`, and no local `forge` binary for `admin create-org`); it now sets both, falling back
+  to the API. With these, the compat bed reproduces main's 1105/1105 and 166/166.
+
+### 2026-10-12 run
 
 **Bug fixed in forge (Dockerfile).** The runtime image was `debian:bookworm-slim`, which ships
 git **2.39.5**. forge's rebase merge and its `rebaseable` check use `git merge-tree --write-tree
@@ -287,7 +334,7 @@ can't be rebased", and the PR's `rebaseable` was false. The gh suite scored 86/8
 image even though it scores 88/88 against a natively built binary, because macOS git is 2.50.
 The fix is a runtime base of `debian:trixie-slim` (git 2.47.3); the Rust build stage is
 unchanged, and the bookworm-built binary runs on trixie's newer glibc. After the fix the image
-scores 88/88. All forge numbers above are from the fixed image. Suggested follow-up, not done
+scores 88/88. All first-run forge numbers are from the fixed image. Suggested follow-up, not done
 here: have `forge serve` check `git --version` at startup and refuse to start below 2.40.
 
 **forge findings (for the forge team):**
@@ -317,6 +364,35 @@ here: have `forge serve` check `git --version` at startup and refuse to start be
   mode it skips the SQL fallback for commit statuses, so it never writes into a database it does
   not own. With default settings the suite behaves exactly as before.
 
+## History: 2026-10-12 run
+
+First run, `main` at `15977d4` (before Checks, orgs, enterprise, Actions, packages and advanced
+security), image `sha256:4dba300d8a34…`, same cluster, limits and harnesses (the gh suite then
+had 88 cases, the conformance harness fewer scenarios). Its generated summary is kept in
+`tests/baseline/results/history/summary-20261012.md`; the raw files are in git history.
+
+| | **Forgejo 16.0.6** (1 replica) | **forge** (1 replica) | **forge** (3 replicas) |
+|---|---:|---:|---:|
+| **REST conformance**, GitHub GHES 3.22 spec, tier 1 (gh core, 104 ops) | 10/104 (9.6%) at `/api/v1`; 0/104 at `/api/v3` | **102/104 (98.1%)** | (same binary) |
+| REST conformance, tier 2 (octokit common, 129 ops) | 19/129 (14.7%) | **120/129 (93.0%)** | |
+| REST conformance, all 1105 ops (conforming / of tested) | 29 (2.6%) / 20% of 145 tested | **224 (20.3%) / 99.1% of 226 tested** | |
+| **gh CLI suite** (`tests/gh/run.sh`, gh as enterprise host) | 0/88 | **88/88** | |
+| stock git smart HTTP (clone, fetch, push, tags, shallow, v2) | 17/17 | 17/17 | |
+| **API reads, saturation** (64 VUs closed loop), throughput | 273 req/s | **1,900 req/s (7.0x)** | **2,894 req/s (10.6x)** |
+| API reads, saturation, p50 / p95 / p99 | 75 / 951 / 1,046 ms | 29 / 71 / 82 ms | 19 / 50 / 64 ms |
+| API reads @ 100 req/s, p50 / p95 / p99 | 5.5 / 18.4 / 29.1 ms | 3.9 / 5.1 / 5.8 ms | 3.8 / 5.8 / 6.5 ms |
+| API reads @ 500 req/s | **not sustained**: 258 req/s done, 14.3k dropped, p95 6.3 s | 500 req/s, p95 2.7 ms | 500 req/s, p95 3.6 ms |
+| API reads @ 1000 req/s | **not sustained**: 258 req/s done, 44.3k dropped | 1,000 req/s, p95 3.1 ms | 1,000 req/s, p95 4.2 ms |
+| git clone (protocol v2), 1 VU: full clone p50 / p95 | 21 / 22 ms | 12 / 13 ms | 12 / 13 ms |
+| git clone/fetch, 32 VUs: clones+fetches/s | 132 | 249 (1.9x) | 485 (3.7x) |
+| git clone/fetch, 32 VUs: full clone p50 / p95 | 240 / 303 ms | 122 / 182 ms | 64 / 96 ms |
+| write mix (create issue + comment) @ 50 it/s, p50 / p95 / p99 | 10.1 / 40.5 / 59.6 ms | 3.0 / 4.2 / 4.5 ms | 3.1 / 4.4 / 5.0 ms |
+| **chaos A1**, graceful pod delete x6: longest / total outage | 4.1 s / 11.5 s | **0 s / 0 s** | **0 s / 0 s** |
+| chaos A1: git loop pushes failed / clones failed | 50 / 50 of 122 | 0 / 0 of 100 | 0 / 0 of 95 |
+| **chaos A2**, `--force --grace-period=0` x6: longest / total outage | 3.0 s / 4.0 s | 3.0 s / 3.5 s | **0 s / 0 s** |
+| chaos A2: git loop pushes failed / clones failed | 6 / 4 of 82 | 5 / 3 of 92 | 0 / 0 of 96 |
+| chaos: acknowledged pushes lost, `fsck --strict` failures | 0, 0 | 0, 0 | 0, 0 |
+
 ## Caveats
 
 - **Single host.** Everything ran in one Docker Desktop VM (10 CPU / 7.75 GiB) on one laptop:
@@ -326,7 +402,8 @@ here: have `forge serve` check `git --version` at startup and refuse to start be
   were shared by about 4 forge CPUs, 3 Postgres CPUs, k6 and other work.
 - **Other work on the machine.** Other engineers' builds and tests ran on the same machine
   during these runs; the host load average is recorded in every `*.top` file and ranged from
-  about 5 to 17. Interleaving runs and taking the median of 3 limits the effect. The first
+  about 5 to 17 in the first run and 2.6 to 18.6 in the rerun. Interleaving runs and taking the
+  median of 3 limits the effect. In the first run the first
   forge-1 run (`read-r100`/`read-r500` run 1 has p99 44 to 74 ms) is visibly noisier than runs
   2 and 3, and the median discards it.
 - **Topology differences that cannot be removed.** forge needs MinIO, an extra pod with its own
@@ -336,10 +413,11 @@ here: have `forge serve` check `git --version` at startup and refuse to start be
 - **Forgejo is tested through GitHub's spec.** The conformance numbers measure how GitHub-
   compatible Forgejo's API is, not how well Forgejo implements its own API. Its contents API
   requires `sha` to create a file, and it has no git refs API. Those two fixture steps block the
-  PR, branch and commit scenarios, so 960 of 1105 operations went untested ("% of tested" is 20%
-  over 145 tested operations). At `/api/v3`, every path returns 404 Not Found: the harness's
-  first step, `GET /user`, gets 404, which blocks every scenario after it, and the 7 meta calls
-  it can still make are all `not_implemented`. That is all a GitHub client pointed at the host
+  PR, branch and commit scenarios, so 665 of 1105 operations went untested in the rerun ("% of
+  tested" is 10% over 440 tested operations; 20% of 145 in the first run, whose harness had fewer
+  scenarios). At `/api/v3`, every path returns 404 Not Found: the harness's
+  first step, `GET /user`, gets 404, which blocks every scenario after it, and the meta calls
+  it can still make (7 in the first run, 23 in the rerun) are all `not_implemented`. That is all a GitHub client pointed at the host
   ever sees. gh fails at
   `gh auth status` (no `/api/v3/user`) and at every GraphQL call (`/api/graphql` returns 405).
 - **The comparison is at equal resources, not equal features.** Forgejo has a web UI, Actions
@@ -354,7 +432,9 @@ here: have `forge serve` check `git --version` at startup and refuse to start be
 ## Reproduce
 
 ```sh
-# compatibility (docker compose, ~5 min)
+# compatibility (docker compose, ~15 min). The conformance runner scenarios start a local
+# `forge runner`: build it first (or point FORGE_BIN at any forge binary of the same commit).
+cargo build -p forge                         # -> target/debug/forge (FORGE_BIN default)
 tests/baseline/compat.sh                     # up conformance gh git down
 
 # performance + chaos (k3d, one cluster at a time; ~45 min per configuration)

@@ -1,25 +1,25 @@
-
-per tag (tested tags only):
-  repos              75/193 (38.9%), tested 75, nonconf 0, n/i 0
-  actions            2/160 (1.3%), tested 2, nonconf 0, n/i 0
-  orgs               7/89 (7.9%), tested 7, nonconf 0, n/i 0
-  issues             38/47 (80.9%), tested 38, nonconf 0, n/i 0
-  users              13/37 (35.1%), tested 13, nonconf 0, n/i 0
-  teams              1/35 (2.9%), tested 1, nonconf 0, n/i 0
-  activity           13/32 (40.6%), tested 13, nonconf 0, n/i 0
-  pulls              26/27 (96.3%), tested 26, nonconf 0, n/i 0
-  gists              5/20 (25%), tested 5, nonconf 0, n/i 0
-  reactions          12/15 (80%), tested 14, nonconf 0, n/i 2
+  reactions          15/15 (100%), tested 15, nonconf 0, n/i 0
   git                13/13 (100%), tested 13, nonconf 0, n/i 0
-  checks             2/12 (16.7%), tested 2, nonconf 0, n/i 0
+  checks             12/12 (100%), tested 12, nonconf 0, n/i 0
+  migrations         11/11 (100%), tested 11, nonconf 0, n/i 0
+  oauth-authorizations 10/10 (100%), tested 10, nonconf 0, n/i 0
   search             7/7 (100%), tested 7, nonconf 0, n/i 0
+  enterprise-team-organizations 6/6 (100%), tested 6, nonconf 0, n/i 0
+  private-registries 6/6 (100%), tested 6, nonconf 0, n/i 0
+  enterprise-teams   5/5 (100%), tested 5, nonconf 0, n/i 0
+  enterprise-team-memberships 5/5 (100%), tested 5, nonconf 0, n/i 0
   meta               4/4 (100%), tested 4, nonconf 0, n/i 0
-  licenses           2/3 (66.7%), tested 2, nonconf 0, n/i 0
-  gitignore          1/2 (50%), tested 1, nonconf 0, n/i 0
-  markdown           1/2 (50%), tested 1, nonconf 0, n/i 0
+  licenses           3/3 (100%), tested 3, nonconf 0, n/i 0
+  dependency-graph   3/3 (100%), tested 3, nonconf 0, n/i 0
+  security-advisories 2/2 (100%), tested 2, nonconf 0, n/i 0
+  codes-of-conduct   2/2 (100%), tested 2, nonconf 0, n/i 0
+  billing            2/2 (100%), tested 2, nonconf 0, n/i 0
+  gitignore          2/2 (100%), tested 2, nonconf 0, n/i 0
+  markdown           2/2 (100%), tested 2, nonconf 0, n/i 0
+  oidc               2/2 (100%), tested 2, nonconf 0, n/i 0
   emojis             1/1 (100%), tested 1, nonconf 0, n/i 0
   rate-limit         1/1 (100%), tested 1, nonconf 0, n/i 0
 
-HTTP requests: 269
+HTTP requests: 1554
 report: ../../tests/baseline/results/compat/conformance-forge-v3.json
 summary: ../../tests/baseline/results/compat/conformance-forge-v3.md

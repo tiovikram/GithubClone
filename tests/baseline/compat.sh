@@ -43,8 +43,11 @@ users() {
   touch "$STATE/compat.env"
   for u in "$@"; do
     grep -q "^FORGE_TOKEN_${u//-/_}=" "$STATE/compat.env" && continue
-    fg admin create-user --login "$u" --password "pw-$u-123456" --email "$u@example.com" --admin >/dev/null
-    fj admin user create --admin --username "$u" --password "pw-$u-123456" --email "$u@example.com" --must-change-password=false >/dev/null
+    # The collaborator must be a regular user: conformance checks that it is refused what only
+    # admins may do (e.g. bypassing push protection), and a site admin may do everything.
+    adm=--admin; [ "$u" = collab ] && adm=""
+    fg admin create-user --login "$u" --password "pw-$u-123456" --email "$u@example.com" $adm >/dev/null
+    fj admin user create $adm --username "$u" --password "pw-$u-123456" --email "$u@example.com" --must-change-password=false >/dev/null
     echo "FORGE_TOKEN_${u//-/_}=$(fg admin create-token --login "$u" | tail -1)" >> "$STATE/compat.env"
     echo "FORGEJO_TOKEN_${u//-/_}=$(fj admin user generate-access-token -u "$u" -t "bench-$RANDOM" --scopes all --raw | tail -1)" >> "$STATE/compat.env"
   done
@@ -68,12 +71,15 @@ conformance)
   ( cd "$ROOT/tools/conformance"
     [ -d node_modules ] || npm install --silent
     [ -f spec/ghes-3.22.json ] || node fetch-spec.mjs
-    for target in "forge-v3 http://localhost:$FPORT/api/v3 $FORGE_TOKEN_conf" \
-                  "forgejo-v1 http://localhost:$JPORT/api/v1 $FORGEJO_TOKEN_conf" \
-                  "forgejo-v3 http://localhost:$JPORT/api/v3 $FORGEJO_TOKEN_conf"; do
+    # The runner scenarios start a local `forge runner` (FORGE_BIN, default target/debug/forge)
+    # against the server; it runs jobs with the host shell (Forgejo's API does not get that far).
+    export FORGE_BIN=${FORGE_BIN:-$ROOT/target/debug/forge}
+    for target in "forge-v3 http://localhost:$FPORT/api/v3 $FORGE_TOKEN_conf $FORGE_TOKEN_collab" \
+                  "forgejo-v1 http://localhost:$JPORT/api/v1 $FORGEJO_TOKEN_conf $FORGEJO_TOKEN_collab" \
+                  "forgejo-v3 http://localhost:$JPORT/api/v3 $FORGEJO_TOKEN_conf $FORGEJO_TOKEN_collab"; do
       set -- $target
       log "conformance: $1 ($2)"
-      node run.mjs --base "$2" --token "$3" --org conforg --collaborator collab \
+      node run.mjs --base "$2" --token "$3" --org conforg --collaborator collab --collaborator-token "$4" \
         --report "$OUT/conformance-$1.json" --md "$OUT/conformance-$1.md" 2>&1 | tail -25 | tee "$OUT/conformance-$1.txt"
     done )
   ;;

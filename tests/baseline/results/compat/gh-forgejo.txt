@@ -1,4 +1,353 @@
-fatal: cannot change to '/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a69095d3dd37d103c/data/bench/gh-forgejo/seed': No such file or directory
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95424 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95436 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95448 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95461 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95474 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95488 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95500 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95512 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95525 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95537 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95549 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95561 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95583 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95595 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95608 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95620 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95632 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95644 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95658 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95671 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95684 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95697 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95710 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95722 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95734 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95746 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95758 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95771 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95783 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95795 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95807 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95820 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95832 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95844 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95856 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95868 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95880 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95892 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95904 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95916 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95929 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95941 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95954 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95969 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95984 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 95999 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96015 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96031 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96044 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96056 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96068 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96080 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96093 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96105 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96117 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96129 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96141 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96153 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96166 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96179 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96191 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96203 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96215 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96227 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96239 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96251 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+fatal: cannot change to '/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/data/bench/gh-forgejo/seed': No such file or directory
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96265 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96277 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96288 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96300 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96312 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96324 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96337 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96349 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96361 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96374 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96387 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96399 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96411 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96423 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96436 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96448 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96460 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96473 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96485 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96497 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96510 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96522 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96541 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96556 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96570 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96585 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96599 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96612 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96626 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96640 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 96649 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 169: 96655 Terminated: 15          ( cd "$CASE_DIR" && "$@" ) > "$log" 2>&1 < /dev/null
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97167 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97181 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97193 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97207 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97221 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97233 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97245 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97258 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97270 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97282 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97294 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97307 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97320 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97332 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97344 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97356 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97368 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97380 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97394 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97407 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97419 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97430 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97443 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97455 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97468 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97483 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97498 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97511 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97526 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97539 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97552 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97564 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97578 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97591 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97603 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97616 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97630 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97642 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97654 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97666 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97678 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97690 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97703 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97721 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97734 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97747 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97761 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97774 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97787 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97800 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97813 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97825 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97837 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97849 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97863 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97875 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97888 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97900 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97913 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97925 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97938 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97955 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97968 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97980 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 97994 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98007 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98019 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98032 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98045 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98058 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98072 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98085 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98105 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98122 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98134 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98151 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98170 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98187 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98199 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98211 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98224 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98236 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98249 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98263 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98275 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98287 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98299 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98311 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98324 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98336 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98348 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98361 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98375 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98388 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98400 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98412 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98424 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98436 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98448 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98461 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98474 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98487 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98499 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98512 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98525 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98538 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98551 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98560 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98577 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98592 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98604 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98617 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98629 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98642 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98654 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98667 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98679 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98691 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98703 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98716 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98731 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98744 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98757 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98770 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98783 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98795 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98809 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98821 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98836 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98848 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98862 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98874 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98888 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98900 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98912 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98924 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98938 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98950 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98962 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98976 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 98988 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99000 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99012 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99024 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99037 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99050 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99063 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99076 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99091 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99113 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99126 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99147 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99162 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99175 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99188 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99203 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99215 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99228 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99240 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99252 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99270 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99282 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99294 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99306 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99320 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99333 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99345 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99357 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99370 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99382 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99396 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99409 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99422 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99434 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99446 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99458 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99470 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99482 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99494 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99506 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99518 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99530 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99542 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99555 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99567 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99579 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99592 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99599 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99611 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99619 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99626 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99638 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99646 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99654 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99662 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99670 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99677 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99686 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99701 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99713 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99726 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99739 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99751 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99763 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99776 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99789 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99801 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99812 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99820 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99832 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99849 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99863 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99875 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99890 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99902 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99914 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99926 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99938 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99951 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99963 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99975 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159: 99988 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159:   101 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159:   114 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159:   127 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159:   140 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159:   154 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159:   169 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159:   182 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159:   195 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159:   212 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159:   225 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159:   238 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159:   251 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159:   264 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159:   277 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159:   290 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159:   303 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159:   316 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159:   329 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159:   339 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159:   357 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159:   380 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159:   411 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159:   443 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159:   461 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159:   477 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159:   490 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159:   505 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159:   522 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
+/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 159:   541 Terminated: 15          sleep "${CASE_TIMEOUT:-60}"
 #    case                                       res   notes
 1    auth status                                FAIL  exit 1 (want 0): forgejo.localhost   X Failed to log in to forgejo.localhost using token (GH_ENTERPRISE_TOKEN)   - Active account: true 
 2    api user (REST GET)                        FAIL  exit 1 (want 0): Not found. gh: HTTP 404 
@@ -10,14 +359,14 @@ fatal: cannot change to '/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent
 8    repo view --json                           FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
 9    repo list                                  FAIL  exit 1 (want 0): non-200 OK status code: 405 Method Not Allowed body: "" 
 10   repo list OWNER --json                     FAIL  exit 1 (want 0): non-200 OK status code: 405 Method Not Allowed body: "" 
-11   repo edit                                  FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-a47457/demo) 
+11   repo edit                                  FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo) 
 12   repo view after edit                       FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
 13   repo clone                                 FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
-14   repo clone result                          FAIL  exit 128 (want 0): fatal: cannot change to '/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a69095d3dd37d103c/data/bench/gh-forgejo/work/clone': No such file or directory 
-15   repo fork (as other user)                  FAIL  exit 1 (want 0): failed to fork: HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-a47457/demo/forks) 
+14   repo clone result                          FAIL  exit 128 (want 0): fatal: cannot change to '/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/data/bench/gh-forgejo/work/clone': No such file or directory 
+15   repo fork (as other user)                  FAIL  exit 1 (want 0): failed to fork: HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/forks) 
 16   repo list --fork (other user)              FAIL  exit 1 (want 0): non-200 OK status code: 405 Method Not Allowed body: "" 
-17   label create (REST)                        FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-a47457/demo/labels) 
-18   label create --force (REST)                FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-a47457/demo/labels) 
+17   label create (REST)                        FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/labels) 
+18   label create --force (REST)                FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/labels) 
 19   api graphql mutation (createLabel)         FAIL  exit 1 (want 0): gh: HTTP 405 
 20   label list                                 FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
 21   label list --json                          FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
@@ -67,12 +416,12 @@ fatal: cannot change to '/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent
 65   pr view after ready                        FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
 66   pr ready (undo the undo)                   FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
 67   pr checks                                  FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
-68   pr checkout                                FAIL  exit 1 (want 0): /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a69095d3dd37d103c/tests/gh/run.sh: line 134: cd: /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent
-69   pr checkout result                         FAIL  exit 1 (want 0): /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a69095d3dd37d103c/tests/gh/run.sh: line 134: cd: /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent
-70   pr status                                  FAIL  exit 1 (want 0): /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a69095d3dd37d103c/tests/gh/run.sh: line 134: cd: /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent
-71   pr view (current branch)                   FAIL  exit 1 (want 0): /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a69095d3dd37d103c/tests/gh/run.sh: line 134: cd: /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent
-72   pr merge --merge --delete-branch           FAIL  exit 1 (want 0): /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a69095d3dd37d103c/tests/gh/run.sh: line 134: cd: /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent
-73   pr merge result (local main)               FAIL  exit 1 (want 0): /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a69095d3dd37d103c/tests/gh/run.sh: line 134: cd: /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent
+68   pr checkout                                FAIL  exit 1 (want 0): /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 164: cd: /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent
+69   pr checkout result                         FAIL  exit 1 (want 0): /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 164: cd: /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent
+70   pr status                                  FAIL  exit 1 (want 0): /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 164: cd: /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent
+71   pr view (current branch)                   FAIL  exit 1 (want 0): /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 164: cd: /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent
+72   pr merge --merge --delete-branch           FAIL  exit 1 (want 0): /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 164: cd: /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent
+73   pr merge result (local main)               FAIL  exit 1 (want 0): /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 164: cd: /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent
 74   pr view merged                             FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
 75   pr close                                   FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
 76   pr reopen                                  FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
@@ -80,14 +429,433 @@ fatal: cannot change to '/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent
 78   pr merge --rebase                          FAIL  exit 1 (want 0): non-200 OK status code: 405 Method Not Allowed body: "" 
 79   pr list --state merged                     FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
 80   pr merge result (remote log)               FAIL  exit 1 (want 0): invalid character 'N' looking for beginning of value 
-81   release create                             FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-a47457/demo/releases) 
+81   release create                             FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/releases) 
 82   release list                               FAIL  exit 1 (want 0): non-200 OK status code: 405 Method Not Allowed body: "" 
 83   release view                               FAIL  exit 1 (want 0): release not found 
 84   api POST -f (REST)                         FAIL  exit 1 (want 0): Not found. gh: HTTP 404 
 85   api --paginate (REST)                      FAIL  exit 1 (want 0): invalid character 'N' looking for beginning of value 
 86   api graphql --paginate                     FAIL  exit 1 (want 0): gh: HTTP 405 
-87   repo delete                                FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-a47457/apirepo) 
+87   repo delete                                FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-e94ba7/apirepo) 
 88   repo view deleted (404)                    FAIL  output did not match /Could not resolve/: HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+89   auth login --with-token                    FAIL  exit 1 (want 0): error validating token: HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/) 
+90   auth status (stored token)                 FAIL  exit 1 (want 0): forgejo.localhost   X Failed to log in to forgejo.localhost using token (default)   - Active account: true 
+91   auth login (second account)                FAIL  exit 1 (want 0): error validating token: HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/) 
+92   auth status (two accounts)                 FAIL  exit 1 (want 0): forgejo.localhost   X Failed to log in to forgejo.localhost using token (default)   - Active account: true 
+93   auth switch                                FAIL  exit 1 (want 0): not logged in to forgejo.localhost account alice-e94ba7 
+94   auth token                                 FAIL  exit 1 (want 0): no oauth token found for forgejo.localhost 
+95   auth token --user                          FAIL  exit 1 (want 0): no oauth token found for forgejo.localhost account bob-e94ba7 
+96   auth setup-git                             PASS  
+97   auth setup-git result                      PASS  
+98   auth refresh (device flow)                 FAIL  exit 143 (want 0): /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 359: 96657 Terminated: 15          gh2 auth refresh --hostname "
+99   auth refresh result                        FAIL  exit 1 (want 0): forgejo.localhost   X Failed to log in to forgejo.localhost using token (default)   - Active account: true 
+100  auth logout                                FAIL  exit 1 (want 0): not logged in to forgejo.localhost account bob-e94ba7 
+101  auth logout result                         FAIL  exit 1 (want 0): forgejo.localhost   X Failed to log in to forgejo.localhost using token (default)   - Active account: true 
+102  browse -n (repo)                           FAIL  exit 1 (want 0): https://forgejo.localhost/alice-e94ba7/demo doesn't exist 
+103  browse -n (issue)                          FAIL  exit 1 (want 0): https://forgejo.localhost/alice-e94ba7/demo/issues/1 doesn't exist 
+104  browse -n (file)                           FAIL  exit 1 (want 0): error determining the default branch: HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+105  browse -n --settings                       FAIL  exit 1 (want 0): https://forgejo.localhost/alice-e94ba7/demo/settings doesn't exist 
+106  browse -n --releases                       FAIL  exit 1 (want 0): https://forgejo.localhost/alice-e94ba7/demo/releases doesn't exist 
+107  browse -n --commit                         FAIL  exit 1 (want 0): non-200 OK status code: 405 Method Not Allowed body: "" 
+108  repo archive                               FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+109  repo archive result                        FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+110  repo unarchive                             FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+111  repo unarchive result                      FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+112  repo rename                                FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-e94ba7/readme) 
+113  repo rename result                         FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+114  repo edit --add-topic                      FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/topics) 
+115  repo view --json (topics, more fields)     FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+116  repo list --json --jq                      FAIL  exit 1 (want 0): non-200 OK status code: 405 Method Not Allowed body: "" 
+117  repo list --topic                          FAIL  exit 1 (want 0): non-200 OK status code: 405 Method Not Allowed body: "" 
+118  repo set-default                           FAIL  exit 1 (want 0): /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 164: cd: /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent
+119  repo set-default --view                    FAIL  exit 1 (want 0): /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 164: cd: /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent
+120  repo sync (local)                          FAIL  exit 1 (want 0): /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 164: cd: /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent
+121  repo sync (local) result                   FAIL  exit 1 (want 0): /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/gh/run.sh: line 164: cd: /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent
+122  repo sync (fork from parent)               FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+123  repo sync (fork) result                    FAIL  exit 1 (want 0): invalid character 'N' looking for beginning of value 
+124  repo deploy-key add                        FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/keys) 
+125  repo deploy-key list                       FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/keys?per_page=100) 
+126  repo deploy-key list --json                FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/keys?per_page=100) 
+127  repo deploy-key delete                     FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/keys/) 
+128  repo autolink create                       FAIL  exit 1 (want 0): error creating autolink: HTTP 404: Must have admin rights to Repository. (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/autolinks) 
+129  repo autolink list                         FAIL  exit 1 (want 0): error getting autolinks: HTTP 404: Perhaps you are missing admin rights to the repository? (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/autolinks) 
+130  repo autolink list --json                  FAIL  exit 1 (want 0): error getting autolinks: HTTP 404: Perhaps you are missing admin rights to the repository? (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/autolinks) 
+131  repo autolink view                         FAIL  exit 1 (want 0): error viewing autolink: HTTP 404: Perhaps you are missing admin rights to the repository? (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/autolinks/) 
+132  repo autolink delete                       FAIL  exit 1 (want 0): error deleting autolink: HTTP 404: Perhaps you are missing admin rights to the repository? (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/autolinks/)
+133  repo gitignore list                        FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/gitignore/templates) 
+134  repo gitignore view                        FAIL  exit 1 (want 0): 'Rust' is not a valid gitignore template. Run `gh repo gitignore list` for options 
+135  repo license list                          FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/licenses) 
+136  repo license view                          FAIL  exit 1 (want 0): 'mit' is not a valid license name or SPDX ID. Run `gh repo license list` to see available commonly used licenses. For even more licenses, visit https://chooseal
+137  repo read-file                             FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/contents/README.md) 
+138  repo read-file --ref --json                FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/contents/feature4.txt?ref=feature4) 
+139  repo read-dir                              FAIL  exit 1 (want 0): non-200 OK status code: 405 Method Not Allowed body: "" 
+140  repo read-dir PATH --json                  FAIL  exit 1 (want 0): non-200 OK status code: 405 Method Not Allowed body: "" 
+141  issue create (for transfer)                FAIL  exit 1 (want 0): non-200 OK status code: 405 Method Not Allowed body: "" 
+142  issue transfer                             FAIL  exit 1 (want 0): invalid issue format: "" 
+143  issue transfer result                      FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+144  issue transfer (gone from source)          FAIL  output did not match /Could not resolve|not found/: invalid issue format: "" 
+145  issue pin                                  FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+146  issue pin result                           FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+147  issue unpin                                FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+148  issue unpin result                         FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+149  issue lock                                 FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+150  issue lock result                          FAIL  exit 1 (want 0): invalid character 'N' looking for beginning of value 
+151  issue unlock                               FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+152  issue unlock result                        FAIL  exit 1 (want 0): invalid character 'N' looking for beginning of value 
+153  issue develop                              FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+154  issue develop --list                       FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+155  issue develop result                       FAIL  exit 1 (want 0): invalid character 'N' looking for beginning of value 
+156  issue comment --edit-last                  FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+157  issue status --json                        FAIL  exit 1 (want 0): non-200 OK status code: 405 Method Not Allowed body: "" 
+158  issue list --json --jq                     FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+159  issue create --milestone                   FAIL  exit 1 (want 0): non-200 OK status code: 405 Method Not Allowed body: "" 
+160  issue list --milestone                     FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/meta) 
+161  issue edit (two issues)                    FAIL  exit 1 (want 0): invalid issue format: "" 
+162  issue close --json view                    FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+163  issue reopen (again)                       FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+164  pr lock                                    FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+165  pr lock result                             FAIL  exit 1 (want 0): invalid character 'N' looking for beginning of value 
+166  pr unlock                                  FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+167  pr unlock result                           FAIL  exit 1 (want 0): invalid character 'N' looking for beginning of value 
+168  pr update-branch                           FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+169  pr update-branch result                    FAIL  exit 1 (want 0): invalid character 'N' looking for beginning of value 
+170  pr create (behind base)                    FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+171  pr update-branch --rebase                  FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+172  pr update-branch --rebase result           FAIL  exit 1 (want 0): invalid character 'N' looking for beginning of value 
+173  pr revert                                  FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+174  pr revert result                           FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+175  pr revert diff                             FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+176  pr comment --edit-last                     FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+177  pr view --comments                         FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+178  pr status --json                           FAIL  exit 1 (want 0): non-200 OK status code: 405 Method Not Allowed body: "" 
+179  pr checks --json                           FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+180  pr diff --patch                            FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+181  pr list --json --jq                        FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+182  pr list --label                            FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/meta) 
+183  pr edit --add-reviewer                     FAIL  exit 1 (want 0): non-200 OK status code: 405 Method Not Allowed body: "" 
+184  pr review --request-changes -> approve     FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+185  label edit                                 FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/labels/triage) 
+186  label edit result                          FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+187  label clone                                FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+188  label clone result                         FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+189  label delete                               FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/labels/gql-label) 
+190  label delete result                        FAIL  output did not match /Not Found/: Not found. gh: HTTP 404 
+191  release create (with asset)                FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/releases) 
+192  release create --draft --generate-notes    FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/releases) 
+193  release upload                             FAIL  exit 1 (want 0): release not found 
+194  release view --json                        FAIL  exit 1 (want 0): release not found 
+195  release list --json                        FAIL  exit 1 (want 0): non-200 OK status code: 405 Method Not Allowed body: "" 
+196  release download (pattern)                 FAIL  exit 1 (want 0): release not found 
+197  release download result                    FAIL  exit 1 (want 0): cat: /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/data/bench/gh-forgejo/dl/asset.txt: No such file or directory 
+198  release download --archive                 FAIL  exit 1 (want 0): release not found 
+199  release download --archive result          FAIL  exit 1 (want 0): tar: /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/data/bench/gh-forgejo/dl/demo-v1.1.tar.gz: m: No such file or directory 
+200  release edit                               FAIL  exit 1 (want 0): release not found 
+201  release edit result                        FAIL  exit 1 (want 0): release not found 
+202  release delete-asset                       FAIL  exit 1 (want 0): release not found 
+203  release delete-asset result                FAIL  exit 1 (want 0): release not found 
+204  release delete                             FAIL  exit 1 (want 0): release not found 
+205  release delete result                      PASS  
+206  gist create                                FAIL  exit 1 (want 0): - Creating gist hello.txt X Failed to create gist: HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/gists) 
+207  gist create (stdin)                        FAIL  exit 1 (want 0): - Creating gist piped.txt X Failed to create gist: HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/gists) 
+208  gist list                                  FAIL  exit 1 (want 0): non-200 OK status code: 405 Method Not Allowed body: "" 
+209  gist list --public                         FAIL  exit 1 (want 0): non-200 OK status code: 405 Method Not Allowed body: "" 
+210  gist view                                  FAIL  exit 1 (want 0): gist ID or URL required when not running interactively View the given gist or select from recent gists. USAGE 
+211  gist view --files                          FAIL  exit 1 (want 0): gist ID or URL required when not running interactively View the given gist or select from recent gists. USAGE 
+212  gist edit --add                            FAIL  exit 1 (want 0): gist ID or URL required when not running interactively Edit one of your gists USAGE 
+213  gist edit FILE (replace content)           FAIL  exit 1 (want 0): gist ID or URL required when not running interactively Edit one of your gists USAGE 
+214  gist edit result                           FAIL  exit 1 (want 0): gist ID or URL required when not running interactively View the given gist or select from recent gists. USAGE 
+215  gist edit --desc                           FAIL  exit 1 (want 0): gist ID or URL required when not running interactively Edit one of your gists USAGE 
+216  gist rename                                FAIL  exit 1 (want 0): gist not found:  
+217  gist rename result                         FAIL  exit 1 (want 0): gist ID or URL required when not running interactively View the given gist or select from recent gists. USAGE 
+218  gist clone                                 FAIL  exit 1 (want 0): Cloning into '/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/data/bench/gh-forgejo/work/gistclone'... remote: Not found. fatal: repos
+219  gist clone result                          FAIL  exit 1 (want 0): ls: /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/data/bench/gh-forgejo/work/gistclone: No such file or directory 
+220  gist delete                                FAIL  exit 1 (want 0): non-200 OK status code: 405 Method Not Allowed body: "" 
+221  gist delete result                         FAIL  output did not match /404|not found/: gist ID or URL required when not running interactively View the given gist or select from recent gists. USAGE 
+222  ssh-key add                                FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/user/keys?per_page=100) 
+223  ssh-key add --type signing                 FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/user/ssh_signing_keys?per_page=100) 
+224  ssh-key list                               FAIL  exit 1 (want 0): warning:  HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/user/keys?per_page=100) warning:  HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/
+225  ssh-key delete                             FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/user/keys/) 
+226  ssh-key delete result                      FAIL  exit 1 (want 0): invalid character 'N' looking for beginning of value 
+227  gpg-key add                                FAIL  exit 1 (want 0): Error: insufficient OAuth scopes to list GPG keys Run the following to grant scopes: gh auth refresh -s write:gpg_key 
+228  gpg-key list                               FAIL  exit 1 (want 0): Error: insufficient OAuth scopes to list GPG keys Run the following to grant scopes: gh auth refresh -s read:gpg_key 
+229  gpg-key delete                             FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/user/gpg_keys?per_page=100) 
+230  gpg-key delete result                      FAIL  exit 1 (want 0): invalid character 'N' looking for beginning of value 
+231  org list                                   FAIL  exit 1 (want 0): non-200 OK status code: 405 Method Not Allowed body: "" 
+232  search repos                               FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/search/repositories?page=1&per_page=30&q=demo+user%3Aalice-e94ba7) 
+233  search repos --json                        FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/search/repositories?page=1&per_page=30&q=demo+user%3Aalice-e94ba7) 
+234  search issues                              FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/meta) 
+235  search issues --json                       FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/meta) 
+236  search prs                                 FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/meta) 
+237  search prs --json --state                  FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/meta) 
+238  search commits                             FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/search/commits?page=1&per_page=30&q=feature+repo%3Aalice-e94ba7%2Fdemo) 
+239  search commits --json                      FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/search/commits?page=1&per_page=30&q=feature+repo%3Aalice-e94ba7%2Fdemo) 
+240  search code                                FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/search/code?page=1&per_page=30&q=demo+repo%3Aalice-e94ba7%2Fdemo) 
+241  search code --json                         FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/search/code?page=1&per_page=30&q=demo+repo%3Aalice-e94ba7%2Fdemo) 
+242  status                                     FAIL  exit 1 (want 0): failed to search: could not search for assignments: HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+243  status --org                               FAIL  exit 1 (want 0): could not load events: failed to get current username: non-200 OK status code: 405 Method Not Allowed body: "" 
+244  api -X PATCH                               FAIL  exit 1 (want 0): invalid character 'N' looking for beginning of value 
+245  api --include                              FAIL  exit 1 (want 0): HTTP/1.1 404 Not Found Cache-Control: max-age=0, private, must-revalidate Content-Length: 11 
+246  api --template                             FAIL  exit 1 (want 0): invalid character 'N' looking for beginning of value 
+247  api --input                                FAIL  exit 1 (want 0): Not found. gh: HTTP 404 
+248  api graphql -F variables                   FAIL  exit 1 (want 0): gh: HTTP 405 
+249  api 404                                    FAIL  output did not match /Not Found/: Not found. gh: HTTP 404 
+250  ruleset list                               FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+251  ruleset view                               FAIL  exit 1 (want 0): invalid value for ruleset ID:  is not an integer View information about a GitHub ruleset. If no ID is provided, an interactive prompt will be used to choose 
+252  ruleset check                              FAIL  exit 1 (want 0): GET repos/alice-e94ba7/demo/rules/branches/main failed: HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/rules/branches/main) 
+253  workflow list                              FAIL  exit 1 (want 0): could not get workflows: HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/actions/workflows?page=1&per_page=50) 
+254  workflow list --json                       FAIL  exit 1 (want 0): could not get workflows: HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/actions/workflows?page=1&per_page=50) 
+255  workflow view                              FAIL  exit 1 (want 0): HTTP 404: workflow ci.yml not found on the default branch (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/actions/workflows/ci.yml) 
+256  workflow disable                           FAIL  exit 1 (want 0): HTTP 404: workflow ci.yml not found on the default branch (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/actions/workflows/ci.yml) 
+257  workflow disable result                    FAIL  exit 1 (want 0): could not get workflows: HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/actions/workflows?page=1&per_page=50) 
+258  workflow enable                            FAIL  exit 1 (want 0): HTTP 404: workflow ci.yml not found on the default branch (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/actions/workflows/ci.yml) 
+259  workflow enable result                     FAIL  exit 1 (want 0): could not get workflows: HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/actions/workflows?page=1&per_page=50) 
+260  workflow run                               FAIL  exit 1 (want 0): HTTP 404: workflow ci.yml not found on the default branch (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/actions/workflows/ci.yml) 
+261  run list                                   FAIL  exit 1 (want 0): failed to get runs: HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/actions/runs?exclude_pull_requests=true&per_page=20) 
+262  run list --json                            FAIL  exit 1 (want 0): failed to get runs: HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/actions/runs?exclude_pull_requests=true&per_page=20) 
+263  run view                                   FAIL  exit 1 (want 0): failed to get run: HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/actions/runs/?exclude_pull_requests=true) 
+264  run view --json                            FAIL  exit 1 (want 0): failed to get run: HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/actions/runs/?exclude_pull_requests=true) 
+265  run cancel                                 FAIL  exit 1 (want 0): Could not find any workflow run with ID  
+266  run watch                                  FAIL  exit 1 (want 0): failed to get run: HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/actions/runs/?exclude_pull_requests=true) 
+267  run rerun                                  FAIL  exit 1 (want 0): failed to get run: HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/actions/runs/?exclude_pull_requests=true) 
+268  run download                               FAIL  output did not match /no valid artifacts/: error fetching artifacts: HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/actions/artifacts?per_page=100) 
+269  run delete                                 FAIL  exit 1 (want 0): could not find any workflow run with ID  
+270  cache list                                 FAIL  exit 1 (want 0): X Failed to get caches: HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/actions/caches?direction=desc&per_page=30&sort=last_ac
+271  cache list --json                          FAIL  exit 1 (want 0): X Failed to get caches: HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/actions/caches?direction=desc&per_page=30&sort=last_ac
+272  cache delete --all                         FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/actions/caches?per_page=100) 
+273  secret set                                 FAIL  exit 1 (want 0): failed to fetch public key: HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/actions/secrets/public-key) 
+274  secret list                                FAIL  exit 1 (want 0): failed to get secrets: HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/actions/secrets?per_page=100) 
+275  secret list --json                         FAIL  exit 1 (want 0): failed to get secrets: HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/actions/secrets?per_page=100) 
+276  secret delete                              FAIL  exit 1 (want 0): failed to delete secret API_KEY: HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/actions/secrets/API_KEY) 
+277  secret delete result                       FAIL  exit 1 (want 0): failed to get secrets: HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/actions/secrets?per_page=100) 
+278  variable set                               FAIL  exit 1 (want 0): failed to set variable "GREETING": HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/actions/variables) 
+279  variable list                              FAIL  exit 1 (want 0): failed to get variables: HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/actions/variables?per_page=100) 
+280  variable list --json                       FAIL  exit 1 (want 0): failed to get variables: HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/actions/variables?per_page=100) 
+281  variable get                               FAIL  exit 1 (want 0): variable GREETING was not found 
+282  variable set (update)                      FAIL  exit 1 (want 0): failed to set variable "GREETING": HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/actions/variables) 
+283  variable set result                        FAIL  exit 1 (want 0): variable GREETING was not found 
+284  variable delete                            FAIL  exit 1 (want 0): failed to delete variable GREETING: HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo/actions/variables/GREETING) 
+285  alias set                                  PASS  
+286  alias set (use)                            FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+287  alias list                                 PASS  
+288  alias import                               PASS  
+289  alias import (use)                         FAIL  exit 1 (want 0): HTTP 405: 405 Method Not Allowed (https://forgejo.localhost/api/graphql) 
+290  alias delete                               PASS  
+291  config set                                 PASS  
+292  config get                                 PASS  
+293  config list                                PASS  
+294  config clear-cache                         PASS  
+295  completion                                 PASS  
+296  licenses                                   PASS  
+297  extension install                          FAIL  exit 1 (want 0): X Could not find extension 'forgejo.localhost/alice-e94ba7/gh-hello' on host forgejo.localhost 
+298  extension list                             FAIL  output did not match /hello/: 
+299  extension exec                             FAIL  exit 1 (want 0): extension "hello" not found 
+300  extension upgrade                          FAIL  exit 1 (want 0): X Failed upgrading extension hello: no extensions installed 
+301  extension upgrade result                   FAIL  exit 1 (want 0): unknown command "hello" for "gh" Work seamlessly with GitHub from the command line. USAGE 
+302  extension search                           FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/search/repositories?page=1&per_page=30&q=hello+topic%3Agh-extension) 
+303  extension remove                           FAIL  exit 1 (want 0): no extension found: "/Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/data/bench/gh-forgejo/xdg-data/gh/extensions/gh-hello" 
+304  extension create                           PASS  
+305  extension create result                    PASS  
+306  skill list                                 PASS  
+307  repo edit --enable-discussions             FAIL  exit 1 (want 0): HTTP 404: 404 Not Found (https://forgejo.localhost/api/v3/repos/alice-e94ba7/demo) 
+308  discussion create                          FAIL  exit 1 (want 0): non-200 OK status code: 405 Method Not Allowed body: "" 
+309  discussion create (Q&A)                    FAIL  exit 1 (want 0): non-200 OK status code: 405 Method Not Allowed body: "" 
+310  discussion list                            FAIL  exit 1 (want 0): non-200 OK status code: 405 Method Not Allowed body: "" 
+311  discussion list --json                     FAIL  exit 1 (want 0): non-200 OK status code: 405 Method Not Allowed body: "" 
+312  discussion list --category                 FAIL  exit 1 (want 0): non-200 OK status code: 405 Method Not Allowed body: "" 
+313  discussion view                            FAIL  exit 1 (want 0): invalid argument: "" (expected a discussion number, URL, or comment ID) Display the title, body, and other information about a discussion. To see the comments o
+314  discussion comment                         FAIL  exit 1 (want 0): invalid argument: "" (expected a discussion number, URL, or comment ID) 
+315  discussion view --comments                 FAIL  exit 1 (want 0): invalid argument: "" (expected a discussion number, URL, or comment ID) Display the title, body, and other information about a discussion. To see the comments o
+316  discussion edit                            FAIL  exit 1 (want 0): invalid discussion argument: "" Edit a GitHub Discussion. Without flags, the command runs interactively when connected to a terminal. 
+317  discussion edit result                     FAIL  exit 1 (want 0): invalid argument: "" (expected a discussion number, URL, or comment ID) Display the title, body, and other information about a discussion. To see the comments o
+318  project create                             FAIL  exit 1 (want 0): unknown owner type 
+319  project list                               FAIL  exit 1 (want 0): unknown owner type 
+320  project list --format json                 FAIL  exit 1 (want 0): unknown owner type 
+321  project view                               FAIL  exit 1 (want 0): unknown owner type 
+322  project edit                               FAIL  exit 1 (want 0): unknown owner type 
+323  project field-create                       FAIL  exit 1 (want 0): unknown owner type 
+324  project field-create (text)                FAIL  exit 1 (want 0): unknown owner type 
+325  project field-list                         FAIL  exit 1 (want 0): unknown owner type 
+326  project item-create                        FAIL  exit 1 (want 0): unknown owner type 
+327  project item-add                           FAIL  exit 1 (want 0): unknown owner type 
+328  project item-list                          FAIL  exit 1 (want 0): unknown owner type 
+329  project item-edit (draft)                  FAIL  exit 1 (want 0): specify the item to edit with `--id` or `--url` Edit a draft issue or a project item. The usual way to select the item and field is by name: pass the project 
+330  project item-edit (field by name)          FAIL  exit 1 (want 0): unknown owner type 
+331  project item-edit result                   FAIL  exit 1 (want 0): unknown owner type 
+332  project item-list --query                  FAIL  exit 1 (want 0): non-200 OK status code: 405 Method Not Allowed body: "" 
+333  project item-archive                       FAIL  exit 1 (want 0): unknown owner type 
+334  project item-archive result                FAIL  exit 1 (want 0): gh: HTTP 405 
+335  project item-delete                        FAIL  exit 1 (want 0): unknown owner type 
+336  project item-delete result                 FAIL  exit 1 (want 0): unknown owner type 
+337  project field-delete                       FAIL  exit 1 (want 0): non-200 OK status code: 405 Method Not Allowed body: "" 
+338  project field-delete result                PASS  
+339  project link                               FAIL  exit 1 (want 0): unknown owner type 
+340  project link result                        FAIL  exit 1 (want 0): gh: HTTP 405 
+341  project unlink                             FAIL  exit 1 (want 0): unknown owner type 
+342  project unlink result                      FAIL  exit 1 (want 0): gh: HTTP 405 
+343  project copy                               FAIL  exit 1 (want 0): unknown owner type 
+344  project mark-template                      FAIL  exit 1 (want 0): unknown owner type 
+345  project mark-template result               FAIL  exit 1 (want 0): gh: HTTP 405 
+346  project close                              FAIL  exit 1 (want 0): unknown owner type 
+347  project close --undo                       FAIL  exit 1 (want 0): unknown owner type 
+348  project delete                             FAIL  exit 1 (want 0): unknown owner type 
+349  project delete result                      FAIL  output did not match /Could not resolve to a ProjectV2/: unknown owner type 
 
-PASS 0/88 (0%)
-logs: /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a69095d3dd37d103c/data/bench/gh-forgejo/logs   report: /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a69095d3dd37d103c/tests/baseline/results/compat/gh-forgejo.md
+  FAIL     gh alias import (1/2 cases pass)
+  FAIL     gh alias set (1/2 cases pass)
+  FAIL     gh api (0/13 cases pass)
+  FAIL     gh auth login (0/2 cases pass)
+  FAIL     gh auth logout (0/2 cases pass)
+  FAIL     gh auth refresh (0/2 cases pass)
+  FAIL     gh auth status (0/3 cases pass)
+  FAIL     gh auth switch (0/1 cases pass)
+  FAIL     gh auth token (0/2 cases pass)
+  FAIL     gh browse (0/6 cases pass)
+  FAIL     gh cache delete (0/1 cases pass)
+  FAIL     gh cache list (0/2 cases pass)
+  FAIL     gh discussion comment (0/1 cases pass)
+  FAIL     gh discussion create (0/2 cases pass)
+  FAIL     gh discussion edit (0/2 cases pass)
+  FAIL     gh discussion list (0/3 cases pass)
+  FAIL     gh discussion view (0/2 cases pass)
+  FAIL     gh extension exec (0/1 cases pass)
+  FAIL     gh extension install (0/1 cases pass)
+  FAIL     gh extension list (0/1 cases pass)
+  FAIL     gh extension remove (0/1 cases pass)
+  FAIL     gh extension search (0/1 cases pass)
+  FAIL     gh extension upgrade (0/2 cases pass)
+  FAIL     gh gist clone (0/2 cases pass)
+  FAIL     gh gist create (0/2 cases pass)
+  FAIL     gh gist delete (0/2 cases pass)
+  FAIL     gh gist edit (0/4 cases pass)
+  FAIL     gh gist list (0/2 cases pass)
+  FAIL     gh gist rename (0/2 cases pass)
+  FAIL     gh gist view (0/2 cases pass)
+  FAIL     gh gpg-key add (0/1 cases pass)
+  FAIL     gh gpg-key delete (0/2 cases pass)
+  FAIL     gh gpg-key list (0/1 cases pass)
+  FAIL     gh issue close (0/2 cases pass)
+  FAIL     gh issue comment (0/2 cases pass)
+  FAIL     gh issue create (0/5 cases pass)
+  FAIL     gh issue delete (0/1 cases pass)
+  FAIL     gh issue develop (0/3 cases pass)
+  FAIL     gh issue edit (0/3 cases pass)
+  FAIL     gh issue list (0/8 cases pass)
+  FAIL     gh issue lock (0/2 cases pass)
+  FAIL     gh issue pin (0/2 cases pass)
+  FAIL     gh issue reopen (0/2 cases pass)
+  FAIL     gh issue status (0/2 cases pass)
+  FAIL     gh issue transfer (0/3 cases pass)
+  FAIL     gh issue unlock (0/2 cases pass)
+  FAIL     gh issue unpin (0/2 cases pass)
+  FAIL     gh issue view (0/5 cases pass)
+  FAIL     gh label clone (0/2 cases pass)
+  FAIL     gh label create (0/2 cases pass)
+  FAIL     gh label delete (0/2 cases pass)
+  FAIL     gh label edit (0/2 cases pass)
+  FAIL     gh label list (0/2 cases pass)
+  FAIL     gh org list (0/1 cases pass)
+  FAIL     gh pr checkout (0/2 cases pass)
+  FAIL     gh pr checks (0/2 cases pass)
+  FAIL     gh pr close (0/1 cases pass)
+  FAIL     gh pr comment (0/2 cases pass)
+  FAIL     gh pr create (0/6 cases pass)
+  FAIL     gh pr diff (0/3 cases pass)
+  FAIL     gh pr edit (0/2 cases pass)
+  FAIL     gh pr list (0/7 cases pass)
+  FAIL     gh pr lock (0/2 cases pass)
+  FAIL     gh pr merge (0/4 cases pass)
+  FAIL     gh pr ready (0/3 cases pass)
+  FAIL     gh pr reopen (0/1 cases pass)
+  FAIL     gh pr revert (0/3 cases pass)
+  FAIL     gh pr review (0/4 cases pass)
+  FAIL     gh pr status (0/2 cases pass)
+  FAIL     gh pr unlock (0/2 cases pass)
+  FAIL     gh pr update-branch (0/4 cases pass)
+  FAIL     gh pr view (0/8 cases pass)
+  FAIL     gh project close (0/2 cases pass)
+  FAIL     gh project copy (0/1 cases pass)
+  FAIL     gh project create (0/1 cases pass)
+  FAIL     gh project delete (0/2 cases pass)
+  FAIL     gh project edit (0/1 cases pass)
+  FAIL     gh project field-create (0/2 cases pass)
+  FAIL     gh project field-delete (1/2 cases pass)
+  FAIL     gh project field-list (0/1 cases pass)
+  FAIL     gh project item-add (0/1 cases pass)
+  FAIL     gh project item-archive (0/2 cases pass)
+  FAIL     gh project item-create (0/1 cases pass)
+  FAIL     gh project item-delete (0/2 cases pass)
+  FAIL     gh project item-edit (0/3 cases pass)
+  FAIL     gh project item-list (0/2 cases pass)
+  FAIL     gh project link (0/2 cases pass)
+  FAIL     gh project list (0/2 cases pass)
+  FAIL     gh project mark-template (0/2 cases pass)
+  FAIL     gh project unlink (0/2 cases pass)
+  FAIL     gh project view (0/1 cases pass)
+  FAIL     gh release create (0/3 cases pass)
+  FAIL     gh release delete (1/2 cases pass)
+  FAIL     gh release delete-asset (0/2 cases pass)
+  FAIL     gh release download (0/4 cases pass)
+  FAIL     gh release edit (0/2 cases pass)
+  FAIL     gh release list (0/2 cases pass)
+  FAIL     gh release upload (0/1 cases pass)
+  FAIL     gh release view (0/2 cases pass)
+  FAIL     gh repo archive (0/2 cases pass)
+  FAIL     gh repo autolink create (0/1 cases pass)
+  FAIL     gh repo autolink delete (0/1 cases pass)
+  FAIL     gh repo autolink list (0/2 cases pass)
+  FAIL     gh repo autolink view (0/1 cases pass)
+  FAIL     gh repo clone (0/2 cases pass)
+  FAIL     gh repo create (0/2 cases pass)
+  FAIL     gh repo delete (0/1 cases pass)
+  FAIL     gh repo deploy-key add (0/1 cases pass)
+  FAIL     gh repo deploy-key delete (0/1 cases pass)
+  FAIL     gh repo deploy-key list (0/2 cases pass)
+  FAIL     gh repo edit (0/3 cases pass)
+  FAIL     gh repo fork (0/1 cases pass)
+  FAIL     gh repo gitignore list (0/1 cases pass)
+  FAIL     gh repo gitignore view (0/1 cases pass)
+  FAIL     gh repo license list (0/1 cases pass)
+  FAIL     gh repo license view (0/1 cases pass)
+  FAIL     gh repo list (0/5 cases pass)
+  FAIL     gh repo read-dir (0/2 cases pass)
+  FAIL     gh repo read-file (0/2 cases pass)
+  FAIL     gh repo rename (0/2 cases pass)
+  FAIL     gh repo set-default (0/2 cases pass)
+  FAIL     gh repo sync (0/4 cases pass)
+  FAIL     gh repo unarchive (0/2 cases pass)
+  FAIL     gh repo view (0/6 cases pass)
+  FAIL     gh ruleset check (0/1 cases pass)
+  FAIL     gh ruleset list (0/1 cases pass)
+  FAIL     gh ruleset view (0/1 cases pass)
+  FAIL     gh run cancel (0/1 cases pass)
+  FAIL     gh run delete (0/1 cases pass)
+  FAIL     gh run download (0/1 cases pass)
+  FAIL     gh run list (0/2 cases pass)
+  FAIL     gh run rerun (0/1 cases pass)
+  FAIL     gh run view (0/2 cases pass)
+  FAIL     gh run watch (0/1 cases pass)
+  FAIL     gh search code (0/2 cases pass)
+  FAIL     gh search commits (0/2 cases pass)
+  FAIL     gh search issues (0/2 cases pass)
+  FAIL     gh search prs (0/2 cases pass)
+  FAIL     gh search repos (0/2 cases pass)
+  FAIL     gh secret delete (0/2 cases pass)
+  FAIL     gh secret list (0/2 cases pass)
+  FAIL     gh secret set (0/1 cases pass)
+  FAIL     gh ssh-key add (0/2 cases pass)
+  FAIL     gh ssh-key delete (0/2 cases pass)
+  FAIL     gh ssh-key list (0/1 cases pass)
+  FAIL     gh status (0/2 cases pass)
+  FAIL     gh variable delete (0/1 cases pass)
+  FAIL     gh variable get (0/1 cases pass)
+  FAIL     gh variable list (0/2 cases pass)
+  FAIL     gh variable set (0/3 cases pass)
+  FAIL     gh workflow disable (0/2 cases pass)
+  FAIL     gh workflow enable (0/2 cases pass)
+  FAIL     gh workflow list (0/2 cases pass)
+  FAIL     gh workflow run (0/1 cases pass)
+  FAIL     gh workflow view (0/1 cases pass)
+
+Cases: PASS 17/349 (4%)
+PASS 11/166 forge-relevant gh commands (6%)
+11/197 of all gh commands (5%)
+logs: /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/data/bench/gh-forgejo/logs   report: /Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tests/baseline/results/compat/gh-forgejo.md

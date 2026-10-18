@@ -15,4 +15,4 @@ PASS  delete remote branch
 PASS  non-fast-forward push rejected
 PASS  shallow clone (--depth 1)
 PASS  protocol v2 advertised
-git smoke: PASS 17/17 (gitsmoke-1791852164-32628)
+git smoke: PASS 17/17 (gitsmoke-1792311569-18639)

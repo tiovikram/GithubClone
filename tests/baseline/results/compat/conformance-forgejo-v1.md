@@ -2,61 +2,61 @@
 
 - **Target:** `http://localhost:3320/api/v1`
 - **Spec:** `descriptions/ghes-3.22/ghes-3.22.json` @ [`58b1e0c00b`](https://github.com/github/rest-api-description/tree/58b1e0c00b39b9e46c24dc4a0ba6a2669c90e9c1) (API 1.1.4)
-- **Run:** 2026-10-13T00:41:56.738Z · 174 HTTP requests · max tier 3
+- **Run:** 2026-10-18T08:28:04.903Z · 598 HTTP requests · max tier 3
 
 ## Score
 
 | scope | ops | conforming | nonconforming | not impl. | untested | % conforming | % of tested |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| **all operations** | 1105 | 29 | 66 | 50 | 960 | **2.6%** | 20% |
-| tier 1 (gh CLI core) | 104 | 10 | 49 | 25 | 20 | **9.6%** | 11.9% |
-| tier 2 (octokit common) | 129 | 19 | 16 | 24 | 70 | **14.7%** | 32.2% |
-| tier 3 (rest) | 872 | 0 | 1 | 1 | 870 | **0%** | 0% |
+| **all operations** | 1105 | 45 | 100 | 295 | 665 | **4.1%** | 10.2% |
+| tier 1 (gh CLI core) | 104 | 10 | 49 | 27 | 18 | **9.6%** | 11.6% |
+| tier 2 (octokit common) | 129 | 18 | 18 | 26 | 67 | **14%** | 29% |
+| tier 3 (rest) | 872 | 17 | 33 | 242 | 580 | **1.9%** | 5.8% |
 
 ## Per tag
 
 | tag | ops | conforming | nonconforming | not impl. | untested | % conforming | % of tested |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| repos | 193 | 7 | 25 | 11 | 150 | **3.6%** | 16.3% |
-| enterprise-admin | 171 | 0 | 0 | 0 | 171 | **0%** | – |
-| actions | 160 | 1 | 0 | 1 | 158 | **0.6%** | 50% |
-| orgs | 89 | 1 | 4 | 2 | 82 | **1.1%** | 14.3% |
-| issues | 47 | 5 | 20 | 11 | 11 | **10.6%** | 13.9% |
+| repos | 193 | 8 | 40 | 70 | 75 | **4.1%** | 6.8% |
+| enterprise-admin | 171 | 0 | 2 | 45 | 124 | **0%** | 0% |
+| actions | 160 | 1 | 0 | 55 | 104 | **0.6%** | 1.8% |
+| orgs | 89 | 6 | 12 | 40 | 31 | **6.7%** | 10.3% |
+| issues | 47 | 5 | 20 | 20 | 2 | **10.6%** | 11.1% |
 | apps | 39 | 0 | 0 | 0 | 39 | **0%** | – |
-| users | 37 | 6 | 5 | 2 | 24 | **16.2%** | 46.2% |
-| teams | 35 | 0 | 1 | 0 | 34 | **0%** | 0% |
-| activity | 32 | 7 | 5 | 1 | 19 | **21.9%** | 53.8% |
+| users | 37 | 13 | 7 | 13 | 4 | **35.1%** | 39.4% |
+| teams | 35 | 0 | 3 | 0 | 32 | **0%** | 0% |
+| activity | 32 | 8 | 8 | 10 | 6 | **25%** | 30.8% |
 | dependabot | 28 | 0 | 0 | 0 | 28 | **0%** | – |
 | packages | 27 | 0 | 0 | 0 | 27 | **0%** | – |
 | pulls | 27 | 0 | 0 | 0 | 27 | **0%** | – |
 | projects | 26 | 0 | 0 | 0 | 26 | **0%** | – |
-| secret-scanning | 23 | 0 | 0 | 0 | 23 | **0%** | – |
-| code-security | 20 | 0 | 0 | 0 | 20 | **0%** | – |
+| secret-scanning | 23 | 0 | 0 | 4 | 19 | **0%** | 0% |
+| code-security | 20 | 0 | 0 | 2 | 18 | **0%** | 0% |
 | gists | 20 | 0 | 0 | 2 | 18 | **0%** | 0% |
 | code-scanning | 17 | 0 | 0 | 0 | 17 | **0%** | – |
 | reactions | 15 | 0 | 4 | 2 | 9 | **0%** | 0% |
-| git | 13 | 0 | 1 | 4 | 8 | **0%** | 0% |
+| git | 13 | 0 | 1 | 5 | 7 | **0%** | 0% |
 | checks | 12 | 0 | 0 | 0 | 12 | **0%** | – |
-| migrations | 11 | 0 | 0 | 0 | 11 | **0%** | – |
+| migrations | 11 | 0 | 0 | 2 | 9 | **0%** | 0% |
 | oauth-authorizations | 10 | 0 | 0 | 0 | 10 | **0%** | – |
 | search | 7 | 0 | 0 | 7 | 0 | **0%** | 0% |
 | enterprise-team-organizations | 6 | 0 | 0 | 0 | 6 | **0%** | – |
-| private-registries | 6 | 0 | 0 | 0 | 6 | **0%** | – |
+| private-registries | 6 | 0 | 0 | 3 | 3 | **0%** | 0% |
 | enterprise-teams | 5 | 0 | 0 | 0 | 5 | **0%** | – |
 | enterprise-team-memberships | 5 | 0 | 0 | 0 | 5 | **0%** | – |
 | meta | 4 | 0 | 0 | 4 | 0 | **0%** | 0% |
-| licenses | 3 | 0 | 1 | 1 | 1 | **0%** | 0% |
-| dependency-graph | 3 | 0 | 0 | 0 | 3 | **0%** | – |
-| security-advisories | 2 | 0 | 0 | 0 | 2 | **0%** | – |
-| codes-of-conduct | 2 | 0 | 0 | 0 | 2 | **0%** | – |
+| licenses | 3 | 0 | 2 | 1 | 0 | **0%** | 0% |
+| dependency-graph | 3 | 0 | 0 | 3 | 0 | **0%** | 0% |
+| security-advisories | 2 | 0 | 1 | 1 | 0 | **0%** | 0% |
+| codes-of-conduct | 2 | 0 | 0 | 2 | 0 | **0%** | 0% |
 | billing | 2 | 0 | 0 | 0 | 2 | **0%** | – |
-| gitignore | 2 | 1 | 0 | 0 | 1 | **50%** | 100% |
-| markdown | 2 | 1 | 0 | 0 | 1 | **50%** | 100% |
-| oidc | 2 | 0 | 0 | 0 | 2 | **0%** | – |
+| gitignore | 2 | 2 | 0 | 0 | 0 | **100%** | 100% |
+| markdown | 2 | 2 | 0 | 0 | 0 | **100%** | 100% |
+| oidc | 2 | 0 | 0 | 2 | 0 | **0%** | 0% |
 | emojis | 1 | 0 | 0 | 1 | 0 | **0%** | 0% |
 | rate-limit | 1 | 0 | 0 | 1 | 0 | **0%** | 0% |
 
-## Failing operations (116)
+## Failing operations (395)
 
 - **meta/root** (tier 1, `GET /`): not_implemented
   - `404 for a route that should exist (expected 200)`
@@ -82,6 +82,7 @@
   - `schema: (root) missing required properties: archive_url, assignees_url, blobs_url, branches_url, collaborators_url, comments_url, commits_url, compare_url, contents_url, contributors_url, deployments_url, downloads_url, ... (+39)  [#/required]`
   - `schema: /owner missing required properties: events_url, followers_url, following_url, gists_url, gravatar_id, node_id, organizations_url, received_events_url, repos_url, site_admin, starred_url, subscriptions_url, ... (+2)  [gh-spec#/definitions/simple-user/required]`
   - `schema: /parent must be object  [#/type]`
+  - `unexpected status 301 (scenario expected 200): <a href="/api/v1/repos/conforg/conf-mvdkc7mvaokk-xfer">Moved Permanently</a>. `
 - **repos/update** (tier 1, `PATCH /repos/{owner}/{repo}`): nonconforming
   - `schema: (root) missing required properties: archive_url, assignees_url, blobs_url, branches_url, collaborators_url, comments_url, commits_url, compare_url, contents_url, contributors_url, deployments_url, downloads_url, ... (+39)  [#/required]`
   - `schema: /owner missing required properties: events_url, followers_url, following_url, gists_url, gravatar_id, node_id, organizations_url, received_events_url, repos_url, site_admin, starred_url, subscriptions_url, ... (+2)  [gh-spec#/definitions/simple-user/required]`
@@ -110,6 +111,8 @@
   - `404 for a route that should exist (expected 200)`
 - **git/create-ref** (tier 1, `POST /repos/{owner}/{repo}/git/refs`): not_implemented
   - `405 for a route that should exist (expected 201)`
+- **git/delete-ref** (tier 1, `DELETE /repos/{owner}/{repo}/git/refs/{ref}`): not_implemented
+  - `405 for a route that should exist (expected 204)`
 - **issues/list-for-repo** (tier 1, `GET /repos/{owner}/{repo}/issues`): nonconforming
   - `schema: /0 missing required properties: comments_url, events_url, node_id, labels_url, repository_url, locked  [#/required]`
   - `schema: /0/user missing required properties: events_url, followers_url, following_url, gists_url, gravatar_id, node_id, organizations_url, received_events_url, repos_url, site_admin, starred_url, subscriptions_url, ... (+2)  [gh-spec#/definitions/nullable-simple-user/required]`
@@ -138,8 +141,9 @@
   - `schema: /pull_request must be object  [#/properties/pull_request/type]`
 - **issues/update** (tier 1, `PATCH /repos/{owner}/{repo}/issues/{issue_number}`): nonconforming
   - `status 201 not documented (documented: 200, 301, 403, 404, 410, 422, 503)`
-  - `unexpected status 201 (scenario expected 200): {"id":1,"url":"http://localhost:3320/api/v1/repos/conf/conf-mv5yhhxeoj4b/issues/1","html_url":"http://localhost:3320/conf/conf-mv5yhhxeoj4b/issues/1","number":1`
-  - `unexpected status 201 (scenario expected 200): {"id":2,"url":"http://localhost:3320/api/v1/repos/conf/conf-mv5yhhxeoj4b/issues/2","html_url":"http://localhost:3320/conf/conf-mv5yhhxeoj4b/issues/2","number":2`
+  - `unexpected status 201 (scenario expected 200): {"id":1,"url":"http://localhost:3320/api/v1/repos/conf/conf-mvdkc7mvaokk/issues/1","html_url":"http://localhost:3320/conf/conf-mvdkc7mvaokk/issues/1","number":1`
+  - `unexpected status 201 (scenario expected 200): {"id":2,"url":"http://localhost:3320/api/v1/repos/conf/conf-mvdkc7mvaokk/issues/2","html_url":"http://localhost:3320/conf/conf-mvdkc7mvaokk/issues/2","number":2`
+  - `unexpected status 201 (scenario expected 200): {"id":3,"url":"http://localhost:3320/api/v1/repos/conf/conf-mvdkc7mvaokk/issues/3","html_url":"http://localhost:3320/conf/conf-mvdkc7mvaokk/issues/3","number":3`
 - **issues/add-assignees** (tier 1, `POST /repos/{owner}/{repo}/issues/{issue_number}/assignees`): not_implemented
   - `404 for a route that should exist (expected 201)`
 - **issues/remove-assignees** (tier 1, `DELETE /repos/{owner}/{repo}/issues/{issue_number}/assignees`): not_implemented
@@ -238,6 +242,8 @@
   - `schema: (root) missing required properties: events_url, followers_url, following_url, gists_url, gravatar_id, node_id, organizations_url, received_events_url, repos_url, site_admin, starred_url, subscriptions_url, ... (+19)  [gh-spec#/definitions/private-user/required]`
   - `schema: (root) missing required properties: events_url, followers_url, following_url, gists_url, gravatar_id, node_id, organizations_url, received_events_url, repos_url, site_admin, starred_url, subscriptions_url, ... (+13)  [gh-spec#/definitions/public-user/required]`
   - `schema: (root) must NOT have additional properties (login_name)  [gh-spec#/definitions/public-user/additionalProperties]`
+- **users/create-gpg-key-for-authenticated-user** (tier 1, `POST /user/gpg_keys`): not_implemented
+  - `404 for a route that should exist (expected 201)`
 - **issues/list-for-authenticated-user** (tier 1, `GET /user/issues`): not_implemented
   - `404 for a route that should exist (expected 200)`
 - **users/create-public-ssh-key-for-authenticated-user** (tier 1, `POST /user/keys`): nonconforming
@@ -273,6 +279,8 @@
   - `schema: /1 missing required properties: spdx_id, node_id  [gh-spec#/definitions/license-simple/required]`
   - `schema: /2 missing required properties: spdx_id, node_id  [gh-spec#/definitions/license-simple/required]`
   - `schema: /3 missing required properties: spdx_id, node_id  [gh-spec#/definitions/license-simple/required]`
+- **activity/list-notifications-for-authenticated-user** (tier 2, `GET /notifications`): nonconforming
+  - `expected at least 1 item(s) (fixtures exist), got 0`
 - **meta/get-octocat** (tier 2, `GET /octocat`): not_implemented
   - `404 for a route that should exist (expected 200)`
 - **orgs/list** (tier 2, `GET /organizations`): not_implemented
@@ -283,6 +291,14 @@
   - `404 for a route that should exist (expected 200)`
 - **issues/check-user-can-be-assigned** (tier 2, `GET /repos/{owner}/{repo}/assignees/{assignee}`): not_implemented
   - `404 for a route that should exist (expected 204)`
+- **repos/get-branch-protection** (tier 2, `GET /repos/{owner}/{repo}/branches/{branch}/protection`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **repos/update-branch-protection** (tier 2, `PUT /repos/{owner}/{repo}/branches/{branch}/protection`): not_implemented
+  - `405 for a route that should exist (expected 200)`
+- **repos/delete-branch-protection** (tier 2, `DELETE /repos/{owner}/{repo}/branches/{branch}/protection`): nonconforming
+  - `status 500 not documented (documented: 204, 403)`
+  - `unexpected status 500 (scenario expected 204): {"message":"object does not exist [id: refs/heads/conf-prot-mvdkc7mvaokk/protection, rel_path: ]","url":"http://localhost:3320/api/swagger"} `
+  - `unexpected status 500 (scenario expected 204): {"message":"object does not exist [id: refs/heads/main/protection, rel_path: ]","url":"http://localhost:3320/api/swagger"} `
 - **repos/list-collaborators** (tier 2, `GET /repos/{owner}/{repo}/collaborators`): nonconforming
   - `expected at least 1 item(s) (fixtures exist), got 0`
 - **repos/check-collaborator** (tier 2, `GET /repos/{owner}/{repo}/collaborators/{username}`): not_implemented
@@ -343,6 +359,7 @@
   - `405 for a route that should exist (expected 200)`
 - **users/list-emails-for-authenticated-user** (tier 2, `GET /user/emails`): nonconforming
   - `schema: /0 missing required property: visibility  [gh-spec#/definitions/email/required]`
+  - `schema: /1 missing required property: visibility  [gh-spec#/definitions/email/required]`
 - **activity/list-repos-starred-by-authenticated-user** (tier 2, `GET /user/starred`): nonconforming
   - `schema: /0 missing required properties: archive_url, assignees_url, blobs_url, branches_url, collaborators_url, comments_url, commits_url, compare_url, contents_url, contributors_url, deployments_url, downloads_url, ... (+37)  [#/required]`
   - `schema: /0/owner missing required properties: events_url, followers_url, following_url, gists_url, gravatar_id, node_id, organizations_url, received_events_url, repos_url, site_admin, starred_url, subscriptions_url, ... (+2)  [gh-spec#/definitions/simple-user/required]`
@@ -356,16 +373,597 @@
   - `schema: /0/owner missing required properties: events_url, followers_url, following_url, gists_url, gravatar_id, node_id, organizations_url, received_events_url, repos_url, site_admin, starred_url, subscriptions_url, ... (+2)  [gh-spec#/definitions/simple-user/required]`
 - **meta/get-zen** (tier 2, `GET /zen`): not_implemented
   - `404 for a route that should exist (expected 200)`
+- **enterprise-admin/create-global-webhook** (tier 3, `POST /admin/hooks`): nonconforming
+  - `status 422 not documented (documented: 201)`
+  - `unexpected status 422 (scenario expected 201): {"message":"[Type]: Required","url":"http://localhost:3320/api/swagger"} `
+- **enterprise-admin/create-org** (tier 3, `POST /admin/organizations`): not_implemented
+  - `404 for a route that should exist (expected 201)`
+- **enterprise-admin/create-user** (tier 3, `POST /admin/users`): nonconforming
+  - `status 422 not documented (documented: 201)`
+  - `unexpected status 422 (scenario expected 201): {"message":"[Username]: Required","url":"http://localhost:3320/api/swagger"} `
+- **security-advisories/list-global-advisories** (tier 3, `GET /advisories`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **security-advisories/get-global-advisory** (tier 3, `GET /advisories/{ghsa_id}`): nonconforming
+  - `content-type "text/plain; charset=utf-8" is not JSON`
+  - `body is not valid JSON: 404 page not found
+`
+- **codes-of-conduct/get-all-codes-of-conduct** (tier 3, `GET /codes_of_conduct`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **codes-of-conduct/get-conduct-code** (tier 3, `GET /codes_of_conduct/{key}`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **enterprise-admin/get-announcement** (tier 3, `GET /enterprise/announcement`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **enterprise-admin/set-announcement** (tier 3, `PATCH /enterprise/announcement`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **enterprise-admin/live-migration-create** (tier 3, `POST /enterprise/live-migrations`): not_implemented
+  - `404 for a route that should exist (expected 201)`
+- **enterprise-admin/get-license-information** (tier 3, `GET /enterprise/settings/license`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **enterprise-admin/get-all-stats** (tier 3, `GET /enterprise/stats/all`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **enterprise-admin/get-comment-stats** (tier 3, `GET /enterprise/stats/comments`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **enterprise-admin/get-gist-stats** (tier 3, `GET /enterprise/stats/gists`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **enterprise-admin/get-hooks-stats** (tier 3, `GET /enterprise/stats/hooks`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **enterprise-admin/get-issue-stats** (tier 3, `GET /enterprise/stats/issues`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **enterprise-admin/get-milestone-stats** (tier 3, `GET /enterprise/stats/milestones`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **enterprise-admin/get-org-stats** (tier 3, `GET /enterprise/stats/orgs`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **enterprise-admin/get-pages-stats** (tier 3, `GET /enterprise/stats/pages`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **enterprise-admin/get-pull-request-stats** (tier 3, `GET /enterprise/stats/pulls`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **enterprise-admin/get-repo-stats** (tier 3, `GET /enterprise/stats/repos`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **enterprise-admin/get-security-products** (tier 3, `GET /enterprise/stats/security-products`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **enterprise-admin/get-user-stats** (tier 3, `GET /enterprise/stats/users`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **actions/get-actions-cache-usage-for-enterprise** (tier 3, `GET /enterprises/{enterprise}/actions/cache/usage`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **actions/get-actions-cache-usage-policy-for-enterprise** (tier 3, `GET /enterprises/{enterprise}/actions/cache/usage-policy`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **actions/set-actions-cache-usage-policy-for-enterprise** (tier 3, `PATCH /enterprises/{enterprise}/actions/cache/usage-policy`): not_implemented
+  - `404 for a route that should exist (expected 204)`
+- **enterprise-admin/get-github-actions-permissions-enterprise** (tier 3, `GET /enterprises/{enterprise}/actions/permissions`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **enterprise-admin/list-self-hosted-runners-for-enterprise** (tier 3, `GET /enterprises/{enterprise}/actions/runners`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **enterprise-admin/list-runner-applications-for-enterprise** (tier 3, `GET /enterprises/{enterprise}/actions/runners/downloads`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **actions/generate-runner-jitconfig-for-enterprise** (tier 3, `POST /enterprises/{enterprise}/actions/runners/generate-jitconfig`): not_implemented
+  - `404 for a route that should exist (expected 201)`
+- **enterprise-admin/create-registration-token-for-enterprise** (tier 3, `POST /enterprises/{enterprise}/actions/runners/registration-token`): not_implemented
+  - `404 for a route that should exist (expected 201)`
+- **enterprise-admin/create-remove-token-for-enterprise** (tier 3, `POST /enterprises/{enterprise}/actions/runners/remove-token`): not_implemented
+  - `404 for a route that should exist (expected 201)`
+- **code-security/create-configuration-for-enterprise** (tier 3, `POST /enterprises/{enterprise}/code-security/configurations`): not_implemented
+  - `404 for a route that should exist (expected 201)`
+- **secret-scanning/list-enterprise-pattern-configs** (tier 3, `GET /enterprises/{enterprise}/secret-scanning/pattern-configurations`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **secret-scanning/update-enterprise-pattern-configs** (tier 3, `PATCH /enterprises/{enterprise}/secret-scanning/pattern-configurations`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **activity/list-public-events** (tier 3, `GET /events`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **activity/get-feeds** (tier 3, `GET /feeds`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **licenses/get** (tier 3, `GET /licenses/{license}`): nonconforming
+  - `schema: (root) missing required properties: spdx_id, node_id, html_url, description, permissions, conditions, limitations, featured  [gh-spec#/definitions/license/required]`
+- **enterprise-admin/get-manage-ssh** (tier 3, `GET /manage/v1/access/ssh`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **enterprise-admin/set-manage-ssh** (tier 3, `POST /manage/v1/access/ssh`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **enterprise-admin/delete-manage-ssh** (tier 3, `DELETE /manage/v1/access/ssh`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **enterprise-admin/get-checks-system-requirements** (tier 3, `GET /manage/v1/checks/system-requirements`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **enterprise-admin/get-cluster-status** (tier 3, `GET /manage/v1/cluster/status`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **enterprise-admin/get-manage-config-apply-status** (tier 3, `GET /manage/v1/config/apply`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **enterprise-admin/post-manage-run-config-apply** (tier 3, `POST /manage/v1/config/apply`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **enterprise-admin/get-manage-config-apply-events** (tier 3, `GET /manage/v1/config/apply/events`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **enterprise-admin/initialize-instance-configuration** (tier 3, `POST /manage/v1/config/init`): not_implemented
+  - `404 for a route that should exist (expected 202)`
+- **enterprise-admin/license-info** (tier 3, `GET /manage/v1/config/license`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **enterprise-admin/license-upload** (tier 3, `PUT /manage/v1/config/license`): not_implemented
+  - `404 for a route that should exist (expected 201)`
+- **enterprise-admin/license-check** (tier 3, `GET /manage/v1/config/license/check`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **enterprise-admin/get-config-nodes** (tier 3, `GET /manage/v1/config/nodes`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **enterprise-admin/get-manage-settings** (tier 3, `GET /manage/v1/config/settings`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **enterprise-admin/set-manage-settings** (tier 3, `PUT /manage/v1/config/settings`): not_implemented
+  - `404 for a route that should exist (expected 204)`
+- **enterprise-admin/get-manage-maintenance** (tier 3, `GET /manage/v1/maintenance`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **enterprise-admin/set-manage-maintenance** (tier 3, `POST /manage/v1/maintenance`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **enterprise-admin/get-replication-status** (tier 3, `GET /manage/v1/replication/status`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **enterprise-admin/apply-manage-upgrade** (tier 3, `POST /manage/v1/upgrade/apply`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **enterprise-admin/download-manage-upgrade** (tier 3, `POST /manage/v1/upgrade/download`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **enterprise-admin/get-manage-upgrade-download-status** (tier 3, `GET /manage/v1/upgrade/download/status`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **enterprise-admin/get-manage-upgrade-status** (tier 3, `GET /manage/v1/upgrade/status`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **enterprise-admin/get-version** (tier 3, `GET /manage/v1/version`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **activity/list-public-events-for-repo-network** (tier 3, `GET /networks/{owner}/{repo}/events`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **orgs/custom-properties-for-orgs-get-organization-values** (tier 3, `GET /organizations/{org}/org-properties/values`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **orgs/custom-properties-for-orgs-create-or-update-organization-values** (tier 3, `PATCH /organizations/{org}/org-properties/values`): not_implemented
+  - `404 for a route that should exist (expected 204)`
+- **orgs/update** (tier 3, `PATCH /orgs/{org}`): nonconforming
+  - `schema: (root) missing required properties: login, url, node_id, repos_url, events_url, hooks_url, issues_url, members_url, public_members_url, html_url, has_organization_projects, has_repository_projects, ... (+8)  [gh-spec#/definitions/organization-full/required]`
+  - `schema: /email must match format "email"  [gh-spec#/definitions/organization-full/properties/email/format]`
+- **actions/get-actions-cache-usage-for-org** (tier 3, `GET /orgs/{org}/actions/cache/usage`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **actions/get-actions-cache-usage-by-repo-for-org** (tier 3, `GET /orgs/{org}/actions/cache/usage-by-repository`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **oidc/get-oidc-custom-sub-template-for-org** (tier 3, `GET /orgs/{org}/actions/oidc/customization/sub`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **oidc/update-oidc-custom-sub-template-for-org** (tier 3, `PUT /orgs/{org}/actions/oidc/customization/sub`): not_implemented
+  - `404 for a route that should exist (expected 201)`
+- **actions/get-github-actions-permissions-organization** (tier 3, `GET /orgs/{org}/actions/permissions`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **actions/set-github-actions-permissions-organization** (tier 3, `PUT /orgs/{org}/actions/permissions`): not_implemented
+  - `404 for a route that should exist (expected 204)`
+- **actions/get-artifact-and-log-retention-settings-organization** (tier 3, `GET /orgs/{org}/actions/permissions/artifact-and-log-retention`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **actions/set-artifact-and-log-retention-settings-organization** (tier 3, `PUT /orgs/{org}/actions/permissions/artifact-and-log-retention`): not_implemented
+  - `404 for a route that should exist (expected 204)`
+- **actions/get-fork-pr-contributor-approval-permissions-organization** (tier 3, `GET /orgs/{org}/actions/permissions/fork-pr-contributor-approval`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **actions/set-fork-pr-contributor-approval-permissions-organization** (tier 3, `PUT /orgs/{org}/actions/permissions/fork-pr-contributor-approval`): not_implemented
+  - `404 for a route that should exist (expected 204)`
+- **actions/get-private-repo-fork-pr-workflows-settings-organization** (tier 3, `GET /orgs/{org}/actions/permissions/fork-pr-workflows-private-repos`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **actions/set-private-repo-fork-pr-workflows-settings-organization** (tier 3, `PUT /orgs/{org}/actions/permissions/fork-pr-workflows-private-repos`): not_implemented
+  - `404 for a route that should exist (expected 204)`
+- **actions/list-selected-repositories-enabled-github-actions-organization** (tier 3, `GET /orgs/{org}/actions/permissions/repositories`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **actions/set-selected-repositories-enabled-github-actions-organization** (tier 3, `PUT /orgs/{org}/actions/permissions/repositories`): not_implemented
+  - `404 for a route that should exist (expected 204)`
+- **actions/enable-selected-repository-github-actions-organization** (tier 3, `PUT /orgs/{org}/actions/permissions/repositories/{repository_id}`): not_implemented
+  - `404 for a route that should exist (expected 204)`
+- **actions/disable-selected-repository-github-actions-organization** (tier 3, `DELETE /orgs/{org}/actions/permissions/repositories/{repository_id}`): not_implemented
+  - `404 for a route that should exist (expected 204)`
+- **actions/get-allowed-actions-organization** (tier 3, `GET /orgs/{org}/actions/permissions/selected-actions`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **actions/set-allowed-actions-organization** (tier 3, `PUT /orgs/{org}/actions/permissions/selected-actions`): not_implemented
+  - `404 for a route that should exist (expected 204)`
+- **actions/get-self-hosted-runners-permissions-organization** (tier 3, `GET /orgs/{org}/actions/permissions/self-hosted-runners`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **actions/set-self-hosted-runners-permissions-organization** (tier 3, `PUT /orgs/{org}/actions/permissions/self-hosted-runners`): not_implemented
+  - `404 for a route that should exist (expected 204)`
+- **actions/list-selected-repositories-self-hosted-runners-organization** (tier 3, `GET /orgs/{org}/actions/permissions/self-hosted-runners/repositories`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **actions/set-selected-repositories-self-hosted-runners-organization** (tier 3, `PUT /orgs/{org}/actions/permissions/self-hosted-runners/repositories`): not_implemented
+  - `404 for a route that should exist (expected 204)`
+- **actions/enable-selected-repository-self-hosted-runners-organization** (tier 3, `PUT /orgs/{org}/actions/permissions/self-hosted-runners/repositories/{repository_id}`): not_implemented
+  - `404 for a route that should exist (expected 204)`
+- **actions/disable-selected-repository-self-hosted-runners-organization** (tier 3, `DELETE /orgs/{org}/actions/permissions/self-hosted-runners/repositories/{repository_id}`): not_implemented
+  - `404 for a route that should exist (expected 204)`
+- **actions/get-github-actions-default-workflow-permissions-organization** (tier 3, `GET /orgs/{org}/actions/permissions/workflow`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **actions/set-github-actions-default-workflow-permissions-organization** (tier 3, `PUT /orgs/{org}/actions/permissions/workflow`): not_implemented
+  - `404 for a route that should exist (expected 204)`
+- **actions/list-self-hosted-runner-groups-for-org** (tier 3, `GET /orgs/{org}/actions/runner-groups`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **actions/create-self-hosted-runner-group-for-org** (tier 3, `POST /orgs/{org}/actions/runner-groups`): not_implemented
+  - `404 for a route that should exist (expected 201)`
+- **actions/list-runner-applications-for-org** (tier 3, `GET /orgs/{org}/actions/runners/downloads`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **actions/generate-runner-jitconfig-for-org** (tier 3, `POST /orgs/{org}/actions/runners/generate-jitconfig`): not_implemented
+  - `405 for a route that should exist (expected 201)`
+- **actions/create-registration-token-for-org** (tier 3, `POST /orgs/{org}/actions/runners/registration-token`): not_implemented
+  - `405 for a route that should exist (expected 201)`
+- **actions/create-remove-token-for-org** (tier 3, `POST /orgs/{org}/actions/runners/remove-token`): not_implemented
+  - `405 for a route that should exist (expected 201)`
+- **actions/get-org-public-key** (tier 3, `GET /orgs/{org}/actions/secrets/public-key`): not_implemented
+  - `405 for a route that should exist (expected 200)`
+- **announcement-banners/get-announcement-banner-for-org** (tier 3, `GET /orgs/{org}/announcement`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **announcement-banners/set-announcement-banner-for-org** (tier 3, `PATCH /orgs/{org}/announcement`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **announcement-banners/remove-announcement-banner-for-org** (tier 3, `DELETE /orgs/{org}/announcement`): not_implemented
+  - `404 for a route that should exist (expected 204)`
+- **orgs/get-audit-log** (tier 3, `GET /orgs/{org}/audit-log`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **orgs/list-push-bypass-requests** (tier 3, `GET /orgs/{org}/bypass-requests/push-rules`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **code-security/create-configuration** (tier 3, `POST /orgs/{org}/code-security/configurations`): not_implemented
+  - `404 for a route that should exist (expected 201)`
+- **orgs/create-custom-repo-role** (tier 3, `POST /orgs/{org}/custom-repository-roles`): not_implemented
+  - `404 for a route that should exist (expected 201)`
+- **activity/list-public-org-events** (tier 3, `GET /orgs/{org}/events`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **orgs/create-webhook** (tier 3, `POST /orgs/{org}/hooks`): nonconforming
+  - `unexpected status 422 (scenario expected 201): {"message":"[Type]: Required","url":"http://localhost:3320/api/swagger"} `
+  - `schema: (root) missing required property: documentation_url  [gh-spec#/definitions/validation-error/required]`
+- **orgs/list-app-installations** (tier 3, `GET /orgs/{org}/installations`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **issues/list-for-org** (tier 3, `GET /orgs/{org}/issues`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **orgs/get-membership-for-user** (tier 3, `GET /orgs/{org}/memberships/{username}`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **orgs/set-membership-for-user** (tier 3, `PUT /orgs/{org}/memberships/{username}`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **orgs/remove-membership-for-user** (tier 3, `DELETE /orgs/{org}/memberships/{username}`): not_implemented
+  - `404 for a route that should exist (expected 204)`
+- **migrations/start-for-org** (tier 3, `POST /orgs/{org}/migrations`): not_implemented
+  - `404 for a route that should exist (expected 201)`
+- **orgs/list-organization-fine-grained-permissions** (tier 3, `GET /orgs/{org}/organization-fine-grained-permissions`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **orgs/list-org-roles** (tier 3, `GET /orgs/{org}/organization-roles`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **orgs/create-custom-organization-role** (tier 3, `POST /orgs/{org}/organization-roles`): not_implemented
+  - `404 for a route that should exist (expected 201)`
+- **orgs/list-outside-collaborators** (tier 3, `GET /orgs/{org}/outside_collaborators`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **orgs/convert-member-to-outside-collaborator** (tier 3, `PUT /orgs/{org}/outside_collaborators/{username}`): not_implemented
+  - `404 for a route that should exist (expected 204)`
+- **orgs/remove-outside-collaborator** (tier 3, `DELETE /orgs/{org}/outside_collaborators/{username}`): not_implemented
+  - `404 for a route that should exist (expected 204)`
+- **orgs/list-pat-grant-requests** (tier 3, `GET /orgs/{org}/personal-access-token-requests`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **orgs/review-pat-grant-requests-in-bulk** (tier 3, `POST /orgs/{org}/personal-access-token-requests`): not_implemented
+  - `404 for a route that should exist (expected 202)`
+- **orgs/review-pat-grant-request** (tier 3, `POST /orgs/{org}/personal-access-token-requests/{pat_request_id}`): nonconforming
+  - `content-type "text/plain; charset=utf-8" is not JSON`
+  - `body is not valid JSON: 404 page not found
+`
+- **orgs/list-pat-grant-request-repositories** (tier 3, `GET /orgs/{org}/personal-access-token-requests/{pat_request_id}/repositories`): nonconforming
+  - `content-type "text/plain; charset=utf-8" is not JSON`
+  - `body is not valid JSON: 404 page not found
+`
+- **orgs/list-pat-grants** (tier 3, `GET /orgs/{org}/personal-access-tokens`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **orgs/update-pat-accesses** (tier 3, `POST /orgs/{org}/personal-access-tokens`): nonconforming
+  - `content-type "text/plain; charset=utf-8" is not JSON`
+  - `body is not valid JSON: 404 page not found
+`
+- **orgs/update-pat-access** (tier 3, `POST /orgs/{org}/personal-access-tokens/{pat_id}`): nonconforming
+  - `content-type "text/plain; charset=utf-8" is not JSON`
+  - `body is not valid JSON: 404 page not found
+`
+- **orgs/list-pat-grant-repositories** (tier 3, `GET /orgs/{org}/personal-access-tokens/{pat_id}/repositories`): nonconforming
+  - `content-type "text/plain; charset=utf-8" is not JSON`
+  - `body is not valid JSON: 404 page not found
+`
+- **private-registries/list-org-private-registries** (tier 3, `GET /orgs/{org}/private-registries`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **private-registries/create-org-private-registry** (tier 3, `POST /orgs/{org}/private-registries`): not_implemented
+  - `404 for a route that should exist (expected 201)`
+- **private-registries/get-org-public-key** (tier 3, `GET /orgs/{org}/private-registries/public-key`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **orgs/custom-properties-for-repos-get-organization-definitions** (tier 3, `GET /orgs/{org}/properties/schema`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **orgs/custom-properties-for-repos-create-or-update-organization-definitions** (tier 3, `PATCH /orgs/{org}/properties/schema`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **orgs/custom-properties-for-repos-get-organization-definition** (tier 3, `GET /orgs/{org}/properties/schema/{custom_property_name}`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **orgs/custom-properties-for-repos-create-or-update-organization-definition** (tier 3, `PUT /orgs/{org}/properties/schema/{custom_property_name}`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **orgs/custom-properties-for-repos-delete-organization-definition** (tier 3, `DELETE /orgs/{org}/properties/schema/{custom_property_name}`): not_implemented
+  - `404 for a route that should exist (expected 204)`
+- **orgs/custom-properties-for-repos-get-organization-values** (tier 3, `GET /orgs/{org}/properties/values`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **orgs/custom-properties-for-repos-create-or-update-organization-values** (tier 3, `PATCH /orgs/{org}/properties/values`): not_implemented
+  - `404 for a route that should exist (expected 204)`
+- **orgs/list-public-members** (tier 3, `GET /orgs/{org}/public_members`): nonconforming
+  - `schema: /0 missing required properties: events_url, followers_url, following_url, gists_url, gravatar_id, node_id, organizations_url, received_events_url, repos_url, site_admin, starred_url, subscriptions_url, ... (+2)  [gh-spec#/definitions/simple-user/required]`
+- **orgs/list-repo-fine-grained-permissions** (tier 3, `GET /orgs/{org}/repository-fine-grained-permissions`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **repos/get-org-rulesets** (tier 3, `GET /orgs/{org}/rulesets`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **repos/create-org-ruleset** (tier 3, `POST /orgs/{org}/rulesets`): not_implemented
+  - `404 for a route that should exist (expected 201)`
+- **secret-scanning/list-org-pattern-configs** (tier 3, `GET /orgs/{org}/secret-scanning/pattern-configurations`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **secret-scanning/update-org-pattern-configs** (tier 3, `PATCH /orgs/{org}/secret-scanning/pattern-configurations`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **orgs/get-immutable-releases-settings** (tier 3, `GET /orgs/{org}/settings/immutable-releases`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **orgs/set-immutable-releases-settings** (tier 3, `PUT /orgs/{org}/settings/immutable-releases`): not_implemented
+  - `404 for a route that should exist (expected 204)`
+- **orgs/get-immutable-releases-settings-repositories** (tier 3, `GET /orgs/{org}/settings/immutable-releases/repositories`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **orgs/set-immutable-releases-settings-repositories** (tier 3, `PUT /orgs/{org}/settings/immutable-releases/repositories`): not_implemented
+  - `404 for a route that should exist (expected 204)`
+- **orgs/enable-selected-repository-immutable-releases-organization** (tier 3, `PUT /orgs/{org}/settings/immutable-releases/repositories/{repository_id}`): not_implemented
+  - `404 for a route that should exist (expected 204)`
+- **orgs/disable-selected-repository-immutable-releases-organization** (tier 3, `DELETE /orgs/{org}/settings/immutable-releases/repositories/{repository_id}`): not_implemented
+  - `404 for a route that should exist (expected 204)`
+- **teams/create** (tier 3, `POST /orgs/{org}/teams`): nonconforming
+  - `status 500 not documented (documented: 201, 403, 422)`
+  - `unexpected status 500 (scenario expected 201): {"message":"units permission should not be empty","url":"http://localhost:3320/api/swagger"} `
+- **orgs/enable-or-disable-security-product-on-all-org-repos** (tier 3, `POST /orgs/{org}/{security_product}/{enablement}`): not_implemented
+  - `404 for a route that should exist (expected 204)`
+- **actions/get-custom-oidc-sub-claim-for-repo** (tier 3, `GET /repos/{owner}/{repo}/actions/oidc/customization/sub`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **actions/set-custom-oidc-sub-claim-for-repo** (tier 3, `PUT /repos/{owner}/{repo}/actions/oidc/customization/sub`): not_implemented
+  - `404 for a route that should exist (expected 201)`
+- **actions/get-github-actions-permissions-repository** (tier 3, `GET /repos/{owner}/{repo}/actions/permissions`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **actions/set-github-actions-permissions-repository** (tier 3, `PUT /repos/{owner}/{repo}/actions/permissions`): not_implemented
+  - `404 for a route that should exist (expected 204)`
+- **actions/get-workflow-access-to-repository** (tier 3, `GET /repos/{owner}/{repo}/actions/permissions/access`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **actions/set-workflow-access-to-repository** (tier 3, `PUT /repos/{owner}/{repo}/actions/permissions/access`): not_implemented
+  - `404 for a route that should exist (expected 204)`
+- **actions/get-artifact-and-log-retention-settings-repository** (tier 3, `GET /repos/{owner}/{repo}/actions/permissions/artifact-and-log-retention`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **actions/set-artifact-and-log-retention-settings-repository** (tier 3, `PUT /repos/{owner}/{repo}/actions/permissions/artifact-and-log-retention`): not_implemented
+  - `404 for a route that should exist (expected 204)`
+- **actions/get-fork-pr-contributor-approval-permissions-repository** (tier 3, `GET /repos/{owner}/{repo}/actions/permissions/fork-pr-contributor-approval`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **actions/set-fork-pr-contributor-approval-permissions-repository** (tier 3, `PUT /repos/{owner}/{repo}/actions/permissions/fork-pr-contributor-approval`): not_implemented
+  - `404 for a route that should exist (expected 204)`
+- **actions/get-private-repo-fork-pr-workflows-settings-repository** (tier 3, `GET /repos/{owner}/{repo}/actions/permissions/fork-pr-workflows-private-repos`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **actions/set-private-repo-fork-pr-workflows-settings-repository** (tier 3, `PUT /repos/{owner}/{repo}/actions/permissions/fork-pr-workflows-private-repos`): not_implemented
+  - `404 for a route that should exist (expected 204)`
+- **actions/get-allowed-actions-repository** (tier 3, `GET /repos/{owner}/{repo}/actions/permissions/selected-actions`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **actions/set-allowed-actions-repository** (tier 3, `PUT /repos/{owner}/{repo}/actions/permissions/selected-actions`): not_implemented
+  - `404 for a route that should exist (expected 204)`
+- **actions/get-github-actions-default-workflow-permissions-repository** (tier 3, `GET /repos/{owner}/{repo}/actions/permissions/workflow`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **actions/set-github-actions-default-workflow-permissions-repository** (tier 3, `PUT /repos/{owner}/{repo}/actions/permissions/workflow`): not_implemented
+  - `404 for a route that should exist (expected 204)`
+- **actions/list-runner-applications-for-repo** (tier 3, `GET /repos/{owner}/{repo}/actions/runners/downloads`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **actions/generate-runner-jitconfig-for-repo** (tier 3, `POST /repos/{owner}/{repo}/actions/runners/generate-jitconfig`): not_implemented
+  - `405 for a route that should exist (expected 201)`
+- **actions/get-repo-public-key** (tier 3, `GET /repos/{owner}/{repo}/actions/secrets/public-key`): not_implemented
+  - `405 for a route that should exist (expected 200)`
+- **repos/list-activities** (tier 3, `GET /repos/{owner}/{repo}/activity`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **repos/list-autolinks** (tier 3, `GET /repos/{owner}/{repo}/autolinks`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **repos/create-autolink** (tier 3, `POST /repos/{owner}/{repo}/autolinks`): not_implemented
+  - `404 for a route that should exist (expected 201)`
+- **repos/check-automated-security-fixes** (tier 3, `GET /repos/{owner}/{repo}/automated-security-fixes`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **repos/get-admin-branch-protection** (tier 3, `GET /repos/{owner}/{repo}/branches/{branch}/protection/enforce_admins`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **repos/set-admin-branch-protection** (tier 3, `POST /repos/{owner}/{repo}/branches/{branch}/protection/enforce_admins`): not_implemented
+  - `405 for a route that should exist (expected 200)`
+- **repos/delete-admin-branch-protection** (tier 3, `DELETE /repos/{owner}/{repo}/branches/{branch}/protection/enforce_admins`): nonconforming
+  - `status 500 not documented (documented: 204, 404)`
+  - `unexpected status 500 (scenario expected 204): {"message":"object does not exist [id: refs/heads/conf-prot-mvdkc7mvaokk/protection/enforce_admins, rel_path: ]","url":"http://localhost:3320/api/swagger"} `
+- **repos/get-pull-request-review-protection** (tier 3, `GET /repos/{owner}/{repo}/branches/{branch}/protection/required_pull_request_reviews`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **repos/update-pull-request-review-protection** (tier 3, `PATCH /repos/{owner}/{repo}/branches/{branch}/protection/required_pull_request_reviews`): nonconforming
+  - `unexpected status 422 (scenario expected 200): {"message":"[Name]: Required","url":"http://localhost:3320/api/swagger"} `
+  - `schema: (root) missing required property: documentation_url  [gh-spec#/definitions/validation-error/required]`
+- **repos/delete-pull-request-review-protection** (tier 3, `DELETE /repos/{owner}/{repo}/branches/{branch}/protection/required_pull_request_reviews`): nonconforming
+  - `status 500 not documented (documented: 204, 404)`
+  - `unexpected status 500 (scenario expected 204): {"message":"object does not exist [id: refs/heads/conf-prot-mvdkc7mvaokk/protection/required_pull_request_reviews, rel_path: ]","url":"http://localhost:3320/api`
+- **repos/get-commit-signature-protection** (tier 3, `GET /repos/{owner}/{repo}/branches/{branch}/protection/required_signatures`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **repos/create-commit-signature-protection** (tier 3, `POST /repos/{owner}/{repo}/branches/{branch}/protection/required_signatures`): not_implemented
+  - `405 for a route that should exist (expected 200)`
+- **repos/delete-commit-signature-protection** (tier 3, `DELETE /repos/{owner}/{repo}/branches/{branch}/protection/required_signatures`): nonconforming
+  - `status 500 not documented (documented: 204, 404)`
+  - `unexpected status 500 (scenario expected 204): {"message":"object does not exist [id: refs/heads/conf-prot-mvdkc7mvaokk/protection/required_signatures, rel_path: ]","url":"http://localhost:3320/api/swagger"}`
+- **repos/get-status-checks-protection** (tier 3, `GET /repos/{owner}/{repo}/branches/{branch}/protection/required_status_checks`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **repos/update-status-check-protection** (tier 3, `PATCH /repos/{owner}/{repo}/branches/{branch}/protection/required_status_checks`): nonconforming
+  - `unexpected status 422 (scenario expected 200): {"message":"[Name]: Required","url":"http://localhost:3320/api/swagger"} `
+  - `schema: (root) missing required property: documentation_url  [gh-spec#/definitions/validation-error/required]`
+- **repos/remove-status-check-protection** (tier 3, `DELETE /repos/{owner}/{repo}/branches/{branch}/protection/required_status_checks`): nonconforming
+  - `status 500 not documented (documented: 204)`
+  - `unexpected status 500 (scenario expected 204): {"message":"object does not exist [id: refs/heads/conf-prot-mvdkc7mvaokk/protection/required_status_checks, rel_path: ]","url":"http://localhost:3320/api/swagge`
+- **repos/get-all-status-check-contexts** (tier 3, `GET /repos/{owner}/{repo}/branches/{branch}/protection/required_status_checks/contexts`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **repos/set-status-check-contexts** (tier 3, `PUT /repos/{owner}/{repo}/branches/{branch}/protection/required_status_checks/contexts`): not_implemented
+  - `405 for a route that should exist (expected 200)`
+- **repos/add-status-check-contexts** (tier 3, `POST /repos/{owner}/{repo}/branches/{branch}/protection/required_status_checks/contexts`): not_implemented
+  - `405 for a route that should exist (expected 200)`
+- **repos/remove-status-check-contexts** (tier 3, `DELETE /repos/{owner}/{repo}/branches/{branch}/protection/required_status_checks/contexts`): nonconforming
+  - `status 500 not documented (documented: 200, 404, 422)`
+  - `unexpected status 500 (scenario expected 200): {"message":"object does not exist [id: refs/heads/conf-prot-mvdkc7mvaokk/protection/required_status_checks/contexts, rel_path: ]","url":"http://localhost:3320/a`
+- **repos/get-access-restrictions** (tier 3, `GET /repos/{owner}/{repo}/branches/{branch}/protection/restrictions`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **repos/delete-access-restrictions** (tier 3, `DELETE /repos/{owner}/{repo}/branches/{branch}/protection/restrictions`): nonconforming
+  - `status 500 not documented (documented: 204)`
+  - `unexpected status 500 (scenario expected 204): {"message":"object does not exist [id: refs/heads/main/protection/restrictions, rel_path: ]","url":"http://localhost:3320/api/swagger"} `
+- **repos/get-apps-with-access-to-protected-branch** (tier 3, `GET /repos/{owner}/{repo}/branches/{branch}/protection/restrictions/apps`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **repos/set-app-access-restrictions** (tier 3, `PUT /repos/{owner}/{repo}/branches/{branch}/protection/restrictions/apps`): not_implemented
+  - `405 for a route that should exist (expected 200)`
+- **repos/add-app-access-restrictions** (tier 3, `POST /repos/{owner}/{repo}/branches/{branch}/protection/restrictions/apps`): not_implemented
+  - `405 for a route that should exist (expected 200)`
+- **repos/remove-app-access-restrictions** (tier 3, `DELETE /repos/{owner}/{repo}/branches/{branch}/protection/restrictions/apps`): nonconforming
+  - `status 500 not documented (documented: 200, 422)`
+  - `unexpected status 500 (scenario expected 200): {"message":"object does not exist [id: refs/heads/main/protection/restrictions/apps, rel_path: ]","url":"http://localhost:3320/api/swagger"} `
+- **repos/get-users-with-access-to-protected-branch** (tier 3, `GET /repos/{owner}/{repo}/branches/{branch}/protection/restrictions/users`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **repos/set-user-access-restrictions** (tier 3, `PUT /repos/{owner}/{repo}/branches/{branch}/protection/restrictions/users`): not_implemented
+  - `405 for a route that should exist (expected 200)`
+- **repos/add-user-access-restrictions** (tier 3, `POST /repos/{owner}/{repo}/branches/{branch}/protection/restrictions/users`): not_implemented
+  - `405 for a route that should exist (expected 200)`
+- **repos/remove-user-access-restrictions** (tier 3, `DELETE /repos/{owner}/{repo}/branches/{branch}/protection/restrictions/users`): nonconforming
+  - `status 500 not documented (documented: 200, 422)`
+  - `unexpected status 500 (scenario expected 200): {"message":"object does not exist [id: refs/heads/main/protection/restrictions/users, rel_path: ]","url":"http://localhost:3320/api/swagger"} `
+- **repos/list-repo-push-bypass-requests** (tier 3, `GET /repos/{owner}/{repo}/bypass-requests/push-rules`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **repos/codeowners-errors** (tier 3, `GET /repos/{owner}/{repo}/codeowners/errors`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **dependency-graph/diff-range** (tier 3, `GET /repos/{owner}/{repo}/dependency-graph/compare/{basehead}`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **dependency-graph/export-sbom** (tier 3, `GET /repos/{owner}/{repo}/dependency-graph/sbom`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **dependency-graph/create-repository-snapshot** (tier 3, `POST /repos/{owner}/{repo}/dependency-graph/snapshots`): not_implemented
+  - `404 for a route that should exist (expected 201)`
+- **repos/create-dispatch-event** (tier 3, `POST /repos/{owner}/{repo}/dispatches`): not_implemented
+  - `404 for a route that should exist (expected 204)`
+- **repos/get-all-environments** (tier 3, `GET /repos/{owner}/{repo}/environments`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **repos/get-environment** (tier 3, `GET /repos/{owner}/{repo}/environments/{environment_name}`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **repos/create-or-update-environment** (tier 3, `PUT /repos/{owner}/{repo}/environments/{environment_name}`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **repos/delete-an-environment** (tier 3, `DELETE /repos/{owner}/{repo}/environments/{environment_name}`): not_implemented
+  - `404 for a route that should exist (expected 204)`
+- **repos/list-deployment-branch-policies** (tier 3, `GET /repos/{owner}/{repo}/environments/{environment_name}/deployment-branch-policies`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **repos/create-deployment-branch-policy** (tier 3, `POST /repos/{owner}/{repo}/environments/{environment_name}/deployment-branch-policies`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **repos/get-all-deployment-protection-rules** (tier 3, `GET /repos/{owner}/{repo}/environments/{environment_name}/deployment_protection_rules`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **repos/list-custom-deployment-rule-integrations** (tier 3, `GET /repos/{owner}/{repo}/environments/{environment_name}/deployment_protection_rules/apps`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **repos/check-immutable-releases** (tier 3, `GET /repos/{owner}/{repo}/immutable-releases`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **repos/enable-immutable-releases** (tier 3, `PUT /repos/{owner}/{repo}/immutable-releases`): not_implemented
+  - `404 for a route that should exist (expected 204)`
+- **repos/disable-immutable-releases** (tier 3, `DELETE /repos/{owner}/{repo}/immutable-releases`): not_implemented
+  - `404 for a route that should exist (expected 204)`
+- **issues/pin-comment** (tier 3, `PUT /repos/{owner}/{repo}/issues/comments/{comment_id}/pin`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **issues/unpin-comment** (tier 3, `DELETE /repos/{owner}/{repo}/issues/comments/{comment_id}/pin`): not_implemented
+  - `404 for a route that should exist (expected 204)`
+- **issues/check-user-can-be-assigned-to-issue** (tier 3, `GET /repos/{owner}/{repo}/issues/{issue_number}/assignees/{assignee}`): not_implemented
+  - `404 for a route that should exist (expected 204)`
+- **issues/list-dependencies-blocked-by** (tier 3, `GET /repos/{owner}/{repo}/issues/{issue_number}/dependencies/blocked_by`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **issues/add-blocked-by-dependency** (tier 3, `POST /repos/{owner}/{repo}/issues/{issue_number}/dependencies/blocked_by`): not_implemented
+  - `404 for a route that should exist (expected 201)`
+- **issues/remove-dependency-blocked-by** (tier 3, `DELETE /repos/{owner}/{repo}/issues/{issue_number}/dependencies/blocked_by/{issue_id}`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **issues/list-dependencies-blocking** (tier 3, `GET /repos/{owner}/{repo}/issues/{issue_number}/dependencies/blocking`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **issues/list-issue-field-values-for-issue** (tier 3, `GET /repos/{owner}/{repo}/issues/{issue_number}/issue-field-values`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **repos/list-deploy-keys** (tier 3, `GET /repos/{owner}/{repo}/keys`): nonconforming
+  - `schema: /0 missing required property: verified  [gh-spec#/definitions/deploy-key/required]`
+- **repos/create-deploy-key** (tier 3, `POST /repos/{owner}/{repo}/keys`): nonconforming
+  - `schema: (root) missing required property: verified  [gh-spec#/definitions/deploy-key/required]`
+- **repos/get-deploy-key** (tier 3, `GET /repos/{owner}/{repo}/keys/{key_id}`): nonconforming
+  - `schema: (root) missing required property: verified  [gh-spec#/definitions/deploy-key/required]`
+- **repos/enable-lfs-for-repo** (tier 3, `PUT /repos/{owner}/{repo}/lfs`): not_implemented
+  - `404 for a route that should exist (expected 202)`
+- **repos/disable-lfs-for-repo** (tier 3, `DELETE /repos/{owner}/{repo}/lfs`): not_implemented
+  - `404 for a route that should exist (expected 204)`
 - **issues/list-labels-for-milestone** (tier 3, `GET /repos/{owner}/{repo}/milestones/{milestone_number}/labels`): not_implemented
   - `404 for a route that should exist (expected 200)`
+- **activity/list-repo-notifications-for-authenticated-user** (tier 3, `GET /repos/{owner}/{repo}/notifications`): nonconforming
+  - `expected at least 1 item(s) (fixtures exist), got 0`
+- **repos/create-pages-site** (tier 3, `POST /repos/{owner}/{repo}/pages`): not_implemented
+  - `404 for a route that should exist (expected 201)`
+- **repos/custom-properties-for-repos-get-repository-values** (tier 3, `GET /repos/{owner}/{repo}/properties/values`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **repos/custom-properties-for-repos-create-or-update-repository-values** (tier 3, `PATCH /repos/{owner}/{repo}/properties/values`): not_implemented
+  - `404 for a route that should exist (expected 204)`
+- **repos/get-readme-in-directory** (tier 3, `GET /repos/{owner}/{repo}/readme/{dir}`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **repos/list-cache-info** (tier 3, `GET /repos/{owner}/{repo}/replicas/caches`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **repos/get-branch-rules** (tier 3, `GET /repos/{owner}/{repo}/rules/branches/{branch}`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **repos/get-repo-rulesets** (tier 3, `GET /repos/{owner}/{repo}/rulesets`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **repos/create-repo-ruleset** (tier 3, `POST /repos/{owner}/{repo}/rulesets`): not_implemented
+  - `404 for a route that should exist (expected 201)`
+- **repos/get-code-frequency-stats** (tier 3, `GET /repos/{owner}/{repo}/stats/code_frequency`): not_implemented
+  - `404 for a route that should exist (expected 200/202/204)`
+- **repos/get-commit-activity-stats** (tier 3, `GET /repos/{owner}/{repo}/stats/commit_activity`): not_implemented
+  - `404 for a route that should exist (expected 200/202/204)`
+- **repos/get-contributors-stats** (tier 3, `GET /repos/{owner}/{repo}/stats/contributors`): not_implemented
+  - `404 for a route that should exist (expected 200/202/204)`
+- **repos/get-participation-stats** (tier 3, `GET /repos/{owner}/{repo}/stats/participation`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **repos/get-punch-card-stats** (tier 3, `GET /repos/{owner}/{repo}/stats/punch_card`): not_implemented
+  - `404 for a route that should exist (expected 200/204)`
+- **repos/list-teams** (tier 3, `GET /repos/{owner}/{repo}/teams`): not_implemented
+  - `schema: /0 missing required properties: node_id, url, members_url, html_url, repositories_url, slug, parent, type  [#/required]`
+  - `405 for a route that should exist (expected 200)`
+- **repos/transfer** (tier 3, `POST /repos/{owner}/{repo}/transfer`): nonconforming
+  - `schema: (root) missing required properties: archive_url, assignees_url, blobs_url, branches_url, collaborators_url, comments_url, commits_url, compare_url, contents_url, contributors_url, deployments_url, downloads_url, ... (+24)  [#/required]`
+  - `schema: /owner missing required properties: events_url, followers_url, following_url, gists_url, gravatar_id, node_id, organizations_url, received_events_url, repos_url, site_admin, starred_url, subscriptions_url, ... (+2)  [gh-spec#/definitions/simple-user/required]`
+- **repos/check-vulnerability-alerts** (tier 3, `GET /repos/{owner}/{repo}/vulnerability-alerts`): not_implemented
+  - `404 for a route that should exist (expected 204)`
+- **repos/enable-vulnerability-alerts** (tier 3, `PUT /repos/{owner}/{repo}/vulnerability-alerts`): not_implemented
+  - `404 for a route that should exist (expected 204)`
+- **repos/disable-vulnerability-alerts** (tier 3, `DELETE /repos/{owner}/{repo}/vulnerability-alerts`): not_implemented
+  - `404 for a route that should exist (expected 204)`
+- **repos/list-public** (tier 3, `GET /repositories`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **users/add-email-for-authenticated-user** (tier 3, `POST /user/emails`): nonconforming
+  - `schema: /0 missing required property: visibility  [gh-spec#/definitions/email/required]`
+  - `schema: /1 missing required property: visibility  [gh-spec#/definitions/email/required]`
+- **users/list-followed-by-authenticated-user** (tier 3, `GET /user/following`): nonconforming
+  - `schema: /0 missing required properties: events_url, followers_url, following_url, gists_url, gravatar_id, node_id, organizations_url, received_events_url, repos_url, site_admin, starred_url, subscriptions_url, ... (+2)  [gh-spec#/definitions/simple-user/required]`
 - **users/get-public-ssh-key-for-authenticated-user** (tier 3, `GET /user/keys/{key_id}`): nonconforming
   - `schema: (root) missing required property: read_only  [gh-spec#/definitions/key/required]`
+- **orgs/list-memberships-for-authenticated-user** (tier 3, `GET /user/memberships/orgs`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **orgs/update-membership-for-authenticated-user** (tier 3, `PATCH /user/memberships/orgs/{org}`): not_implemented
+  - `404 for a route that should exist (expected 200/202)`
+- **migrations/start-for-authenticated-user** (tier 3, `POST /user/migrations`): not_implemented
+  - `404 for a route that should exist (expected 201)`
+- **users/list-public-emails-for-authenticated-user** (tier 3, `GET /user/public_emails`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **repos/list-invitations-for-authenticated-user** (tier 3, `GET /user/repository_invitations`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **users/list-social-accounts-for-authenticated-user** (tier 3, `GET /user/social_accounts`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **users/add-social-account-for-authenticated-user** (tier 3, `POST /user/social_accounts`): not_implemented
+  - `404 for a route that should exist (expected 201)`
+- **users/delete-social-account-for-authenticated-user** (tier 3, `DELETE /user/social_accounts`): not_implemented
+  - `404 for a route that should exist (expected 204)`
+- **users/list-ssh-signing-keys-for-authenticated-user** (tier 3, `GET /user/ssh_signing_keys`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **users/create-ssh-signing-key-for-authenticated-user** (tier 3, `POST /user/ssh_signing_keys`): not_implemented
+  - `404 for a route that should exist (expected 201)`
+- **teams/list-for-authenticated-user** (tier 3, `GET /user/teams`): nonconforming
+  - `schema: /0 missing required properties: node_id, url, members_url, html_url, repositories_url, slug, type, created_at, updated_at, members_count, repos_count  [#/required]`
+  - `schema: /0/organization missing required properties: login, url, node_id, repos_url, events_url, hooks_url, issues_url, members_url, public_members_url, html_url, has_organization_projects, has_repository_projects, ... (+8)  [gh-spec#/definitions/team-organization/required]`
+  - `schema: /0/organization/email must match format "email"  [gh-spec#/definitions/team-organization/properties/email/format]`
+- **users/get-by-id** (tier 3, `GET /user/{account_id}`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **activity/list-events-for-authenticated-user** (tier 3, `GET /users/{username}/events`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **activity/list-org-events-for-authenticated-user** (tier 3, `GET /users/{username}/events/orgs/{org}`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **activity/list-public-events-for-user** (tier 3, `GET /users/{username}/events/public`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **users/get-context-for-user** (tier 3, `GET /users/{username}/hovercard`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **activity/list-received-events-for-user** (tier 3, `GET /users/{username}/received_events`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **activity/list-received-public-events-for-user** (tier 3, `GET /users/{username}/received_events/public`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **users/list-social-accounts-for-user** (tier 3, `GET /users/{username}/social_accounts`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **users/list-ssh-signing-keys-for-user** (tier 3, `GET /users/{username}/ssh_signing_keys`): not_implemented
+  - `404 for a route that should exist (expected 200)`
+- **activity/list-repos-watched-by-user** (tier 3, `GET /users/{username}/subscriptions`): nonconforming
+  - `schema: /0 missing required properties: archive_url, assignees_url, blobs_url, branches_url, collaborators_url, comments_url, commits_url, compare_url, contents_url, contributors_url, deployments_url, downloads_url, ... (+24)  [#/required]`
+  - `schema: /0/owner missing required properties: events_url, followers_url, following_url, gists_url, gravatar_id, node_id, organizations_url, received_events_url, repos_url, site_admin, starred_url, subscriptions_url, ... (+2)  [gh-spec#/definitions/simple-user/required]`
+  - `schema: /1 missing required properties: archive_url, assignees_url, blobs_url, branches_url, collaborators_url, comments_url, commits_url, compare_url, contents_url, contributors_url, deployments_url, downloads_url, ... (+24)  [#/required]`
+  - `schema: /1/owner missing required properties: events_url, followers_url, following_url, gists_url, gravatar_id, node_id, organizations_url, received_events_url, repos_url, site_admin, starred_url, subscriptions_url, ... (+2)  [gh-spec#/definitions/simple-user/required]`
 
-## Conforming operations (29)
+## Conforming operations (45)
 
-`gitignore/get-all-templates`, `markdown/render`, `activity/list-notifications-for-authenticated-user`, `orgs/check-membership-for-user`, `repos/delete`, `actions/list-workflow-runs-for-repo`, `repos/add-collaborator`, `repos/remove-collaborator`, `repos/list-webhooks`, `issues/delete-comment`, `issues/list-labels-on-issue`, `issues/remove-all-labels`, `issues/list-events-for-timeline`, `issues/delete-label`, `repos/list-languages`, `repos/delete-release`, `activity/get-repo-subscription`, `activity/set-repo-subscription`, `activity/delete-repo-subscription`, `repos/list-tags`, `users/list-gpg-keys-for-authenticated-user`, `users/list-public-ssh-keys-for-authenticated-user`, `users/delete-public-ssh-key-for-authenticated-user`, `activity/check-repo-is-starred-by-authenticated-user`, `activity/star-repo-for-authenticated-user`, `activity/unstar-repo-for-authenticated-user`, `users/list-followers-for-user`, `users/list-following-for-user`, `users/list-public-keys-for-user`
+`gitignore/get-all-templates`, `gitignore/get-template`, `markdown/render`, `markdown/render-raw`, `activity/mark-notifications-as-read`, `orgs/list-webhooks`, `orgs/check-membership-for-user`, `orgs/remove-member`, `orgs/check-public-membership-for-user`, `orgs/set-public-membership-for-authenticated-user`, `orgs/remove-public-membership-for-authenticated-user`, `repos/delete`, `actions/list-workflow-runs-for-repo`, `repos/add-collaborator`, `repos/remove-collaborator`, `repos/list-webhooks`, `issues/delete-comment`, `issues/list-labels-on-issue`, `issues/remove-all-labels`, `issues/list-events-for-timeline`, `repos/delete-deploy-key`, `issues/delete-label`, `repos/list-languages`, `activity/mark-repo-notifications-as-read`, `repos/delete-release`, `activity/get-repo-subscription`, `activity/set-repo-subscription`, `activity/delete-repo-subscription`, `repos/list-tags`, `users/delete-email-for-authenticated-user`, `users/list-followers-for-authenticated-user`, `users/check-person-is-followed-by-authenticated`, `users/follow`, `users/unfollow`, `users/list-gpg-keys-for-authenticated-user`, `users/list-public-ssh-keys-for-authenticated-user`, `users/delete-public-ssh-key-for-authenticated-user`, `activity/check-repo-is-starred-by-authenticated-user`, `activity/star-repo-for-authenticated-user`, `activity/unstar-repo-for-authenticated-user`, `users/list-followers-for-user`, `users/list-following-for-user`, `users/check-following-for-user`, `users/list-gpg-keys-for-user`, `users/list-public-keys-for-user`
 
-## Untested tier 1/2 operations (90)
+## Untested tier 1/2 operations (85)
 
 - `gists/get` (tier 2): scenario not reached (blocked, skipped by --tier/--readonly, or optional fixture missing)
 - `gists/update` (tier 2): scenario not reached (blocked, skipped by --tier/--readonly, or optional fixture missing)
@@ -374,13 +972,10 @@
 - `actions/list-jobs-for-workflow-run` (tier 2): scenario not reached (blocked, skipped by --tier/--readonly, or optional fixture missing)
 - `repos/list-branches` (tier 1): scenario not reached (blocked, skipped by --tier/--readonly, or optional fixture missing)
 - `repos/get-branch` (tier 1): scenario not reached (blocked, skipped by --tier/--readonly, or optional fixture missing)
-- `repos/get-branch-protection` (tier 2): scenario not reached (blocked, skipped by --tier/--readonly, or optional fixture missing)
-- `repos/update-branch-protection` (tier 2): scenario not reached (blocked, skipped by --tier/--readonly, or optional fixture missing)
-- `repos/delete-branch-protection` (tier 2): scenario not reached (blocked, skipped by --tier/--readonly, or optional fixture missing)
 - `repos/rename-branch` (tier 2): scenario not reached (blocked, skipped by --tier/--readonly, or optional fixture missing)
-- `checks/get` (tier 2): no scenario
-- `checks/list-annotations` (tier 2): no scenario
-- `checks/get-suite` (tier 2): no scenario
+- `checks/get` (tier 2): scenario not reached (blocked, skipped by --tier/--readonly, or optional fixture missing)
+- `checks/list-annotations` (tier 2): scenario not reached (blocked, skipped by --tier/--readonly, or optional fixture missing)
+- `checks/get-suite` (tier 2): scenario not reached (blocked, skipped by --tier/--readonly, or optional fixture missing)
 - `repos/list-commit-comments-for-repo` (tier 2): scenario not reached (blocked, skipped by --tier/--readonly, or optional fixture missing)
 - `repos/get-commit-comment` (tier 2): scenario not reached (blocked, skipped by --tier/--readonly, or optional fixture missing)
 - `repos/update-commit-comment` (tier 2): scenario not reached (blocked, skipped by --tier/--readonly, or optional fixture missing)
@@ -407,7 +1002,6 @@
 - `git/get-blob` (tier 2): scenario not reached (blocked, skipped by --tier/--readonly, or optional fixture missing)
 - `git/create-commit` (tier 2): scenario not reached (blocked, skipped by --tier/--readonly, or optional fixture missing)
 - `git/update-ref` (tier 1): scenario not reached (blocked, skipped by --tier/--readonly, or optional fixture missing)
-- `git/delete-ref` (tier 1): scenario not reached (blocked, skipped by --tier/--readonly, or optional fixture missing)
 - `git/create-tag` (tier 2): scenario not reached (blocked, skipped by --tier/--readonly, or optional fixture missing)
 - `git/get-tag` (tier 2): scenario not reached (blocked, skipped by --tier/--readonly, or optional fixture missing)
 - `git/create-tree` (tier 2): scenario not reached (blocked, skipped by --tier/--readonly, or optional fixture missing)
@@ -448,15 +1042,14 @@
 - `pulls/update-review` (tier 2): scenario not reached (blocked, skipped by --tier/--readonly, or optional fixture missing)
 - `pulls/delete-pending-review` (tier 2): scenario not reached (blocked, skipped by --tier/--readonly, or optional fixture missing)
 - `pulls/list-comments-for-review` (tier 2): scenario not reached (blocked, skipped by --tier/--readonly, or optional fixture missing)
-- `pulls/dismiss-review` (tier 2): no scenario
+- `pulls/dismiss-review` (tier 2): scenario not reached (blocked, skipped by --tier/--readonly, or optional fixture missing)
 - `pulls/submit-review` (tier 2): scenario not reached (blocked, skipped by --tier/--readonly, or optional fixture missing)
 - `pulls/update-branch` (tier 1): scenario not reached (blocked, skipped by --tier/--readonly, or optional fixture missing)
 - `reactions/delete-for-release` (tier 2): scenario not reached (blocked, skipped by --tier/--readonly, or optional fixture missing)
 - `repos/create-commit-status` (tier 2): scenario not reached (blocked, skipped by --tier/--readonly, or optional fixture missing)
 - `repos/download-tarball-archive` (tier 2): scenario not reached (blocked, skipped by --tier/--readonly, or optional fixture missing)
 - `repos/download-zipball-archive` (tier 2): scenario not reached (blocked, skipped by --tier/--readonly, or optional fixture missing)
-- `users/create-gpg-key-for-authenticated-user` (tier 1): no scenario
-- `users/delete-gpg-key-for-authenticated-user` (tier 1): no scenario
+- `users/delete-gpg-key-for-authenticated-user` (tier 1): scenario not reached (blocked, skipped by --tier/--readonly, or optional fixture missing)
 
 ## Scenarios
 
@@ -485,4 +1078,101 @@
 - completed: actions (read)
 - completed: search
 - completed: misc endpoints
+- blocked: actions-settings: repository secrets and variables — fixture step actions/get-repo-public-key returned 405: 
+- blocked: actions-settings: org secrets and variables with selected repositories — fixture step actions/get-org-public-key returned 405: 
+- completed: actions-settings: repository permissions and OIDC
+- completed: actions-settings: organization permissions
+- blocked: actions-settings: organization runner groups — fixture step actions/create-self-hosted-runner-group-for-org returned 404: 404 page not found
+
+- blocked: actions-settings: enterprise permissions and runner groups — fixture step enterprise-admin/get-github-actions-permissions-enterprise returned 404: 404 page not found
+
+- completed: advsec: global advisories
+- blocked: advsec: code security configuration on an org repository — fixture step code-security/create-configuration returned 404: 404 page not found
+
+- skipped: advsec: secret scanning, push protection and bypasses — requires advsec
+- completed: advsec: secret scanning pattern configurations
+- skipped: advsec: Dependabot alerts and dismissal requests — requires advsec
+- skipped: advsec: Dependabot secrets and repository access — requires advsec
+- skipped: advsec: code scanning (SARIF upload, analyses, alerts) — requires advsec
+- skipped: advsec: detach and delete the org configuration — requires advsec
+- blocked: advsec: enterprise code security configurations — fixture step code-security/create-configuration-for-enterprise returned 404: 404 page not found
+
+- errored: apps: GitHub App, JWT, installations, installation tokens, webhook — register app: 404 Not found.
+ @ 
+- errored: apps: enterprise app installations on an organization — register app: 404 Not found.
+ @ 
+- errored: apps: manifest flow — manifest code: 404 Not found.
+ @ 
+- errored: oauth-authorizations: authorizations and grants — oauth app: 404 Not found.
+ @ 
+- blocked: migrations: user export — fixture step migrations/start-for-authenticated-user returned 404: 404 page not found
+
+- blocked: migrations: organization export with locked repositories — fixture step migrations/start-for-org returned 404: 404 page not found
+
+- skipped: checks: runs, annotations, suites — requires featureSha
+- completed: checks: gpg keys
+- blocked: checks: review dismissal, PR check runs — fixture step git/create-ref returned 405: 
+- blocked: checks: workflow run fixture — fixture step repos/create-or-update-file-contents returned 422: {"message":"[SHA]: Required","url":"http://localhost:3320/api/swagger"}
+
+- blocked: enterprise: users, impersonation, suspension — fixture step enterprise-admin/create-user returned 422: {"message":"[Username]: Required","url":"http://localhost:3320/api/swagger"}
+
+- blocked: enterprise: global webhooks — fixture step enterprise-admin/create-global-webhook returned 422: {"message":"[Type]: Required","url":"http://localhost:3320/api/swagger"}
+
+- errored: enterprise: stats, license, announcement, keys — announcement not stored @ at Object.run (file:///Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tools/conformance/scenarios/write-enterprise.mjs:94:76)
+- blocked: enterprise: organizations, LDAP team mapping — fixture step enterprise-admin/create-org returned 404: 404 page not found
+
+- skipped: enterprise: pre-receive environments and hooks — requires entOrg
+- completed: enterprise: self-hosted runners
+- skipped: enterprise: audit log, streams, code security, billing, rulesets, bypass requests — requires entOrg
+- skipped: enterprise: custom properties — requires entOrg
+- skipped: enterprise: SCIM provisioning, enterprise teams, external groups — requires entOrg, entOrgTeam, entUser
+- blocked: enterprise: live migrations — fixture step enterprise-admin/live-migration-create returned 404: 404 page not found
+
+- completed: enterprise: Manage API (nodes, settings, maintenance, license, ssh, upgrades)
+- completed: enterprise: cleanup
+- completed: finish: gitignore template, license, raw markdown
+- blocked: finish: repository invitations — fixture step enterprise-admin/get-manage-settings returned 404: 404 page not found
+
+- blocked: finish: enterprise runner group membership — fixture step actions/generate-runner-jitconfig-for-enterprise returned 404: 404 page not found
+
+- blocked: finish: push ruleset delegated bypass requests — fixture step repos/create-repo-ruleset returned 404: 404 page not found
+
+- completed: orgs: settings, announcement, immutable releases, security products
+- completed: orgs: public membership
+- completed: teams: nested teams, members, repositories (slug and legacy routes)
+- completed: orgs: custom repository roles
+- completed: orgs: organization roles and security managers
+- completed: orgs: outside collaborators
+- completed: orgs: custom properties
+- completed: private registries
+- completed: orgs: ruleset history, fine-grained PAT policy, audit log
+- completed: orgs: webhooks, memberships, team membership
+- completed: orgs: delete organization
+- errored: packages: container images and npm packages (user namespace) — start upload: HTTP 401 {"errors":[{"code":"UNAUTHORIZED","message":""}]}
+ @ 
+- errored: packages: organization packages — start upload: HTTP 401 {"errors":[{"code":"UNAUTHORIZED","message":""}]}
+ @ 
+- errored: projects: Projects (v2) REST for the authenticated user — Cannot read properties of undefined (reading 'createProjectV2') @ at createProject (file:///Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tools/conformance/scenarios/write-p
+- errored: projects: Projects (v2) REST for an organization — Cannot read properties of undefined (reading 'createProjectV2') @ at createProject (file:///Users/vs/Workspace/GitHubClone/.claude/worktrees/agent-a0df397a2e1901171/tools/conformance/scenarios/write-p
+- completed: repos: environments, branch policies, deployment statuses
+- completed: repos: security & feature toggles
+- completed: repos: properties, dispatch, CODEOWNERS, teams, caches, public list
+- completed: repos: statistics
+- completed: repos: branch protection sub-resources
+- completed: repos: rulesets, history, rule suites
+- completed: repos: pages (legacy builds and artifact deployments)
+- completed: repos: webhooks extras, deploy keys, autolinks, transfer
+- completed: users: emails, social accounts, follows, signing keys, hovercard
+- completed: issues: pinned comments, dependencies, field values
+- completed: gists: comments, stars, forks, revisions
+- completed: activity: notifications, feeds, events, codes of conduct
+- completed: dependency graph: SBOM, compare, snapshots
+- blocked: runner: fixture repository and runner process — fixture step actions/generate-runner-jitconfig-for-repo returned 405: 
+- skipped: runner: push workflow, runs, jobs, logs, artifacts, caches, re-runs — requires runnerReady
+- skipped: runner: dispatch, cancel, force-cancel — requires runnerReady
+- skipped: runner: environment reviews and deployment protection rules — requires runnerReady
+- blocked: runner: organization runners, OIDC, cache usage — fixture step actions/generate-runner-jitconfig-for-org returned 405: 
+- blocked: runner: enterprise runners and cache policy — fixture step actions/generate-runner-jitconfig-for-enterprise returned 404: 404 page not found
+
+- completed: runner: cleanup
 - completed: cleanup
