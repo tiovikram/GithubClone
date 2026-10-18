@@ -30,12 +30,26 @@ use crate::state::AppState;
 pub fn forge_routes() -> Router<AppState> {
     Router::new()
         .route("/apps", get(list_apps).post(create_app))
-        .route("/apps/{slug}", delete(delete_app))
-        .route("/apps/{slug}/keys", post(add_key))
+        .route("/apps/{slug}", get(super::apps_manage::get_app).patch(super::apps_manage::update_app).delete(delete_app))
+        .route("/apps/{slug}/keys", get(super::apps_manage::list_keys).post(add_key))
+        .route("/apps/{slug}/keys/{key_id}", delete(super::apps_manage::delete_key))
+        .route("/apps/{slug}/client-secret", post(super::apps_manage::new_client_secret))
+        .route(
+            "/installations/{installation_id}",
+            get(super::apps_manage::get_installation).patch(super::apps_manage::update_installation).delete(super::apps_manage::delete_installation),
+        )
+        .route(
+            "/installations/{installation_id}/suspended",
+            axum::routing::put(super::apps_manage::suspend_installation).delete(super::apps_manage::unsuspend_installation),
+        )
+        .route("/installations/{installation_id}/permissions", post(super::apps_manage::accept_permissions))
+        .route("/authorizations", get(super::apps_manage::list_authorizations))
+        .route("/authorizations/{grant_id}", delete(super::apps_manage::revoke_authorization))
         .route("/apps/{slug}/installations", post(install))
         .route("/app-manifests", post(create_manifest_code))
         .route("/oauth-apps", post(create_oauth_app))
         .merge(super::apps_migrations::forge_routes())
+        .merge(super::packages_forge::forge_routes())
 }
 
 async fn owner_for(s: &AppState, u: &User, owner: Option<&str>) -> ApiResult<User> {
@@ -75,7 +89,20 @@ async fn list_apps(State(s): State<AppState>, AuthUser(u): AuthUser) -> ApiResul
     .await?;
     let mut out = Vec::new();
     for a in &rows {
-        let mut v = if a.kind == "app" { apps::integration_json(&s, a).await? } else { json!({ "id": a.id, "name": a.name, "url": a.external_url, "client_id": a.client_id }) };
+        let mut v = if a.kind == "app" {
+            apps::integration_json(&s, a).await?
+        } else {
+            let owner = db::user_by_id(&s.db, a.owner_id).await?;
+            json!({
+                "id": a.id,
+                "slug": a.slug,
+                "name": a.name,
+                "url": a.external_url,
+                "client_id": a.client_id,
+                "description": a.description,
+                "owner": crate::json::user::simple(&s.api_url(), s.base_url(), &owner),
+            })
+        };
         v["kind"] = json!(a.kind);
         out.push(v);
     }

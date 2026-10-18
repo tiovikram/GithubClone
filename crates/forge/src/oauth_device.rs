@@ -295,7 +295,16 @@ async fn describe(State(s): State<AppState>, AuthUser(_u): AuthUser, Path(code):
     .fetch_optional(&s.db)
     .await?;
     let (client_id, scopes, expires_at) = row.ok_or_else(ApiError::not_found)?;
+    // The requesting application (registered OAuth app or GitHub App), for the approval page.
+    let app = match crate::apps::app_by_client_id(&s.db, &client_id).await {
+        Ok(a) => {
+            let owner = crate::db::user_by_id(&s.db, a.owner_id).await.ok().map(|o| o.login);
+            json!({ "name": a.name, "kind": a.kind, "url": a.external_url, "owner": owner })
+        }
+        Err(_) => Value::Null,
+    };
     Ok(axum::Json(json!({
+        "app": app,
         "user_code": normalize_user_code(&code),
         "client_id": client_id,
         "scopes": scopes.split_whitespace().collect::<Vec<_>>(),
