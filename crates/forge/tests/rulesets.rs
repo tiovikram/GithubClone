@@ -69,8 +69,8 @@ async fn branch_rules_block_pushes_with_gh013() {
     assert!(out.contains("Commit message must start with a given pattern: feat"), "{out}");
     let all = suites(&s, &u, &rp).await;
     assert_eq!(all[0]["result"], "fail", "{all:?}");
-    assert_eq!(all[0]["evaluation_result"], Value::Null);
     let (_, one) = s.call(Some(&u), "GET", &format!("{rp}/rulesets/rule-suites/{}", all[0]["id"]), None).await;
+    assert_eq!(one["evaluation_result"], Value::Null, "{one}");
     let evals = one["rule_evaluations"].as_array().unwrap();
     assert!(evals.iter().any(|e| e["rule_type"] == "commit_message_pattern" && e["result"] == "fail"), "{one}");
     assert!(evals.iter().any(|e| e["rule_type"] == "deletion" && e["result"] == "pass"), "{one}");
