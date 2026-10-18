@@ -18,7 +18,8 @@
     "marked": "^18.1.1",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
-    "react-router-dom": "^7.18.4"
+    "react-router-dom": "^7.18.4",
+    "tweetnacl": "1.0.3"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",

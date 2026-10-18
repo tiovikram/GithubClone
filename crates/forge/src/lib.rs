@@ -86,7 +86,7 @@ pub fn app(state: AppState) -> Router {
         .route("/api/v3/", get(api::meta::root_handler))
         .nest("/api/v3", api)
         .nest("/api/graphql", graphql)
-        .nest("/api/forge", forge_api::routes().merge(oauth_device::forge_routes()).merge(api::apps_forge::forge_routes()).merge(advsec::forge_routes()))
+        .nest("/api/forge", forge_api::routes().merge(oauth_device::forge_routes()).merge(api::apps_forge::forge_routes()).merge(advsec::forge_routes()).merge(api::actions::forge_routes()))
         .merge(oauth_device::routes())
         .nest(
             "/api/uploads",
