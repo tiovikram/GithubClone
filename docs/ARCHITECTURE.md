@@ -192,6 +192,11 @@ An embedded `russh` server, started by `forge serve` when `FORGE_SSH_LISTEN` is 
   The runner calls `actions_allowed`, `workflow_token_permissions`, `action_allowed`,
   `fork_pr_policy`, `retention_days`, `self_hosted_runners_allowed`, `workflow_access_allowed`,
   `oidc_sub_claim_keys`, `runner_group_of`, `runner_group_allows`.
+- **OIDC** (`runner/oidc.rs`): jobs with `id-token: write` get `ACTIONS_ID_TOKEN_REQUEST_URL`
+  (`{runner's forge URL}/_services/token/idtoken?api-version=2.0`) and a per-job request token;
+  the endpoint signs RS256 ID tokens with the site key (`actions_oidc_keys`, private key sealed
+  via the master key). Issuer `{base}/_services/token`, discovery at
+  `{issuer}/.well-known/openid-configuration`, JWKS at `{issuer}/.well-known/jwks`.
 - **Runner groups** (`actions_runner_groups`): per org and for the enterprise, with a `Default`
   group each; membership in `actions_runner_group_runners` (no row = default group). forge has no
   GitHub-hosted runner fleet: jobs run on self-hosted runners (`forge runner`).
