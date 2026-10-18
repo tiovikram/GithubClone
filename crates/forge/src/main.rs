@@ -54,6 +54,15 @@ enum AdminCmd {
         #[arg(long, default_value_t = 1)]
         hours: i64,
     },
+    /// Create an organization administered by `--owner`.
+    CreateOrg {
+        #[arg(long)]
+        login: String,
+        #[arg(long)]
+        owner: String,
+        #[arg(long)]
+        name: Option<String>,
+    },
 }
 
 #[tokio::main]
@@ -156,6 +165,13 @@ async fn main() -> anyhow::Result<()> {
                         .await
                         .map_err(|e| anyhow::anyhow!(e.message))?;
                     println!("{token}");
+                }
+                AdminCmd::CreateOrg { login, owner, name } => {
+                    let u = forge::db::user_by_login(&state.db, &owner).await.map_err(|e| anyhow::anyhow!(e.message))?;
+                    let o = forge::api::repos::create_organization(&state, &login, name.as_deref(), &u)
+                        .await
+                        .map_err(|e| anyhow::anyhow!("{}: {:?}", e.message, e.errors))?;
+                    println!("created organization {} (id {})", o.login, o.id);
                 }
             }
         }

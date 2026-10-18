@@ -1,6 +1,8 @@
 //! REST API mounted at /api/v3. One module per area; each exposes `routes()`.
 pub mod keys;
 pub mod branches;
+pub mod checks;
+pub mod review_reactions;
 pub mod commits;
 pub mod contents;
 pub mod cross_compare;
@@ -20,6 +22,11 @@ pub mod gists;
 pub mod gist_git;
 pub mod misc;
 pub mod orgs_extra;
+pub mod orgs_props;
+pub mod orgs_registries;
+pub mod orgs_roles;
+pub mod orgs_settings;
+pub mod orgs_teams;
 pub mod plat;
 pub mod projects_v2;
 pub mod releases;
@@ -83,6 +90,11 @@ pub fn routes() -> Router<AppState> {
         .merge(webhooks::routes())
         .merge(social::routes())
         .merge(orgs_extra::routes())
+        .merge(orgs_teams::routes())
+        .merge(orgs_settings::routes())
+        .merge(orgs_roles::routes())
+        .merge(orgs_props::routes())
+        .merge(orgs_registries::routes())
         .merge(repo_extras::routes())
         .merge(commit_comments::routes())
         .merge(deployments::routes())
@@ -92,6 +104,8 @@ pub fn routes() -> Router<AppState> {
         .merge(rulesets::routes())
         .merge(signing_keys::routes())
         .merge(actions::routes())
+        .merge(checks::routes())
+        .merge(review_reactions::routes())
         .merge(actions_secrets::routes())
         .merge(runner_runners::routes())
         .merge(runner_misc::routes())

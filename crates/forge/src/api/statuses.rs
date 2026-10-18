@@ -1,4 +1,5 @@
-//! Commit statuses (create, list, combined) and empty check-runs/check-suites listings.
+//! Commit statuses (create, list, combined); the per-ref check-runs/check-suites listings
+//! delegate to `checks.rs`.
 use std::collections::HashMap;
 
 use axum::extract::{OriginalUri, Path, Query, State};
@@ -194,19 +195,19 @@ async fn combined_status(
 async fn check_runs(
     State(s): State<AppState>,
     MaybeUser(u): MaybeUser,
+    uri: OriginalUri,
     Path((owner, repo, r)): Path<(String, String, String)>,
-) -> ApiResult<Json<Value>> {
-    let ctx = gitapi::load(&s, u.as_ref(), &owner, &repo).await?;
-    commit_for(&s, &ctx, &r).await?;
-    Ok(Json(json!({ "total_count": 0, "check_runs": [] })))
+    Query(q): Query<super::checks::RunsQuery>,
+) -> ApiResult<Response> {
+    super::checks::list_for_ref(&s, u.as_ref(), &uri, &owner, &repo, &r, q).await
 }
 
 async fn check_suites(
     State(s): State<AppState>,
     MaybeUser(u): MaybeUser,
+    uri: OriginalUri,
     Path((owner, repo, r)): Path<(String, String, String)>,
-) -> ApiResult<Json<Value>> {
-    let ctx = gitapi::load(&s, u.as_ref(), &owner, &repo).await?;
-    commit_for(&s, &ctx, &r).await?;
-    Ok(Json(json!({ "total_count": 0, "check_suites": [] })))
+    Query(q): Query<super::checks::SuitesQuery>,
+) -> ApiResult<Response> {
+    super::checks::suites_for_ref(&s, u.as_ref(), &uri, &owner, &repo, &r, q).await
 }

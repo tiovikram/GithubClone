@@ -169,6 +169,12 @@ CREATE TABLE actions_schedules (
     PRIMARY KEY (repo_id, workflow_path, cron)
 );
 
+-- Workflow runs belong to the check suite of their head commit; each job has a check run and
+-- uses the check run's id as its own id (like GitHub, where job id == check run id). The job
+-- sequence only serves as a fallback and starts far above any check run id.
+ALTER TABLE actions_runs ADD COLUMN check_suite_id BIGINT;
+ALTER TABLE actions_jobs ALTER COLUMN id RESTART WITH 1000000000000;
+
 -- Reviews of deployment environments for a run (get-reviews-for-run).
 CREATE TABLE actions_run_approvals (
     id           BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,

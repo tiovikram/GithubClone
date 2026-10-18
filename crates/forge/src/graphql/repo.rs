@@ -1092,10 +1092,12 @@ impl GCommit {
         .bind(&self.oid)
         .fetch_all(&st(ctx).db)
         .await?;
-        if rows.is_empty() {
+        let runs = crate::api::checks::latest_runs_for_sha(&st(ctx).db, self.repo.repo.id, &self.oid).await?;
+        if rows.is_empty() && runs.is_empty() {
             return Ok(None);
         }
-        Ok(Some(StatusCheckRollup { rows: Arc::new(rows), repo: self.repo.clone() }))
+        let runs = runs.into_iter().map(|r| CheckRun { row: Arc::new(r), repo: self.repo.clone() }).collect();
+        Ok(Some(StatusCheckRollup { rows: Arc::new(rows), runs: Arc::new(runs), repo: self.repo.clone() }))
     }
     async fn repository(&self) -> GRepo {
         GRepo::new(self.repo.clone())
@@ -1155,6 +1157,8 @@ pub struct StatusRow {
 #[derive(Clone)]
 pub struct StatusCheckRollup {
     rows: Arc<Vec<StatusRow>>,
+    /// Latest check run per name (see `api::checks`).
+    runs: Arc<Vec<CheckRun>>,
     repo: Arc<RepoCtx>,
 }
 
@@ -1164,16 +1168,44 @@ impl StatusCheckRollup {
         ID(ids::encode("StatusCheckRollup", self.rows.first().map(|r| r.id).unwrap_or(0)))
     }
     async fn state(&self) -> StatusState {
-        combined_state(&self.rows)
+        let statuses = combined_state(&self.rows);
+        // the worst of statuses and check runs (any failure fails, any pending keeps it pending)
+        let rank = |s: StatusState| match s {
+            StatusState::Error | StatusState::Failure => 2,
+            StatusState::Pending | StatusState::Expected => 1,
+            StatusState::Success => 0,
+        };
+        match (self.rows.is_empty(), check_runs_state(&self.runs)) {
+            (true, Some(r)) => r,
+            (false, Some(r)) if rank(r) > rank(statuses) => r,
+            _ => statuses,
+        }
     }
     async fn contexts(&self, first: Option<i32>, after: Option<String>, last: Option<i32>, before: Option<String>) -> StatusCheckRollupContextConnection {
         let all = self
-            .rows
+            .runs
             .iter()
-            .map(|r| StatusCheckRollupContext::StatusContext(StatusContext { row: r.clone(), repo: self.repo.clone() }))
+            .map(|r| StatusCheckRollupContext::CheckRun(r.clone()))
+            .chain(self.rows.iter().map(|r| StatusCheckRollupContext::StatusContext(StatusContext { row: r.clone(), repo: self.repo.clone() })))
             .collect();
         StatusCheckRollupContextConnection::from_all(all, &ConnArgs::new(first, after, last, before))
     }
+}
+
+/// Rollup state of check runs: failure for a failing conclusion, pending while any run is not
+/// completed, else success (None without runs).
+fn check_runs_state(runs: &[CheckRun]) -> Option<StatusState> {
+    if runs.is_empty() {
+        return None;
+    }
+    let failing = |c: &str| matches!(c, "failure" | "timed_out" | "cancelled" | "action_required" | "startup_failure" | "stale");
+    Some(if runs.iter().any(|r| r.row.conclusion.as_deref().is_some_and(failing)) {
+        StatusState::Failure
+    } else if runs.iter().any(|r| r.row.status != "completed") {
+        StatusState::Pending
+    } else {
+        StatusState::Success
+    })
 }
 
 pub fn combined_state(rows: &[StatusRow]) -> StatusState {
@@ -1227,35 +1259,88 @@ impl StatusContext {
     }
 }
 
-/// Check runs (GitHub Actions) are not implemented by forge; the type exists for gh's queries.
+/// A check run (`api::checks`), as listed in a commit's `statusCheckRollup`.
 #[derive(Clone)]
 pub struct CheckRun {
-    pub id: i64,
-    pub name: String,
+    pub row: Arc<crate::api::checks::CheckRunRow>,
+    pub repo: Arc<RepoCtx>,
+}
+
+fn check_status(s: &str) -> CheckStatusState {
+    match s {
+        "requested" => CheckStatusState::Requested,
+        "in_progress" => CheckStatusState::InProgress,
+        "completed" => CheckStatusState::Completed,
+        "waiting" => CheckStatusState::Waiting,
+        "pending" => CheckStatusState::Pending,
+        _ => CheckStatusState::Queued,
+    }
+}
+
+fn check_conclusion(s: &str) -> Option<CheckConclusionState> {
+    Some(match s {
+        "action_required" => CheckConclusionState::ActionRequired,
+        "timed_out" => CheckConclusionState::TimedOut,
+        "cancelled" => CheckConclusionState::Cancelled,
+        "failure" => CheckConclusionState::Failure,
+        "success" => CheckConclusionState::Success,
+        "neutral" => CheckConclusionState::Neutral,
+        "skipped" => CheckConclusionState::Skipped,
+        "startup_failure" => CheckConclusionState::StartupFailure,
+        "stale" => CheckConclusionState::Stale,
+        _ => return None,
+    })
+}
+
+impl CheckRun {
+    fn html_url(&self, ctx: &Context<'_>) -> String {
+        format!("{}/{}/runs/{}", st(ctx).base_url(), self.repo.full_name(), self.row.id)
+    }
 }
 
 #[Object]
 impl CheckRun {
     pub async fn id(&self) -> ID {
-        ID(ids::encode("CheckRun", self.id))
+        ID(ids::encode("CheckRun", self.row.id))
+    }
+    async fn database_id(&self) -> i64 {
+        self.row.id
     }
     async fn name(&self) -> String {
-        self.name.clone()
+        self.row.name.clone()
     }
     async fn status(&self) -> CheckStatusState {
-        CheckStatusState::Completed
+        check_status(&self.row.status)
     }
     async fn conclusion(&self) -> Option<CheckConclusionState> {
-        None
+        self.row.conclusion.as_deref().and_then(check_conclusion)
     }
     async fn started_at(&self) -> Option<DateTime> {
-        None
+        self.row.started_at.map(dt)
     }
     async fn completed_at(&self) -> Option<DateTime> {
-        None
+        self.row.completed_at.map(dt)
     }
-    async fn details_url(&self) -> Option<Uri> {
-        None
+    async fn details_url(&self, ctx: &Context<'_>) -> Option<Uri> {
+        Some(Uri(self.row.details_url.clone().unwrap_or_else(|| self.html_url(ctx))))
+    }
+    async fn url(&self, ctx: &Context<'_>) -> Uri {
+        Uri(self.html_url(ctx))
+    }
+    async fn permalink(&self, ctx: &Context<'_>) -> Uri {
+        Uri(self.html_url(ctx))
+    }
+    async fn title(&self) -> Option<String> {
+        self.row.output_title.clone()
+    }
+    async fn summary(&self) -> Option<String> {
+        self.row.output_summary.clone()
+    }
+    async fn text(&self) -> Option<String> {
+        self.row.output_text.clone()
+    }
+    async fn external_id(&self) -> Option<String> {
+        self.row.external_id.clone()
     }
     async fn check_suite(&self) -> CheckSuite {
         CheckSuite

@@ -455,8 +455,22 @@ pub fn parse_diff(text: &str) -> Vec<FileDiff> {
     files
 }
 
+/// Parsed per-file diff. Bounded by `FORGE_MAX_DIFF_BYTES`: past it, the list is cut at the
+/// last complete file (like GitHub's truncated file lists for huge pull requests).
 pub async fn diff(git: &GitCmd, repo: &Path, from: &str, to: &str, path: Option<&str>) -> anyhow::Result<Vec<FileDiff>> {
-    let text = raw_diff(git, repo, from, to, path).await?;
+    let mut args = vec![
+        "-c", "core.quotePath=false", "diff", "--no-color", "--no-ext-diff", "--full-index", "-M",
+        "--src-prefix=a/", "--dst-prefix=b/", from, to,
+    ];
+    if let Some(p) = path {
+        args.push("--");
+        args.push(p);
+    }
+    let (mut text, truncated) = crate::security::git_output_capped(git, repo, &args, crate::security::max_diff_bytes()).await?;
+    if truncated {
+        let cut = text.windows(12).rposition(|w| w == b"\ndiff --git ").map(|i| i + 1).unwrap_or(0);
+        text.truncate(cut);
+    }
     Ok(parse_diff(&String::from_utf8_lossy(&text)))
 }
 
@@ -470,12 +484,12 @@ pub async fn raw_diff(git: &GitCmd, repo: &Path, from: &str, to: &str, path: Opt
         args.push("--");
         args.push(p);
     }
-    git.run(repo, &args).await
+    crate::security::git_diff_capped(git, repo, &args).await
 }
 
 /// `git format-patch --stdout` for `application/vnd.github.patch`.
 pub async fn format_patch(git: &GitCmd, repo: &Path, range: &str) -> anyhow::Result<Vec<u8>> {
-    git.run(repo, &["format-patch", "--stdout", "--no-color", range]).await
+    crate::security::git_diff_capped(git, repo, &["format-patch", "--stdout", "--no-color", range]).await
 }
 
 /// One line of a file patch with its diff position and line numbers.

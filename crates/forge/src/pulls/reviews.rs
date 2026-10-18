@@ -248,10 +248,19 @@ pub struct NewReviewComment {
     pub in_reply_to: Option<i64>,
 }
 
+/// Locked conversations accept reviews and review comments only from users with Write.
+fn check_unlocked(ctx: &RepoCtx, pull: &Pull) -> ApiResult<()> {
+    if pull.issue.locked && ctx.perm < Perm::Write {
+        return Err(ApiError::forbidden("Unable to create comment because issue is locked."));
+    }
+    Ok(())
+}
+
 /// Adds a single review comment (wrapped in its own COMMENTED review, like GitHub), or a reply.
 pub async fn add_review_comment(state: &AppState, ctx: &RepoCtx, actor: &User, number: i64, input: NewReviewComment) -> ApiResult<ReviewCommentRow> {
     ctx.require(Perm::Read)?;
     let pull = pull_by_number(&state.db, ctx.repo.id, number).await?;
+    check_unlocked(ctx, &pull)?;
     if input.body.trim().is_empty() {
         return Err(ApiError::validation("PullRequestReviewComment", "body", "missing_field"));
     }
@@ -373,6 +382,7 @@ async fn after_submit(db: &PgPool, pull: &Pull, actor: &User) -> ApiResult<()> {
 pub async fn create_review(state: &AppState, ctx: &RepoCtx, actor: &User, number: i64, input: CreateReview) -> ApiResult<ReviewRow> {
     ctx.require(Perm::Read)?;
     let pull = pull_by_number(&state.db, ctx.repo.id, number).await?;
+    check_unlocked(ctx, &pull)?;
     let st = event_state(input.event.as_deref())?;
     let body = input.body.clone().unwrap_or_default();
     check_submit(&pull, actor, st, &body, !input.comments.is_empty())?;
@@ -432,6 +442,7 @@ pub async fn submit_review(state: &AppState, ctx: &RepoCtx, actor: &User, number
     if r.state != "PENDING" {
         return Err(simple_error("Can not submit a non-pending review"));
     }
+    check_unlocked(ctx, &pull)?;
     let st = event_state(event)?;
     if st == "PENDING" {
         return Err(simple_error("Unexpected event"));

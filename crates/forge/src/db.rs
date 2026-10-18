@@ -157,17 +157,8 @@ pub async fn permission(db: &PgPool, viewer: Option<&User>, repo: &Repo, owner: 
     }
     let mut best = base;
     if owner.kind == "Organization" {
-        let role: Option<String> =
-            sqlx::query_scalar("SELECT role FROM org_members WHERE org_id = $1 AND user_id = $2")
-                .bind(owner.id)
-                .bind(u.id)
-                .fetch_optional(db)
-                .await?;
-        match role.as_deref() {
-            Some("admin") => return Ok(Perm::Admin),
-            Some(_) => best = best.max(Perm::Write),
-            None => {}
-        }
+        // Owners, base permission, teams, org roles and collaborators (incl. custom repo roles).
+        return Ok(best.max(crate::orgs::perm::org_repo_permission(db, owner.id, repo.id, u.id).await?));
     }
     let collab: Option<String> =
         sqlx::query_scalar("SELECT permission FROM repo_collaborators WHERE repo_id = $1 AND user_id = $2")

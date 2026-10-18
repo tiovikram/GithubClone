@@ -204,6 +204,24 @@ async fn resolve_ref(s: &AppState, ctx: &RepoCtx, r: &str) -> ApiResult<Option<(
     Ok(None)
 }
 
+/// `simple-commit` JSON for a commit.
+pub async fn simple_commit(s: &AppState, ctx: &RepoCtx, sha: &str) -> ApiResult<Option<Value>> {
+    let Some(out) = super::plat::git_read(s, ctx.repo.id, &["log", "-1", "--format=%H%x00%T%x00%an%x00%ae%x00%cn%x00%ce%x00%cI%x00%B", sha]).await? else {
+        return Ok(None);
+    };
+    let text = String::from_utf8_lossy(&out);
+    let f: Vec<&str> = text.splitn(8, '\0').collect();
+    if f.len() < 8 {
+        return Ok(None);
+    }
+    let when = DateTime::parse_from_rfc3339(f[6]).map(|t| crate::json::ts(t.with_timezone(&Utc))).unwrap_or_default();
+    Ok(Some(json!({
+        "id": f[0], "tree_id": f[1], "message": f[7].trim_end(), "timestamp": when,
+        "author": { "name": f[2], "email": f[3] },
+        "committer": { "name": f[4], "email": f[5] },
+    })))
+}
+
 /// `workflow_dispatch`: creates a run of the workflow at `git_ref` (queued for a runner).
 pub async fn dispatch(s: &AppState, ctx: &RepoCtx, actor: &User, workflow: &Workflow, git_ref: &str, inputs: Option<Value>) -> ApiResult<RunRow> {
     ctx.require(Perm::Write)?;
@@ -268,6 +286,7 @@ pub struct RunRow {
     pub pull_requests: Value,
     pub head_repo_id: Option<i64>,
     pub completed_at: Option<DateTime<Utc>>,
+    pub check_suite_id: Option<i64>,
 }
 
 async fn users_by_id(s: &AppState, ids: &[i64]) -> ApiResult<Vec<User>> {
@@ -298,8 +317,8 @@ fn run_json(s: &AppState, ctx: &RepoCtx, r: &RunRow, attempt: Option<&AttemptRow
         "id": r.id,
         "name": r.name,
         "node_id": crate::ids::encode("WorkflowRun", r.id),
-        "check_suite_id": r.id,
-        "check_suite_node_id": crate::ids::encode("CheckSuite", r.id),
+        "check_suite_id": r.check_suite_id.unwrap_or(r.id),
+        "check_suite_node_id": crate::ids::encode("CheckSuite", r.check_suite_id.unwrap_or(r.id)),
         "head_branch": r.head_branch,
         "head_sha": r.head_sha,
         "path": r.workflow_path,
@@ -318,7 +337,7 @@ fn run_json(s: &AppState, ctx: &RepoCtx, r: &RunRow, attempt: Option<&AttemptRow
         "run_started_at": crate::json::ts(attempt.map(|a| a.run_started_at).unwrap_or(r.run_started_at)),
         "jobs_url": format!("{url}/jobs"),
         "logs_url": format!("{url}/logs"),
-        "check_suite_url": format!("{api}/repos/{full}/check-suites/{}", r.id),
+        "check_suite_url": format!("{api}/repos/{full}/check-suites/{}", r.check_suite_id.unwrap_or(r.id)),
         "artifacts_url": format!("{url}/artifacts"),
         "cancel_url": format!("{url}/cancel"),
         "rerun_url": format!("{url}/rerun"),

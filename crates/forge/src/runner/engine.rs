@@ -12,6 +12,7 @@ use super::expr::{self, Ctx, Status};
 use super::token;
 use super::workflow::{self, Workflow};
 use crate::api::actions::RunRow;
+use crate::api::checks::{self, CheckRunInput, OutputInput};
 use crate::db::{self, Perm, RepoCtx, User};
 use crate::error::{ApiError, ApiResult};
 use crate::state::AppState;
@@ -140,6 +141,11 @@ pub async fn create_run(s: &AppState, ctx: &RepoCtx, nr: NewRun) -> ApiResult<Ru
         }
     }
     let run = run.ok_or_else(|| ApiError::conflict("Could not allocate a run number, try again"))?;
+    if let Ok(bot) = token::bot_user(&s.db).await {
+        if let Ok((suite, _)) = checks::ensure_suite(s, ctx, &bot, &nr.head_sha).await {
+            sqlx::query("UPDATE actions_runs SET check_suite_id = $2 WHERE id = $1").bind(run.id).bind(suite.id).execute(&s.db).await?;
+        }
+    }
     sqlx::query("INSERT INTO actions_run_attempts (run_id, attempt, status, triggering_actor_id) VALUES ($1, 1, 'queued', $2)")
         .bind(run.id)
         .bind(actor_id)
@@ -177,13 +183,16 @@ async fn create_attempt_jobs(
     carry: Option<&HashMap<String, Vec<JobRow>>>,
     only: &HashMap<String, Vec<Value>>,
 ) -> ApiResult<()> {
+    let ctx = run_ctx(s, run.repo_id).await?;
     for (key, def) in &w.jobs {
         if let Some(rows) = carry.and_then(|c| c.get(key)) {
             for r in rows {
+                let cid = alloc_job_id(s, &ctx, run, &r.name, r.conclusion.as_deref()).await;
                 sqlx::query(
-                    "INSERT INTO actions_jobs (run_id, repo_id, run_attempt, job_key, name, matrix, needs, definition, labels, status, conclusion,
+                    "INSERT INTO actions_jobs (id, run_id, repo_id, run_attempt, job_key, name, matrix, needs, definition, labels, status, conclusion,
                          steps, outputs, runner_id, runner_name, log_key, log_size, step_logs, created_at, started_at, completed_at)
-                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'completed', $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)",
+                     OVERRIDING SYSTEM VALUE
+                     VALUES (COALESCE($21, nextval(pg_get_serial_sequence('actions_jobs', 'id'))), $1, $2, $3, $4, $5, $6, $7, $8, $9, 'completed', $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)",
                 )
                 .bind(run.id)
                 .bind(run.repo_id)
@@ -205,6 +214,7 @@ async fn create_attempt_jobs(
                 .bind(r.created_at)
                 .bind(r.started_at)
                 .bind(r.completed_at)
+                .bind(cid)
                 .execute(&s.db)
                 .await?;
             }
@@ -213,9 +223,11 @@ async fn create_attempt_jobs(
             }
         }
         let name = def.get("name").map(expr::to_string).filter(|n| !n.contains("${{")).unwrap_or_else(|| key.clone());
+        let cid = alloc_job_id(s, &ctx, run, &name, None).await;
         sqlx::query(
-            "INSERT INTO actions_jobs (run_id, repo_id, run_attempt, job_key, name, needs, definition, labels, status, matrix)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9)",
+            "INSERT INTO actions_jobs (id, run_id, repo_id, run_attempt, job_key, name, needs, definition, labels, status, matrix)
+             OVERRIDING SYSTEM VALUE
+             VALUES (COALESCE($10, nextval(pg_get_serial_sequence('actions_jobs', 'id'))), $1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9)",
         )
         .bind(run.id)
         .bind(run.repo_id)
@@ -226,6 +238,7 @@ async fn create_attempt_jobs(
         .bind(def)
         .bind(workflow::runs_on_labels(def.get("runs-on").unwrap_or(&Value::Null)))
         .bind(only.get(key).map(|l| json!({ ONLY: l })))
+        .bind(cid)
         .execute(&s.db)
         .await?;
     }
@@ -462,9 +475,11 @@ pub async fn advance(s: &AppState, run_id: i64) -> ApiResult<()> {
                                 .await?;
                             changed_jobs.push(j.id);
                         } else {
+                            let cid = alloc_job_id(s, &ctx, &run, &p.name, None).await;
                             let id: i64 = sqlx::query_scalar(
-                                "INSERT INTO actions_jobs (run_id, repo_id, run_attempt, job_key, name, matrix, needs, definition, labels, status)
-                                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'queued') RETURNING id",
+                                "INSERT INTO actions_jobs (id, run_id, repo_id, run_attempt, job_key, name, matrix, needs, definition, labels, status)
+                                 OVERRIDING SYSTEM VALUE
+                                 VALUES (COALESCE($10, nextval(pg_get_serial_sequence('actions_jobs', 'id'))), $1, $2, $3, $4, $5, $6, $7, $8, $9, 'queued') RETURNING id",
                             )
                             .bind(j.run_id)
                             .bind(j.repo_id)
@@ -475,6 +490,7 @@ pub async fn advance(s: &AppState, run_id: i64) -> ApiResult<()> {
                             .bind(&j.needs)
                             .bind(&j.definition)
                             .bind(&p.labels)
+                            .bind(cid)
                             .fetch_one(&mut *tx)
                             .await?;
                             changed_jobs.push(id);
@@ -568,25 +584,68 @@ async fn recompute_run(tx: &mut sqlx::PgConnection, run: &RunRow) -> ApiResult<(
     Ok(())
 }
 
-/// Commit status for a job: `<workflow> / <job> (<event>)`, like GitHub's check names.
-pub async fn post_status(s: &AppState, ctx: &RepoCtx, run: &RunRow, job: &JobRow) {
-    let (state, desc) = match (job.status.as_str(), job.conclusion.as_deref()) {
-        ("completed", Some("success")) => {
-            let secs = match (job.started_at, job.completed_at) {
-                (Some(a), Some(b)) => (b - a).num_seconds().max(0),
-                _ => 0,
-            };
-            ("success", format!("Successful in {secs}s"))
+/// A check run for a new job (its id becomes the job id). None if the Checks API refused.
+async fn alloc_job_id(s: &AppState, ctx: &RepoCtx, run: &RunRow, name: &str, conclusion: Option<&str>) -> Option<i64> {
+    let bot = token::bot_user(&s.db).await.ok()?;
+    let input = CheckRunInput {
+        name: Some(name.to_string()),
+        head_sha: Some(run.head_sha.clone()),
+        external_id: Some(run.id.to_string()),
+        status: Some(if conclusion.is_some() { "completed" } else { "queued" }.into()),
+        conclusion: conclusion.map(str::to_string),
+        details_url: Some(format!("{}/{}/actions/runs/{}", s.base_url(), ctx.full_name(), run.id)),
+        ..Default::default()
+    };
+    match checks::create_check_run(s, ctx, &bot, input).await {
+        Ok(r) => Some(r.id),
+        Err(e) => {
+            tracing::warn!(run = run.id, error = %e.message, "could not create a check run for a job");
+            None
         }
+    }
+}
+
+/// Mirrors a job's state on its check run (name, status, conclusion, times, details URL).
+/// Jobs without a check run get a commit status `<workflow> / <job> (<event>)` instead.
+pub async fn post_status(s: &AppState, ctx: &RepoCtx, run: &RunRow, job: &JobRow) {
+    let Ok(bot) = token::bot_user(&s.db).await else { return };
+    let target = format!("{}/{}/actions/runs/{}/job/{}", s.base_url(), ctx.full_name(), run.id, job.id);
+    let secs = match (job.started_at, job.completed_at) {
+        (Some(a), Some(b)) => (b - a).num_seconds().max(0),
+        _ => 0,
+    };
+    let (status, conclusion) = match job.status.as_str() {
+        "completed" => ("completed", Some(job.conclusion.clone().unwrap_or_else(|| "failure".into()))),
+        "in_progress" => ("in_progress", None),
+        _ => ("queued", None),
+    };
+    let output = conclusion.as_ref().map(|c| OutputInput {
+        title: Some(format!("{} {}", job.name, c)),
+        summary: Some(format!("Job `{}` of workflow run {} ({}) finished with conclusion `{c}` in {secs}s.", job.name, run.run_number, run.name)),
+        ..Default::default()
+    });
+    let input = CheckRunInput {
+        name: Some(job.name.clone()),
+        details_url: Some(target.clone()),
+        status: Some(status.into()),
+        conclusion: conclusion.clone(),
+        started_at: job.started_at,
+        completed_at: job.completed_at,
+        output,
+        ..Default::default()
+    };
+    if checks::update_check_run(s, ctx, &bot, job.id, input).await.is_ok() {
+        return;
+    }
+    let (state, desc) = match (job.status.as_str(), job.conclusion.as_deref()) {
+        ("completed", Some("success")) => ("success", format!("Successful in {secs}s")),
         ("completed", Some("skipped")) => ("success", "Skipped".to_string()),
         ("completed", Some("cancelled")) => ("error", "Cancelled".to_string()),
         ("completed", _) => ("failure", "Failing".to_string()),
         ("in_progress", _) => ("pending", "In progress".to_string()),
         _ => ("pending", "Queued".to_string()),
     };
-    let Ok(bot) = token::bot_user(&s.db).await else { return };
     let context = format!("{} / {} ({})", run.name, job.name, run.event);
-    let target = format!("{}/{}/actions/runs/{}/job/{}", s.base_url(), ctx.full_name(), run.id, job.id);
     let _ = sqlx::query(
         "INSERT INTO commit_statuses (repo_id, sha, state, context, description, target_url, creator_id) VALUES ($1, $2, $3, $4, $5, $6, $7)",
     )

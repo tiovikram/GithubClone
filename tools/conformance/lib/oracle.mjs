@@ -75,7 +75,7 @@ export class Oracle {
     return url;
   }
 
-  async http(method, url, { body, headers = {}, rawBody, contentType } = {}) {
+  async http(method, url, { body, headers = {}, rawBody, contentType, token } = {}) {
     if (this.replay) {
       const k = `${method} ${url}`;
       const ex = this.replay.get(k)?.shift();
@@ -89,7 +89,9 @@ export class Oracle {
       'user-agent': 'forge-conformance/0.1',
       ...headers,
     };
-    if (this.token) h.authorization = `${this.authScheme} ${this.token}`;
+    // `token` (per call) acts as another user, e.g. the --collaborator-token user.
+    const tok = token ?? this.token;
+    if (tok) h.authorization = `${this.authScheme} ${tok}`;
     let payload;
     if (rawBody !== undefined) { payload = rawBody; h['content-type'] = contentType || 'application/octet-stream'; }
     else if (body !== undefined) { payload = JSON.stringify(body); h['content-type'] = 'application/json'; }
@@ -103,7 +105,7 @@ export class Oracle {
    * Call an operation by operationId and validate the response.
    * opts: params, query, body, rawBody, contentType, headers, url (override),
    *       expect: [statuses] (default: documented 2xx), fixture: throw Blocked on unexpected status,
-   *       note: free text for the report.
+   *       note: free text for the report; token: act as another user (e.g. s.collaboratorToken).
    * Returns {status, headers, body, text} or null if skipped by --tier.
    */
   async call(opId, opts = {}) {

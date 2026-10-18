@@ -133,6 +133,7 @@ pub async fn create_fork(
         return Err(ApiError::internal(format!("fork storage copy failed: {e:#}")));
     }
     sqlx::query("UPDATE repositories SET forks_count = forks_count + 1 WHERE id = $1").bind(r.id).execute(&s.db).await?;
+    crate::orgs::grant_creator_admin(&s.db, owner, repo.id, actor).await?;
     let perm = db::permission(&s.db, Some(actor), &repo, owner).await?;
     Ok(RepoCtx { repo, owner: owner.clone(), perm })
 }

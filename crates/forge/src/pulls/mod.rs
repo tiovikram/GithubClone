@@ -742,8 +742,19 @@ pub struct UpdatePull {
     pub maintainer_can_modify: Option<bool>,
 }
 
+/// Closing/reopening: the author or anyone with Triage (GitHub's triage role).
 fn can_edit(ctx: &RepoCtx, actor: &User, pull: &Pull) -> ApiResult<()> {
     if pull.issue.user_id == Some(actor.id) || ctx.perm >= Perm::Triage {
+        Ok(())
+    } else {
+        ctx.require(Perm::Write)
+    }
+}
+
+/// Title, body, base, draft state and maintainer edits: the author or Write (triage is not
+/// enough on GitHub).
+fn can_edit_content(ctx: &RepoCtx, actor: &User, pull: &Pull) -> ApiResult<()> {
+    if pull.issue.user_id == Some(actor.id) {
         Ok(())
     } else {
         ctx.require(Perm::Write)
@@ -757,6 +768,14 @@ pub async fn update_pull(state: &AppState, ctx: &RepoCtx, actor: &User, number: 
         if s != "open" && s != "closed" {
             return Err(ApiError::validation("PullRequest", "state", "invalid"));
         }
+    }
+    let base_name = input.base.as_deref().map(|b| b.strip_prefix("refs/heads/").unwrap_or(b));
+    let content_change = input.title.as_ref().is_some_and(|t| *t != pull.issue.title)
+        || input.body.as_ref().is_some_and(|b| Some(b.as_str()).filter(|b| !b.is_empty()) != pull.issue.body.as_deref())
+        || base_name.is_some_and(|b| b != pull.pr.base_ref)
+        || input.maintainer_can_modify.is_some_and(|m| m != pull.pr.maintainer_can_modify);
+    if content_change {
+        can_edit_content(ctx, actor, &pull)?;
     }
     if let Some(t) = &input.title {
         if t.trim().is_empty() {
@@ -850,7 +869,7 @@ pub async fn reopen_pull(state: &AppState, ctx: &RepoCtx, actor: &User, number: 
 
 async fn set_draft(state: &AppState, ctx: &RepoCtx, actor: &User, number: i64, draft: bool) -> ApiResult<Pull> {
     let pull = pull_by_number(&state.db, ctx.repo.id, number).await?;
-    can_edit(ctx, actor, &pull)?;
+    can_edit_content(ctx, actor, &pull)?;
     if !pull.is_open() {
         return Err(custom_error("PullRequest", "Pull request is closed"));
     }

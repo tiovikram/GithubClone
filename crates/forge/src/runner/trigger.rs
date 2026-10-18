@@ -53,10 +53,14 @@ async fn resolve(s: &AppState, repo_id: i64, rev: &str) -> Option<String> {
 }
 
 /// Called for every repository event (after the webhook payload is complete).
-pub async fn on_event(s: &AppState, ctx: &RepoCtx, event: &str, payload: &Value) {
-    if let Err(e) = on_event_inner(s, ctx, event, payload).await {
-        tracing::warn!(repo = ctx.repo.id, event, error = %e.message, "actions trigger failed");
-    }
+/// Boxed: creating a run creates check runs, which emit webhook events, which call this again
+/// (those events are ignored, but the future type must not be recursive).
+pub fn on_event<'a>(s: &'a AppState, ctx: &'a RepoCtx, event: &'a str, payload: &'a Value) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send + 'a>> {
+    Box::pin(async move {
+        if let Err(e) = on_event_inner(s, ctx, event, payload).await {
+            tracing::warn!(repo = ctx.repo.id, event, error = %e.message, "actions trigger failed");
+        }
+    })
 }
 
 async fn on_event_inner(s: &AppState, ctx: &RepoCtx, event: &str, payload: &Value) -> ApiResult<()> {
