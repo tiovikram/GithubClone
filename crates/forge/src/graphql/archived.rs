@@ -8,6 +8,10 @@
 //! value is `null`. Doing it generically means new mutations are covered without extra code.
 //! Repositories the viewer can't see are left to the mutation itself, which reports them as
 //! unresolvable, so the check never reveals a private repository.
+//!
+//! The same hook enforces migration locks (REST: `migration::lock_guard`): a mutation naming a
+//! repository locked for migration fails with `type: FORBIDDEN`, "Repository has been locked for
+//! migration." (only starring and watching, which REST serves outside `/repos/...`, still work).
 use std::sync::Arc;
 
 use async_graphql::extensions::{Extension, ExtensionContext, ExtensionFactory, NextPrepareRequest, NextResolve, ResolveInfo};
@@ -30,6 +34,12 @@ const ALLOWED: &[&str] = &[
     "updateRepository",
     "cloneTemplateRepository",
 ];
+
+/// Mutations that still work on a repository locked for migration (their REST equivalents live
+/// under `/user/...`, which the REST lock guard does not cover).
+const LOCK_ALLOWED: &[&str] = &["addStar", "removeStar", "updateSubscription"];
+
+pub const LOCKED_MESSAGE: &str = "Repository has been locked for migration.";
 
 /// Bound on node ids examined per mutation field.
 const MAX_IDS: usize = 200;
@@ -55,7 +65,9 @@ impl Extension for ArchivedGuardExt {
     }
 
     async fn resolve(&self, ctx: &ExtensionContext<'_>, info: ResolveInfo<'_>, next: NextResolve<'_>) -> ServerResult<Option<Value>> {
-        if info.parent_type == "Mutation" && info.path_node.parent.is_none() && !ALLOWED.contains(&info.name) {
+        let check_archived = !ALLOWED.contains(&info.name);
+        let check_locked = !LOCK_ALLOWED.contains(&info.name);
+        if info.parent_type == "Mutation" && info.path_node.parent.is_none() && (check_archived || check_locked) {
             if let (Some(state), Some(viewer)) = (ctx.data_opt::<AppState>(), ctx.data_opt::<Viewer>()) {
                 let empty = Variables::default();
                 let vars = ctx.data_opt::<RequestVariables>().map(|v| &v.0).unwrap_or(&empty);
@@ -65,10 +77,15 @@ impl Extension for ArchivedGuardExt {
                         collect_strings(&c, &mut node_ids);
                     }
                 }
-                if archived_target(state, &viewer.0, &node_ids).await {
+                let blocked = match blocked_target(state, &viewer.0, &node_ids).await {
+                    Some(Block::Locked) if check_locked => Some(("FORBIDDEN", LOCKED_MESSAGE)),
+                    Some(Block::Archived) if check_archived => Some(("UNPROCESSABLE", ARCHIVED_MESSAGE)),
+                    _ => None,
+                };
+                if let Some((kind, msg)) = blocked {
                     let mut ext = ErrorExtensionValues::default();
-                    ext.set("type", "UNPROCESSABLE");
-                    let mut e = ServerError::new(ARCHIVED_MESSAGE, Some(info.field.name.pos));
+                    ext.set("type", kind);
+                    let mut e = ServerError::new(msg, Some(info.field.name.pos));
                     e.path = vec![async_graphql::PathSegment::Field(info.alias.unwrap_or(info.name).to_string())];
                     e.extensions = Some(ext);
                     return Err(e);
@@ -121,8 +138,14 @@ pub async fn repo_of_node(db: &sqlx::PgPool, node_id: &str) -> Option<i64> {
     sqlx::query_scalar::<_, Option<i64>>(sql).bind(id).fetch_optional(db).await.ok().flatten().flatten()
 }
 
-/// True if any of `node_ids` belongs to an archived repository `viewer` can see.
-async fn archived_target(state: &AppState, viewer: &crate::db::User, node_ids: &[String]) -> bool {
+enum Block {
+    Locked,
+    Archived,
+}
+
+/// Why a mutation naming `node_ids` must be refused: one of their repositories (visible to
+/// `viewer`) is locked for migration, or archived. Locks win (REST checks them first).
+async fn blocked_target(state: &AppState, viewer: &crate::db::User, node_ids: &[String]) -> Option<Block> {
     let mut repos: Vec<i64> = Vec::new();
     for n in node_ids {
         if let Some(r) = repo_of_node(&state.db, n).await {
@@ -132,17 +155,27 @@ async fn archived_target(state: &AppState, viewer: &crate::db::User, node_ids: &
         }
     }
     if repos.is_empty() {
-        return false;
+        return None;
     }
-    let archived: Vec<i64> = sqlx::query_scalar("SELECT id FROM repositories WHERE id = ANY($1) AND archived")
-        .bind(&repos)
-        .fetch_all(&state.db)
-        .await
-        .unwrap_or_default();
-    for id in archived {
-        if crate::db::load_repo_by_id(&state.db, Some(viewer), id).await.is_ok() {
-            return true;
+    let rows: Vec<(i64, bool, bool)> = sqlx::query_as(
+        "SELECT r.id, EXISTS (SELECT 1 FROM migration_locks l WHERE l.repo_id = r.id), r.archived
+           FROM repositories r WHERE r.id = ANY($1) AND (r.archived OR EXISTS (SELECT 1 FROM migration_locks l WHERE l.repo_id = r.id))",
+    )
+    .bind(&repos)
+    .fetch_all(&state.db)
+    .await
+    .unwrap_or_default();
+    let mut out = None;
+    for (id, locked, archived) in rows {
+        if crate::db::load_repo_by_id(&state.db, Some(viewer), id).await.is_err() {
+            continue;
+        }
+        if locked {
+            return Some(Block::Locked);
+        }
+        if archived {
+            out = Some(Block::Archived);
         }
     }
-    false
+    out
 }

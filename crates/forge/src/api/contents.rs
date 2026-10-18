@@ -364,6 +364,7 @@ pub async fn write_file(s: &AppState, ctx: &RepoCtx, actor: &User, w: FileWrite)
     }
     let refname = format!("refs/heads/{branch}");
     let b2 = branch.clone();
+    let (st, rctx, ractor) = (s.clone(), ctx.clone(), crate::rules::Actor::new(ctx, actor));
     let (fc, updates) = s
         .git
         .write(ctx.repo.id, |path| async move {
@@ -414,6 +415,8 @@ pub async fn write_file(s: &AppState, ctx: &RepoCtx, actor: &User, w: FileWrite)
                         e
                     }
                 })?;
+            let upd = crate::rules::RefUpdate::new(&refname, head.as_deref(), Some(&sha));
+            crate::rules::enforce_api(&st, &rctx, &ractor, &path, &[upd], crate::rules::Via::Commit, None).await.map_err(reject)?;
             plumbing::update_ref(&git, &path, &refname, &sha, head.as_deref()).await?;
             let entry = entry_at(&git, &path, &sha, &w.path).await?;
             let commit = read::read_commit(&git, &path, &sha).await?.ok_or_else(|| anyhow::anyhow!("commit missing"))?;

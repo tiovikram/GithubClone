@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth";
+import { AnnouncementBanner } from "./Announcement";
 import { Avatar } from "./common";
 import { ChevronDownIcon, LogoIcon, MoonIcon, PlusIcon, SearchIcon, SunIcon } from "./icons";
 
@@ -157,6 +158,7 @@ export function Layout() {
           )}
         </div>
       </header>
+      <AnnouncementBanner />
       <main id="main" className="main">
         <Outlet />
       </main>

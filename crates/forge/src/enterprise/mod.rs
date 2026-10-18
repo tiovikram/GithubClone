@@ -565,3 +565,17 @@ pub async fn signup_enabled(state: &AppState) -> bool {
         _ => true,
     }
 }
+
+/// `FORGE_REPO_INVITATIONS=1|true`: the default of the `repository_invitations.enabled` setting.
+pub fn repo_invitations_env_default() -> bool {
+    std::env::var("FORGE_REPO_INVITATIONS").is_ok_and(|v| v == "1" || v == "true")
+}
+
+/// Whether adding a collaborator creates an invitation (management console setting
+/// `repository_invitations.enabled`, default from `FORGE_REPO_INVITATIONS`).
+pub async fn repo_invitations_enabled(db: &sqlx::PgPool) -> bool {
+    match get_setting(db, "manage_settings").await {
+        Ok(Some(v)) => v.pointer("/repository_invitations/enabled").and_then(Value::as_bool).unwrap_or_else(repo_invitations_env_default),
+        _ => repo_invitations_env_default(),
+    }
+}

@@ -643,3 +643,10 @@ td.ln a:hover { color: var(--fg); text-decoration: none; }
 .review-changes { color: var(--danger); }
 .review-form { margin-top: 8px; }
 .review-form .radio-row { display: flex; gap: 8px; align-items: flex-start; margin: 4px 0; }
+
+/* enterprise announcement banner */
+.announcement-banner { display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px; background: var(--attention-subtle);
+  border-bottom: 1px solid var(--attention-border); }
+.announcement-body { flex: 1; font-size: 14px; }
+.announcement-body > :last-child { margin-bottom: 0; }
+.announcement-dismiss { background: transparent; border: 0; font-size: 20px; line-height: 1; cursor: pointer; color: inherit; padding: 0 4px; }

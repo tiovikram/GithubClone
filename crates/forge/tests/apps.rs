@@ -422,6 +422,18 @@ async fn migrations_export_lock_and_download() {
     s.git(&c, &["commit", "-m", "x"]);
     let (ok, out) = s.git(&c, &["push", "origin", "HEAD"]);
     assert!(!ok, "{out}");
+    // GraphQL mutations respect the lock too.
+    let gql = |q: String| {
+        let client = s.client();
+        let url = format!("{}/api/graphql", s.base);
+        let auth = tok(&u);
+        async move { client.post(url).header("Authorization", auth).json(&json!({"query": q})).send().await.unwrap().json::<Value>().await.unwrap() }
+    };
+    let v = gql(format!("{{ repository(owner: \"{}\", name: \"{name}\") {{ id }} }}", u.login)).await;
+    let rid = v["data"]["repository"]["id"].as_str().unwrap().to_string();
+    let v = gql(format!("mutation {{ createIssue(input: {{repositoryId: \"{rid}\", title: \"x\"}}) {{ issue {{ number }} }} }}")).await;
+    assert_eq!(v["errors"][0]["type"], "FORBIDDEN", "{v}");
+    assert_eq!(v["errors"][0]["message"], "Repository has been locked for migration.", "{v}");
     // run the export job
     for _ in 0..50 {
         forge::jobs::run_once(&s.state).await.unwrap();

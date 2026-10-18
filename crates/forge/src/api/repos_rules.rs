@@ -1,8 +1,8 @@
 //! Branch protection sub-resources (`required_status_checks/contexts`, `restrictions`
 //! users/teams/apps), ruleset history (`/rulesets/{id}/history`), rule suites (ruleset
-//! evaluations of pushes, recorded by [`on_refs_changed`]) and push-rule bypass requests.
+//! evaluations of ref updates, recorded by `crate::rules`) and push-rule bypass requests.
 use axum::extract::{OriginalUri, Path, Query, State};
-use axum::response::{IntoResponse, Response};
+use axum::response::Response;
 use axum::routing::get;
 use axum::Router;
 use chrono::{DateTime, Utc};
@@ -10,14 +10,13 @@ use serde::Deserialize;
 use serde_json::{json, Value};
 
 use super::repo_extras::{load_protection, load_users, prot_ctx, save_protection, users_list};
-use super::rulesets::{self, Level, RulesetRow};
+use super::rulesets::{self, Level};
 use super::{no_content, PageParams, Paged};
 use crate::auth::AuthUser;
 use crate::db::{self, Perm, RepoCtx, User};
 use crate::error::{ApiError, ApiResult};
 use crate::extract::Json;
 use crate::state::AppState;
-use crate::webhooks::ZERO_SHA;
 
 pub fn routes() -> Router<AppState> {
     Router::new()
@@ -28,7 +27,7 @@ pub fn routes() -> Router<AppState> {
         .route("/orgs/{org}/rulesets/rule-suites", get(org_suites))
         .route("/orgs/{org}/rulesets/rule-suites/{id}", get(org_suite))
         .route("/repos/{owner}/{repo}/bypass-requests/push-rules", get(list_bypass))
-        .route("/repos/{owner}/{repo}/bypass-requests/push-rules/{number}", get(get_bypass))
+        .route("/repos/{owner}/{repo}/bypass-requests/push-rules/{number}", get(get_bypass).patch(review_bypass).delete(cancel_bypass))
 }
 
 /// Branch-protection sub-routes, mounted behind `ref_dispatch` (branch names may contain `/`).
@@ -414,110 +413,9 @@ pub struct SuiteRow {
     #[sqlx(rename = "ref")]
     pub git_ref: String,
     pub result: String,
-    pub evaluation_result: String,
+    pub evaluation_result: Option<String>,
     pub rule_evaluations: Value,
     pub pushed_at: DateTime<Utc>,
-}
-
-/// Evaluates one rule of a ruleset against a ref update. Returns (passed, details).
-async fn evaluate_rule(s: &AppState, ctx: &RepoCtx, rule: &Value, refname: &str, old: &str, new: &str, pr_merge: bool) -> (bool, Option<String>) {
-    let created = old == ZERO_SHA;
-    let deleted = new == ZERO_SHA;
-    match rule.get("type").and_then(Value::as_str).unwrap_or("") {
-        "creation" => (!created, created.then(|| "Cannot create ref due to creations being restricted.".into())),
-        "deletion" => (!deleted, deleted.then(|| "Cannot delete this ref.".into())),
-        "update" => {
-            let upd = !created && !deleted;
-            (!upd, upd.then(|| "Cannot update this protected ref.".into()))
-        }
-        "non_fast_forward" if !created && !deleted => {
-            let path = match s.git.sync(ctx.repo.id).await {
-                Ok(p) => p,
-                Err(_) => return (true, None),
-            };
-            let ff = crate::git::read::is_ancestor(&s.git.git, &path, old, new).await.unwrap_or(true);
-            (ff, (!ff).then(|| "Cannot force-push to this ref.".into()))
-        }
-        "required_linear_history" if !created && !deleted => {
-            let range = format!("{old}..{new}");
-            let merges = super::plat::git_read(s, ctx.repo.id, &["rev-list", "--merges", "-n", "1", &range, "--"]).await.ok().flatten().unwrap_or_default();
-            let ok = merges.is_empty();
-            (ok, (!ok).then(|| "This branch must not contain merge commits.".into()))
-        }
-        "pull_request" if refname.starts_with("refs/heads/") && !created && !deleted => {
-            (pr_merge, (!pr_merge).then(|| "Changes must be made through a pull request.".into()))
-        }
-        _ => (true, None),
-    }
-}
-
-/// Records a rule suite for every ref update that active or evaluate-mode rulesets apply to.
-/// forge does not block pushes on ruleset rules, so failing active rules are reported as
-/// `bypass` (the push went through) and evaluate-mode failures as `evaluation_result: fail`.
-pub async fn record_rule_suites(s: &AppState, ctx: &RepoCtx, actor: Option<&User>, changed: &[(String, String, String)]) -> anyhow::Result<()> {
-    let level = Level::Repo(ctx.clone());
-    let all = rulesets::list_rulesets(s, &level, true, None).await.map_err(|e| anyhow::anyhow!(e.message))?;
-    let all: Vec<RulesetRow> = all.into_iter().filter(|r| r.enforcement != "disabled").collect();
-    if all.is_empty() {
-        return Ok(());
-    }
-    for (refname, old, new) in changed {
-        let target = if refname.starts_with("refs/heads/") {
-            "branch"
-        } else if refname.starts_with("refs/tags/") {
-            "tag"
-        } else {
-            continue;
-        };
-        let applicable: Vec<&RulesetRow> =
-            all.iter().filter(|r| r.target == target && rulesets::applies_to(r, refname, &ctx.repo.default_branch)).collect();
-        if applicable.is_empty() {
-            continue;
-        }
-        let pr_merge = super::repos_stats::is_pr_merge(s, ctx, refname, new).await;
-        let mut evals = Vec::new();
-        let (mut active_fail, mut eval_fail) = (false, false);
-        for r in applicable {
-            for rule in r.rules.as_array().into_iter().flatten() {
-                let (ok, details) = evaluate_rule(s, ctx, rule, refname, old, new, pr_merge).await;
-                if !ok {
-                    if r.enforcement == "active" {
-                        active_fail = true
-                    } else {
-                        eval_fail = true
-                    }
-                }
-                let mut e = json!({
-                    "rule_source": {"type": if r.org_id.is_some() { "organization" } else { "ruleset" }, "id": r.id, "name": r.name},
-                    "enforcement": r.enforcement,
-                    "result": if ok { "pass" } else { "fail" },
-                    "rule_type": rule.get("type").and_then(Value::as_str).unwrap_or("unknown"),
-                });
-                if let Some(d) = details {
-                    e["details"] = json!(d);
-                }
-                evals.push(e);
-            }
-        }
-        let org_id = (ctx.owner.kind == "Organization").then_some(ctx.owner.id);
-        sqlx::query(
-            "INSERT INTO rule_suites (repo_id, org_id, actor_id, actor_name, before_sha, after_sha, ref, result, evaluation_result, rule_evaluations)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)",
-        )
-        .bind(ctx.repo.id)
-        .bind(org_id)
-        .bind(actor.map(|a| a.id))
-        .bind(actor.map(|a| a.login.clone()).unwrap_or_default())
-        .bind(old)
-        .bind(new)
-        .bind(refname)
-        .bind(if active_fail { "bypass" } else { "pass" })
-        .bind(if eval_fail { "fail" } else { "pass" })
-        .bind(Value::Array(evals))
-        .execute(&s.db)
-        .await?;
-    }
-    Ok(())
 }
 
 fn suite_json(r: &SuiteRow, repo_name: &str, detail: bool) -> Value {
@@ -526,7 +424,9 @@ fn suite_json(r: &SuiteRow, repo_name: &str, detail: bool) -> Value {
         "before_sha": r.before_sha, "after_sha": r.after_sha, "ref": r.git_ref,
         "repository_id": r.repo_id, "repository_name": repo_name,
         "pushed_at": crate::json::ts(r.pushed_at),
-        "result": r.result, "evaluation_result": r.evaluation_result,
+        // The list schema has no null evaluation_result (rule-suites); the single one does.
+        "result": r.result,
+        "evaluation_result": if detail { json!(r.evaluation_result) } else { json!(r.evaluation_result.clone().unwrap_or_else(|| r.result.clone())) },
     });
     if detail {
         v["rule_evaluations"] = r.rule_evaluations.clone();
@@ -625,18 +525,37 @@ async fn org_suite(State(s): State<AppState>, AuthUser(u): AuthUser, Path((org, 
 }
 
 // ---------------------------------------------------------------------------------------------
-// Push-rule bypass requests. Push rulesets (target `push`) are stored but not enforced, so no
-// push is ever blocked and no delegated-bypass request is created: lists are empty.
+// Push-rule bypass requests (delegated bypass of push rulesets, see `crate::rules::bypass`).
 
-async fn list_bypass(State(s): State<AppState>, uri: OriginalUri, AuthUser(u): AuthUser, Path((o, r)): Path<(String, String)>, Query(p): Query<PageParams>) -> ApiResult<Paged> {
+async fn list_bypass(State(s): State<AppState>, AuthUser(u): AuthUser, Path((o, r)): Path<(String, String)>, Query(f): Query<crate::rules::bypass::ListFilter>) -> ApiResult<Json<Value>> {
     let ctx = db::load_repo(&s.db, Some(&u), &o, &r).await?;
     ctx.require(Perm::Write)?;
-    Ok(Paged::new(&uri, &s, p, Some(0), vec![]))
+    Ok(Json(Value::Array(crate::rules::bypass::list(&s, Some(ctx.repo.id), None, &f).await?)))
 }
 
-async fn get_bypass(State(s): State<AppState>, AuthUser(u): AuthUser, Path((o, r, _n)): Path<(String, String, i64)>) -> ApiResult<Response> {
+async fn get_bypass(State(s): State<AppState>, AuthUser(u): AuthUser, Path((o, r, n)): Path<(String, String, i64)>) -> ApiResult<Json<Value>> {
     let ctx = db::load_repo(&s.db, Some(&u), &o, &r).await?;
     ctx.require(Perm::Write)?;
-    Ok(ApiError::not_found().into_response())
+    Ok(Json(crate::rules::bypass::get(&s, ctx.repo.id, n).await?))
 }
 
+#[derive(Deserialize)]
+struct ReviewBody {
+    status: Option<String>,
+}
+
+/// forge extension (GitHub reviews push bypass requests in its web UI): approve or deny.
+async fn review_bypass(State(s): State<AppState>, AuthUser(u): AuthUser, Path((o, r, n)): Path<(String, String, i64)>, Json(b): Json<ReviewBody>) -> ApiResult<Json<Value>> {
+    let ctx = db::load_repo(&s.db, Some(&u), &o, &r).await?;
+    ctx.require(Perm::Write)?;
+    let status = b.status.ok_or_else(|| ApiError::validation("BypassRequest", "status", "missing_field"))?;
+    Ok(Json(crate::rules::bypass::review(&s, &ctx, &u, n, &status).await?))
+}
+
+/// forge extension: the requester cancels a pending request.
+async fn cancel_bypass(State(s): State<AppState>, AuthUser(u): AuthUser, Path((o, r, n)): Path<(String, String, i64)>) -> ApiResult<Response> {
+    let ctx = db::load_repo(&s.db, Some(&u), &o, &r).await?;
+    ctx.require(Perm::Write)?;
+    crate::rules::bypass::cancel(&s, &ctx, &u, n).await?;
+    Ok(no_content())
+}

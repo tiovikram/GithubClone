@@ -990,6 +990,7 @@ pub async fn merge_pull(state: &AppState, ctx: &RepoCtx, actor: &User, number: i
     let committer = identity(actor);
     let pr_author = author.as_ref().map(identity).unwrap_or_else(|| committer.clone());
     let p = pull.clone();
+    let (st, rctx, ractor) = (state.clone(), ctx.clone(), crate::rules::Actor::new(ctx, actor));
     let (res, updates) = state
         .git
         .write(ctx.repo.id, |path| async move {
@@ -1054,6 +1055,10 @@ pub async fn merge_pull(state: &AppState, ctx: &RepoCtx, actor: &User, number: i
                         .ok_or_else(|| halt(not_mergeable("This branch can't be rebased")))?
                 }
             };
+            let upd = crate::rules::RefUpdate::new(&base_ref, Some(&base_sha), Some(&new_sha));
+            crate::rules::enforce_api(&st, &rctx, &ractor, &path, &[upd], crate::rules::Via::Merge(Some(input.method)), Some(&p))
+                .await
+                .map_err(halt)?;
             plumbing::update_ref(&git, &path, &base_ref, &new_sha, Some(&base_sha)).await?;
             git.run(&path, &["update-ref", &format!("refs/pull/{n}/head"), &head_sha]).await?;
             let _ = git.try_run(&path, &["update-ref", "-d", &format!("refs/pull/{n}/merge")]).await;
@@ -1122,9 +1127,17 @@ pub async fn update_branch_with(
     } else {
         format!("Merge branch '{}' into {}\n", pull.pr.base_ref, pull.pr.head_ref)
     };
+    let (st, rctx, ractor) = (state.clone(), head_ctx.clone(), crate::rules::Actor::new(&head_ctx, actor));
     let (_, updates) = state
         .git
         .write(head_ctx.repo.id, |path| async move {
+            let enforce = |sha: String| {
+                let (st, rctx, ractor, path, head_ref, head_sha) = (st.clone(), rctx.clone(), ractor.clone(), path.clone(), head_ref.clone(), head_sha.clone());
+                async move {
+                    let upd = crate::rules::RefUpdate::new(&head_ref, Some(&head_sha), Some(&sha));
+                    crate::rules::enforce_api(&st, &rctx, &ractor, &path, &[upd], crate::rules::Via::Commit, None).await.map_err(halt)
+                }
+            };
             if let Some(bp) = &base_path {
                 ensure_objects(&git, &path, bp, &base_sha).await?;
             }
@@ -1140,6 +1153,7 @@ pub async fn update_branch_with(
                 let sha = git::rebase(&git, &path, &base_sha, &mb, &head_sha, &who)
                     .await?
                     .ok_or_else(|| halt(custom_error("PullRequest", "merge conflict between base and head")))?;
+                enforce(sha.clone()).await?;
                 plumbing::update_ref(&git, &path, &head_ref, &sha, Some(&head_sha)).await?;
                 return Ok(());
             }
@@ -1147,6 +1161,7 @@ pub async fn update_branch_with(
                 .await?
                 .ok_or_else(|| halt(custom_error("PullRequest", "merge conflict between base and head")))?;
             let sha = git::commit_tree(&git, &path, &tree, &[&head_sha, &base_sha], &msg, &who, &who).await?;
+            enforce(sha.clone()).await?;
             plumbing::update_ref(&git, &path, &head_ref, &sha, Some(&head_sha)).await?;
             Ok(())
         })

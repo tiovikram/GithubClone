@@ -1,7 +1,7 @@
 //! Repository and organization rulesets:
 //! /repos/{o}/{r}/rulesets[/{id}], /orgs/{org}/rulesets[/{id}] and
 //! /repos/{o}/{r}/rules/branches/{branch} (the active rules that apply to a branch).
-//! forge stores and reports rulesets; enforcement on push is not implemented.
+//! Enforcement (pushes and API writes) lives in `crate::rules`.
 use axum::extract::{OriginalUri, Path, Query, State};
 use axum::response::Response;
 use axum::routing::get;
@@ -296,7 +296,7 @@ pub async fn rules_for_branch(s: &AppState, ctx: &RepoCtx, branch: &str) -> ApiR
     let level = Level::Repo(ctx.clone());
     let full_ref = format!("refs/heads/{branch}");
     let mut out = Vec::new();
-    for r in list_rulesets(s, &level, true, None).await? {
+    for r in crate::rules::repo_rulesets(s, ctx).await? {
         if r.enforcement != "active" || r.target != "branch" || !applies_to(&r, &full_ref, &ctx.repo.default_branch) {
             continue;
         }
@@ -357,19 +357,28 @@ async fn list_repo(State(s): State<AppState>, uri: OriginalUri, MaybeUser(u): Ma
 async fn create_repo(State(s): State<AppState>, AuthUser(u): AuthUser, Path((owner, repo)): Path<(String, String)>, Json(b): Json<RulesetInput>) -> ApiResult<Response> {
     let level = repo_level(&s, Some(&u), &owner, &repo).await?;
     let row = create_ruleset(&s, &level, &u, b).await?;
-    Ok(created(ruleset_json(&s, &row, &level, true)))
+    Ok(created(full_json(&s, &row, &level, Some(&u)).await))
 }
 
 async fn get_repo(State(s): State<AppState>, MaybeUser(u): MaybeUser, Path((owner, repo, id)): Path<(String, String, i64)>) -> ApiResult<Json<Value>> {
     let level = repo_level(&s, u.as_ref(), &owner, &repo).await?;
     let row = get_ruleset(&s, &level, id).await?;
-    Ok(Json(ruleset_json(&s, &row, &level, true)))
+    Ok(Json(full_json(&s, &row, &level, u.as_ref()).await))
+}
+
+/// A ruleset with `current_user_can_bypass` computed for the viewer (repository level).
+async fn full_json(s: &AppState, row: &RulesetRow, level: &Level, viewer: Option<&User>) -> Value {
+    let mut v = ruleset_json(s, row, level, true);
+    if let Level::Repo(ctx) = level {
+        v["current_user_can_bypass"] = json!(crate::rules::current_user_can_bypass(s, ctx, viewer, row).await);
+    }
+    v
 }
 
 async fn update_repo(State(s): State<AppState>, AuthUser(u): AuthUser, Path((owner, repo, id)): Path<(String, String, i64)>, Json(b): Json<RulesetInput>) -> ApiResult<Json<Value>> {
     let level = repo_level(&s, Some(&u), &owner, &repo).await?;
     let row = update_ruleset(&s, &level, &u, id, b).await?;
-    Ok(Json(ruleset_json(&s, &row, &level, true)))
+    Ok(Json(full_json(&s, &row, &level, Some(&u)).await))
 }
 
 async fn delete_repo(State(s): State<AppState>, AuthUser(u): AuthUser, Path((owner, repo, id)): Path<(String, String, i64)>) -> ApiResult<Response> {

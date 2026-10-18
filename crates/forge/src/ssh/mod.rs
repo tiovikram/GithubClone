@@ -373,7 +373,7 @@ async fn exec(
                 stderr(write, "ERROR: Repository has been locked for migration.\n").await;
                 return Ok(1);
             }
-            serve_push(state, &ctx, &actor, read, write, proto).await
+            serve_push(state, &ctx, &actor, matches!(owner, KeyOwner::Deploy(_)), read, write, proto).await
         }
     }
 }
@@ -488,12 +488,15 @@ async fn serve_push(
     state: &AppState,
     ctx: &RepoCtx,
     pusher: &User,
+    deploy_key: bool,
     read: ChannelReadHalf,
     write: &Writer,
     proto: Option<String>,
 ) -> anyhow::Result<u32> {
     let git = state.git.git.clone();
-    let guard = crate::protection::push_guard(state, ctx).await?;
+    let mut actor = crate::rules::Actor::new(ctx, pusher);
+    actor.deploy_key = deploy_key;
+    let guard = crate::protection::push_guard(state, ctx, actor).await?;
     let ent_hooks = crate::enterprise::prereceive::hook_guard(state, ctx, pusher, "git push", None).await?;
     let ss_guard = crate::advsec::secret_scanning::push_guard(state, ctx, pusher).await?;
     let tap = Arc::new(Mutex::new(PushRequestParser::default()));

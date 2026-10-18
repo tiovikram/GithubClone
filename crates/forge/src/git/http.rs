@@ -226,7 +226,7 @@ async fn receive_pack(
         _ => return auth_challenge(),
     };
     let proto = protocol_env(&parts.headers);
-    let guard = match crate::protection::push_guard(&state, &ctx).await {
+    let guard = match crate::protection::push_guard(&state, &ctx, crate::rules::Actor::new(&ctx, &pusher)).await {
         Ok(g) => g,
         Err(e) => {
             tracing::error!(error = %format!("{e:#}"), "branch protection setup failed");

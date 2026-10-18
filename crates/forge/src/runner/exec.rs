@@ -269,6 +269,9 @@ impl Job {
                 }
             }
         }
+        if let Some(t) = msg.pointer("/id_token/token").and_then(Value::as_str) {
+            log.add_mask(t);
+        }
         let mut contexts = msg["contexts"].clone();
         let ws = workspace.to_string_lossy().to_string();
         contexts["github"]["workspace"] = json!(ws);
@@ -438,6 +441,11 @@ impl Job {
         let r = &self.contexts["runner"];
         for (k, key) in [("RUNNER_OS", "os"), ("RUNNER_ARCH", "arch"), ("RUNNER_NAME", "name"), ("RUNNER_TEMP", "temp"), ("RUNNER_TOOL_CACHE", "tool_cache"), ("RUNNER_ENVIRONMENT", "environment")] {
             e.insert(k.into(), expr::to_string(&r[key]));
+        }
+        // OIDC (`permissions: id-token: write`): the runner's own URL for forge + the token path.
+        if let (Some(p), Some(t)) = (self.msg.pointer("/id_token/path").and_then(Value::as_str), self.msg.pointer("/id_token/token").and_then(Value::as_str)) {
+            e.insert("ACTIONS_ID_TOKEN_REQUEST_URL".into(), format!("{}{p}", self.api.base.trim_end_matches('/')));
+            e.insert("ACTIONS_ID_TOKEN_REQUEST_TOKEN".into(), t.into());
         }
         e.insert("RUNNER_WORKSPACE".into(), self.workspace.parent().unwrap_or(&self.workspace).to_string_lossy().into());
         for (k, v) in step_env {

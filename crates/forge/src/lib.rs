@@ -27,6 +27,7 @@ pub mod pulls;
 pub mod runner;
 pub mod security;
 pub mod protection;
+pub mod rules;
 pub mod signed_url;
 pub mod state;
 pub mod web;
@@ -100,6 +101,7 @@ pub fn app(state: AppState) -> Router {
         .route("/readyz", get(readyz))
         .merge(git::http::routes())
         .merge(runner::protocol::routes())
+        .merge(runner::oidc::routes())
         .merge(api::actions::download_routes())
         .merge(api::runner_runners::download_routes())
         .merge(api::branches::web_routes())

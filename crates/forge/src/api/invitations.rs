@@ -2,7 +2,8 @@
 //! `/user/repository_invitations[/{id}]` (invitee accepts / declines).
 //!
 //! GHES adds collaborators directly (`PUT /collaborators/{u}` answers 204), which is forge's
-//! default. With `FORGE_REPO_INVITATIONS=1`, adding a user who is not yet a collaborator creates
+//! default. With the site setting `repository_invitations.enabled` (manage API
+//! `/manage/v1/config/settings`; default `FORGE_REPO_INVITATIONS=1`), adding a user who is not yet a collaborator creates
 //! an invitation instead (github.com behaviour, 201 with the invitation); accepting it makes the
 //! user a collaborator. Invitations expire after 7 days.
 use axum::extract::{OriginalUri, Path, Query, State};
@@ -38,8 +39,10 @@ pub struct InvitationRow {
     pub created_at: DateTime<Utc>,
 }
 
-pub fn invitations_enabled() -> bool {
-    std::env::var("FORGE_REPO_INVITATIONS").is_ok_and(|v| v == "1" || v == "true")
+/// Runtime site setting (`/manage/v1/config/settings` `repository_invitations.enabled`,
+/// default `FORGE_REPO_INVITATIONS`).
+pub async fn invitations_enabled(s: &AppState) -> bool {
+    crate::enterprise::repo_invitations_enabled(&s.db).await
 }
 
 fn expired(i: &InvitationRow) -> bool {
