@@ -108,6 +108,7 @@ async fn main() -> anyhow::Result<()> {
         Cmd::Gc => {
             let state = forge::build_state(cfg).await?;
             forge::git::gc::run(&state).await?;
+            forge::packages::gc::run(&state).await?;
         }
         Cmd::Admin { cmd } => {
             let state = forge::build_state(cfg).await?;
