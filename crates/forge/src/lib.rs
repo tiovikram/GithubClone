@@ -5,6 +5,7 @@ pub mod api;
 pub mod auth;
 pub mod config;
 pub mod db;
+pub mod enterprise;
 pub mod error;
 pub mod events;
 pub mod extract;
@@ -95,6 +96,7 @@ pub fn app(state: AppState) -> Router {
         .merge(api::branches::web_routes())
         .fallback(web::spa)
         .layer(middleware::from_fn_with_state(state.clone(), api::keys::dot_keys_middleware))
+        .layer(middleware::from_fn_with_state(state.clone(), enterprise::maintenance_guard))
         .layer(middleware::from_fn(security::nosniff))
         .layer(TraceLayer::new_for_http())
         .with_state(state)

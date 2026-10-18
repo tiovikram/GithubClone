@@ -59,7 +59,7 @@ pub async fn user_for_token(state: &AppState, token: &str) -> Result<Option<User
     let hash = sha256_hex(token);
     let user = sqlx::query_as::<_, User>(
         "SELECT u.* FROM tokens t JOIN users u ON u.id = t.user_id
-          WHERE t.token_hash = $1 AND (t.expires_at IS NULL OR t.expires_at > now())",
+          WHERE t.token_hash = $1 AND (t.expires_at IS NULL OR t.expires_at > now()) AND u.suspended_at IS NULL",
     )
     .bind(&hash)
     .fetch_optional(&state.db)
@@ -93,7 +93,7 @@ pub async fn user_for_password(state: &AppState, login: &str, password: &str, cl
     }
     // An exact login match wins over another account that uses the same string as its email.
     let u = sqlx::query_as::<_, User>(
-        "SELECT * FROM users WHERE lower(login) = lower($1) OR lower(email) = lower($1)
+        "SELECT * FROM users WHERE (lower(login) = lower($1) OR lower(email) = lower($1)) AND suspended_at IS NULL
           ORDER BY (lower(login) = lower($1)) DESC, id LIMIT 1",
     )
     .bind(login)
@@ -118,7 +118,7 @@ fn dummy_hash() -> &'static str {
 async fn user_for_session(state: &AppState, sid: &str) -> Result<Option<User>, ApiError> {
     Ok(sqlx::query_as::<_, User>(
         "SELECT u.* FROM sessions s JOIN users u ON u.id = s.user_id
-          WHERE s.id_hash = $1 AND s.expires_at > now()",
+          WHERE s.id_hash = $1 AND s.expires_at > now() AND u.suspended_at IS NULL",
     )
     .bind(sha256_hex(sid))
     .fetch_optional(&state.db)

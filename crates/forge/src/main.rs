@@ -16,6 +16,9 @@ enum Cmd {
     Migrate,
     /// Repack repositories and delete unreferenced objects.
     Gc,
+    /// Runs enterprise pre-receive hooks (invoked by git during receive-pack; internal).
+    #[command(hide = true)]
+    PreReceiveHooks { spec: String },
     /// Administrative commands.
     Admin {
         #[command(subcommand)]
@@ -85,6 +88,9 @@ async fn main() -> anyhow::Result<()> {
             axum::serve(listener, app.into_make_service_with_connect_info::<std::net::SocketAddr>())
                 .with_graceful_shutdown(shutdown())
                 .await?;
+        }
+        Cmd::PreReceiveHooks { spec } => {
+            std::process::exit(forge::enterprise::prereceive::run_hooks_main(&spec));
         }
         Cmd::Migrate => {
             let state = forge::build_state(cfg).await?;
