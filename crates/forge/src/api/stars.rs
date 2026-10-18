@@ -86,7 +86,7 @@ pub async fn set_subscription(state: &AppState, ctx: &RepoCtx, actor: &User, sub
     Ok(Some(
         sqlx::query_as(
             "INSERT INTO watches (user_id, repo_id, subscribed, ignored) VALUES ($1, $2, $3, $4)
-             ON CONFLICT (user_id, repo_id) DO UPDATE SET subscribed = $3, ignored = $4
+             ON CONFLICT (user_id, repo_id) DO UPDATE SET subscribed = $3, ignored = $4, custom_events = NULL
              RETURNING user_id, repo_id, created_at, subscribed, ignored",
         )
         .bind(actor.id)

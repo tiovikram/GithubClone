@@ -160,13 +160,7 @@ pub async fn generate_from_template(s: &AppState, tpl: &RepoCtx, actor: &User, r
     }
     let repo = db::repo_by_id(&s.db, new_id).await?;
     let ctx = RepoCtx { repo, owner: ctx.owner, perm: Perm::Admin };
-    let sender = crate::json::user::simple(&s.api_url(), s.base_url(), actor);
-    let _ = crate::activity::record(s, "CreateEvent", Some(actor.id), Some(&ctx), json!({
-        "ref": null, "ref_type": "repository", "master_branch": ctx.repo.default_branch,
-        "description": ctx.repo.description, "pusher_type": "user",
-    }))
-    .await;
-    let _ = sender;
+    // The CreateEvent (ref_type "repository") is recorded by `repos::create_repo`.
     Ok(ctx)
 }
 

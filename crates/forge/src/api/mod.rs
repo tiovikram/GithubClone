@@ -38,6 +38,7 @@ pub mod projects_v2;
 pub mod releases;
 pub mod repo_extras;
 pub mod social;
+pub mod social_forge;
 pub mod repos;
 pub mod reviews;
 pub mod statuses;
@@ -119,6 +120,7 @@ pub fn routes() -> Router<AppState> {
         .merge(releases::routes())
         .merge(webhooks::routes())
         .merge(social::routes())
+        .merge(social_forge::routes())
         .merge(orgs_extra::routes())
         .merge(orgs_teams::routes())
         .merge(orgs_settings::routes())
