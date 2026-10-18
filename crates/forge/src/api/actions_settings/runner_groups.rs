@@ -66,7 +66,7 @@ const COLS: &str = "id, owner_kind, owner_id, name, visibility, is_default, allo
 
 /// The owner's default group, created on first use.
 pub async fn ensure_default(s: &AppState, kind: &str, id: i64) -> ApiResult<Group> {
-    sqlx::query("INSERT INTO actions_runner_groups (owner_kind, owner_id, name, visibility, is_default) VALUES ($1, $2, 'Default', 'all', true) ON CONFLICT DO NOTHING")
+    sqlx::query("INSERT INTO actions_runner_groups (owner_kind, owner_id, name, visibility, is_default, allows_public_repositories) VALUES ($1, $2, 'Default', 'all', true, true) ON CONFLICT DO NOTHING")
         .bind(kind)
         .bind(id)
         .execute(&s.db)
