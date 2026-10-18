@@ -33,14 +33,12 @@ pub fn routes() -> Router<AppState> {
 // ---------------------------------------------------------------------------------------------
 // Hook
 
-/// Repos-area processing after refs change: ref activity log, ruleset rule suites, Pages builds.
+/// Repos-area processing after refs change: ref activity log, Pages builds.
 pub async fn on_refs_changed(s: &AppState, ctx: &RepoCtx, actor: Option<&User>, changed: &[(String, String, String)]) {
     if let Err(e) = record_activity(s, ctx, actor, changed).await {
         tracing::warn!(error = %format!("{e:#}"), "repo activity recording failed");
     }
-    if let Err(e) = super::repos_rules::record_rule_suites(s, ctx, actor, changed).await {
-        tracing::warn!(error = %format!("{e:#}"), "rule suite recording failed");
-    }
+    // Rule suites are recorded where rulesets are enforced (crate::rules).
     super::repos_pages::on_refs_changed(s, ctx, actor, changed).await;
 }
 

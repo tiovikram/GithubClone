@@ -235,6 +235,7 @@ pub async fn merge_branch(s: &AppState, ctx: &RepoCtx, actor: &User, base: &str,
     let base_ref = format!("refs/heads/{base}");
     let (base_s, head_s) = (base.to_string(), head.to_string());
     let me = user_signature(actor);
+    let (st, rctx, ractor) = (s.clone(), ctx.clone(), crate::rules::Actor::new(ctx, actor));
     let (out, updates) = s
         .git
         .write(ctx.repo.id, |path| async move {
@@ -253,6 +254,8 @@ pub async fn merge_branch(s: &AppState, ctx: &RepoCtx, actor: &User, base: &str,
             };
             let msg = message.unwrap_or_else(|| format!("Merge {head_s} into {base_s}"));
             let sha = objects::write_commit(&git, &path, &tree, &[b.clone(), h], &me, &me, &msg, None).await?;
+            let upd = crate::rules::RefUpdate::new(&base_ref, Some(&b), Some(&sha));
+            crate::rules::enforce_api(&st, &rctx, &ractor, &path, &[upd], crate::rules::Via::Commit, None).await.map_err(reject)?;
             crate::git::plumbing::update_ref(&git, &path, &base_ref, &sha, Some(&b)).await?;
             let c = read::read_commit(&git, &path, &sha).await?.ok_or_else(|| anyhow::anyhow!("merge commit missing"))?;
             Ok(MergeOutcome::Merged(c))

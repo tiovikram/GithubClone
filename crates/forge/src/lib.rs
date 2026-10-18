@@ -27,6 +27,7 @@ pub mod pulls;
 pub mod runner;
 pub mod security;
 pub mod protection;
+pub mod rules;
 pub mod signed_url;
 pub mod state;
 pub mod web;
