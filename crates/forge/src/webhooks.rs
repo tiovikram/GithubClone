@@ -113,6 +113,8 @@ pub async fn enqueue_event_ctx(state: &AppState, ctx: &RepoCtx, event: &str, mut
         }
         crate::activity::record(state, kind, actor_id, Some(ctx), ap).await?;
     }
+    // repos area: notification threads for watchers and participants.
+    crate::api::notifications::on_event(state, ctx, event, &payload).await;
     if let Some(o) = payload.as_object_mut() {
         o.entry("repository").or_insert_with(|| repo_payload(state, ctx));
         if ctx.owner.kind == "Organization" {

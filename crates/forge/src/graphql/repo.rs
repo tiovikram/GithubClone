@@ -118,9 +118,7 @@ pub async fn list_repositories(
         ),
         None => ("r.created_at", "ASC"),
     };
-    let visible = "(NOT r.private OR r.owner_id = $1 OR EXISTS(SELECT 1 FROM repo_collaborators c WHERE c.repo_id = r.id AND c.user_id = $1)
-                    OR EXISTS(SELECT 1 FROM org_members m WHERE m.org_id = r.owner_id AND m.user_id = $1)
-                    OR EXISTS(SELECT 1 FROM users a WHERE a.id = $1 AND a.site_admin))";
+    let visible = crate::db::readable_sql("r.id", "$1");
     let from = format!("FROM repositories r WHERE {visible} AND ({}){extra}", conds.join(" OR "));
     let vid = viewer(ctx).map(|u| u.id).unwrap_or(-1);
     let total: i64 = sqlx::query_scalar(sqlx::AssertSqlSafe(format!("SELECT count(*) {from}")))

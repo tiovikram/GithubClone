@@ -95,6 +95,8 @@ pub fn app(state: AppState) -> Router {
         .route("/readyz", get(readyz))
         .merge(git::http::routes())
         .merge(api::branches::web_routes())
+        .merge(api::repos_pages::web_routes())
+        .merge(api::activity_extra::web_routes())
         .fallback(web::spa)
         .layer(middleware::from_fn_with_state(state.clone(), api::keys::dot_keys_middleware))
         .layer(middleware::from_fn_with_state(state.clone(), enterprise::maintenance_guard))

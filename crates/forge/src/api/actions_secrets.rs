@@ -2,13 +2,18 @@
 //! organizations.
 //!
 //! Secrets arrive already encrypted by the client (libsodium sealed box against the owner's
-//! public key from `.../secrets/public-key`); forge stores the ciphertext and never returns it.
-//! forge has no runner that would consume secrets, so it never needs the private half: the
-//! public key is 32 random bytes generated once per owner, which is all a client needs.
+//! public key from `.../secrets/public-key`); forge stores the ciphertext and never returns it
+//! through the API. forge holds each owner's private key (sealed with its master key, see
+//! `actions_settings::crypto`), checks that a new value opens, and decrypts secrets only to
+//! inject them into jobs (`actions_settings::secrets_for_job`).
+//!
+//! Org secrets and variables have a visibility: `all` repositories of the org, `private`
+//! (private and internal repositories) or `selected` (`actions_secret_repos` /
+//! `actions_variable_repos`).
 use axum::extract::{OriginalUri, Path, Query, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use axum::routing::get;
+use axum::routing::{get, put};
 use axum::Router;
 use base64::Engine;
 use chrono::{DateTime, Utc};
@@ -17,6 +22,7 @@ use serde_json::{json, Value};
 
 use super::plat::total_envelope;
 use super::{no_content, PageParams};
+use super::actions_settings::crypto;
 use crate::auth::AuthUser;
 use crate::db::{self, Perm, RepoCtx, User};
 use crate::error::{ApiError, ApiResult};
@@ -44,10 +50,14 @@ pub fn routes() -> Router<AppState> {
         .route(&format!("{org}/secrets"), get(org_list_secrets))
         .route(&format!("{org}/secrets/public-key"), get(org_public_key))
         .route(&format!("{org}/secrets/{{name}}"), get(org_get_secret).put(org_put_secret).delete(org_delete_secret))
-        .route(&format!("{org}/secrets/{{name}}/repositories"), get(org_secret_repos))
+        .route(&format!("{org}/secrets/{{name}}/repositories"), get(org_secret_repos).put(org_secret_set_repos))
+        .route(&format!("{org}/secrets/{{name}}/repositories/{{repository_id}}"), put(org_secret_add_repo).delete(org_secret_remove_repo))
         .route(&format!("{org}/variables"), get(org_list_variables).post(org_create_variable))
         .route(&format!("{org}/variables/{{name}}"), get(org_get_variable).patch(org_update_variable).delete(org_delete_variable))
-        .route(&format!("{org}/variables/{{name}}/repositories"), get(org_variable_repos))
+        .route(&format!("{org}/variables/{{name}}/repositories"), get(org_variable_repos).put(org_variable_set_repos))
+        .route(&format!("{org}/variables/{{name}}/repositories/{{repository_id}}"), put(org_variable_add_repo).delete(org_variable_remove_repo))
+        .route(&format!("{repo}/organization-secrets"), get(repo_org_secrets_h))
+        .route(&format!("{repo}/organization-variables"), get(repo_org_variables_h))
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -132,23 +142,11 @@ async fn org_scope(s: &AppState, u: &User, org: &str) -> ApiResult<Scope> {
 // ---------------------------------------------------------------------------------------------
 // Public key
 
-/// The owner's (key_id, base64 key), created on first use.
+/// The owner's (key_id, base64 key), created on first use (an X25519 key pair whose private
+/// half forge keeps sealed with its master key, see `actions_settings::crypto`).
 pub async fn public_key(s: &AppState, scope: &Scope) -> ApiResult<(String, String)> {
     let (kind, id) = scope.key_owner();
-    let key: [u8; 32] = rand::random();
-    let key_id = (rand::random::<u64>() >> 4).to_string();
-    sqlx::query("INSERT INTO actions_public_keys (owner_kind, owner_id, key_id, key) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING")
-        .bind(kind)
-        .bind(id)
-        .bind(&key_id)
-        .bind(base64::engine::general_purpose::STANDARD.encode(key))
-        .execute(&s.db)
-        .await?;
-    Ok(sqlx::query_as("SELECT key_id, key FROM actions_public_keys WHERE owner_kind = $1 AND owner_id = $2")
-        .bind(kind)
-        .bind(id)
-        .fetch_one(&s.db)
-        .await?)
+    super::actions_settings::crypto::public_key(s, kind, id).await
 }
 
 async fn public_key_json(s: &AppState, scope: &Scope) -> ApiResult<Json<Value>> {
@@ -241,6 +239,7 @@ pub struct PutSecret {
     pub encrypted_value: Option<String>,
     pub key_id: Option<String>,
     pub visibility: Option<String>,
+    pub selected_repository_ids: Option<Vec<i64>>,
 }
 
 /// Creates or updates a secret; returns true when it was created.
@@ -255,28 +254,30 @@ pub async fn put_secret(s: &AppState, scope: &Scope, name: &str, input: PutSecre
     if key_id != current {
         return Err(ApiError::validation("Secret", "key_id", "invalid"));
     }
-    let visibility = valid_visibility(scope, input.visibility.as_deref())?;
-    let name = name.to_ascii_uppercase();
-    let updated = sqlx::query(sqlx::AssertSqlSafe(format!(
-        "UPDATE actions_secrets SET encrypted_value = $5, key_id = $6, visibility = COALESCE($7, visibility), updated_at = now()
-          WHERE {OWNER_FILTER} AND name = $4"
-    )))
-    .bind(scope.repo_id())
-    .bind(scope.org_id())
-    .bind(scope.env())
-    .bind(&name)
-    .bind(&value)
-    .bind(&key_id)
-    .bind(&visibility)
-    .execute(&s.db)
-    .await?
-    .rows_affected();
-    if updated > 0 {
-        return Ok(false);
+    // The value must be a sealed box for this key, or it could never be injected into a job.
+    let (kind, owner) = scope.key_owner();
+    match crypto::private_key(s, kind, owner).await? {
+        Some((_, sk)) if crypto::open_sealed(&sk, &value).is_some() => {}
+        _ => {
+            let mut e = ApiError::validation("Secret", "encrypted_value", "invalid");
+            e.errors = Some(json!([{ "resource": "Secret", "field": "encrypted_value", "code": "invalid",
+                "message": "encrypted_value must be a libsodium sealed box for the key from the public-key endpoint" }]));
+            return Err(e);
+        }
     }
-    sqlx::query(
+    let visibility = valid_visibility(scope, input.visibility.as_deref())?;
+    let selected = match (&input.selected_repository_ids, scope) {
+        (Some(ids), Scope::Org(o)) => Some(org_repo_ids(s, o, ids).await?),
+        _ => None,
+    };
+    let name = name.to_ascii_uppercase();
+    let (id, created): (i64, bool) = sqlx::query_as(
         "INSERT INTO actions_secrets (repo_id, org_id, environment, name, encrypted_value, key_id, visibility)
-         VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT DO NOTHING",
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         ON CONFLICT (COALESCE(repo_id, 0), COALESCE(org_id, 0), environment, name) DO UPDATE
+            SET encrypted_value = EXCLUDED.encrypted_value, key_id = EXCLUDED.key_id,
+                visibility = COALESCE($8, actions_secrets.visibility), updated_at = now()
+         RETURNING id, (xmax = 0)",
     )
     .bind(scope.repo_id())
     .bind(scope.org_id())
@@ -285,9 +286,187 @@ pub async fn put_secret(s: &AppState, scope: &Scope, name: &str, input: PutSecre
     .bind(&value)
     .bind(&key_id)
     .bind(&visibility)
-    .execute(&s.db)
+    .bind(input.visibility.as_ref().and(visibility.as_ref()))
+    .fetch_one(&s.db)
     .await?;
-    Ok(true)
+    if let Some(ids) = selected {
+        replace_selected(s, Selected::Secret, id, &ids).await?;
+    }
+    Ok(created)
+}
+
+// ---------------------------------------------------------------------------------------------
+// Selected repositories of org secrets and variables
+
+#[derive(Clone, Copy)]
+pub enum Selected {
+    Secret,
+    Variable,
+}
+
+impl Selected {
+    fn table(self) -> (&'static str, &'static str, &'static str) {
+        match self {
+            Selected::Secret => ("actions_secrets", "actions_secret_repos", "secret_id"),
+            Selected::Variable => ("actions_variables", "actions_variable_repos", "variable_id"),
+        }
+    }
+}
+
+/// Validates that every id is a repository owned by `org` (422 otherwise); returns them deduplicated.
+pub async fn org_repo_ids(s: &AppState, org: &User, ids: &[i64]) -> ApiResult<Vec<i64>> {
+    let mut ids = ids.to_vec();
+    ids.sort_unstable();
+    ids.dedup();
+    let found: i64 = sqlx::query_scalar("SELECT count(*) FROM repositories WHERE owner_id = $1 AND id = ANY($2)")
+        .bind(org.id)
+        .bind(&ids)
+        .fetch_one(&s.db)
+        .await?;
+    if found != ids.len() as i64 {
+        return Err(ApiError::validation("Repository", "selected_repository_ids", "invalid"));
+    }
+    Ok(ids)
+}
+
+/// Replaces the selected repositories of an org secret/variable.
+pub async fn replace_selected(s: &AppState, kind: Selected, id: i64, repo_ids: &[i64]) -> ApiResult<()> {
+    let (_, table, col) = kind.table();
+    let mut tx = s.db.begin().await?;
+    sqlx::query(sqlx::AssertSqlSafe(format!("DELETE FROM {table} WHERE {col} = $1"))).bind(id).execute(&mut *tx).await?;
+    sqlx::query(sqlx::AssertSqlSafe(format!("INSERT INTO {table} ({col}, repo_id) SELECT $1, unnest($2::bigint[]) ON CONFLICT DO NOTHING")))
+        .bind(id)
+        .bind(repo_ids)
+        .execute(&mut *tx)
+        .await?;
+    tx.commit().await?;
+    Ok(())
+}
+
+/// (id, visibility) of an org secret/variable by name.
+async fn org_item(s: &AppState, kind: Selected, org: &User, name: &str) -> ApiResult<(i64, String)> {
+    let (items, _, _) = kind.table();
+    let row: Option<(i64, Option<String>)> =
+        sqlx::query_as(sqlx::AssertSqlSafe(format!("SELECT id, visibility FROM {items} WHERE org_id = $1 AND upper(name) = upper($2)")))
+            .bind(org.id)
+            .bind(name)
+            .fetch_optional(&s.db)
+            .await?;
+    let (id, vis) = row.ok_or_else(ApiError::not_found)?;
+    Ok((id, vis.unwrap_or_else(|| "private".into())))
+}
+
+fn not_selected() -> ApiError {
+    ApiError::conflict("The visibility must be set to 'selected' to manage the selected repositories.")
+}
+
+/// Repositories an org secret/variable is shared with (visibility `selected`), paginated.
+pub async fn list_selected(s: &AppState, kind: Selected, org: &User, name: &str, p: PageParams) -> ApiResult<(Vec<RepoCtx>, i64)> {
+    let (id, vis) = org_item(s, kind, org, name).await?;
+    if vis != "selected" {
+        return match kind {
+            Selected::Variable => Err(not_selected()),
+            Selected::Secret => Ok((vec![], 0)),
+        };
+    }
+    let (_, table, col) = kind.table();
+    let total: i64 = sqlx::query_scalar(sqlx::AssertSqlSafe(format!(
+        "SELECT count(*) FROM {table} t JOIN repositories r ON r.id = t.repo_id WHERE t.{col} = $1"
+    )))
+    .bind(id)
+    .fetch_one(&s.db)
+    .await?;
+    let repos: Vec<crate::db::Repo> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
+        "SELECT r.* FROM {table} t JOIN repositories r ON r.id = t.repo_id WHERE t.{col} = $1 ORDER BY r.id LIMIT $2 OFFSET $3"
+    )))
+    .bind(id)
+    .bind(p.limit())
+    .bind(p.offset())
+    .fetch_all(&s.db)
+    .await?;
+    Ok((repos.into_iter().map(|repo| RepoCtx { repo, owner: org.clone(), perm: Perm::Admin }).collect(), total))
+}
+
+pub async fn set_selected(s: &AppState, kind: Selected, org: &User, name: &str, repo_ids: &[i64]) -> ApiResult<()> {
+    let (id, vis) = org_item(s, kind, org, name).await?;
+    if vis != "selected" {
+        return Err(not_selected());
+    }
+    let ids = org_repo_ids(s, org, repo_ids).await?;
+    replace_selected(s, kind, id, &ids).await
+}
+
+pub async fn add_selected(s: &AppState, kind: Selected, org: &User, name: &str, repo_id: i64, add: bool) -> ApiResult<()> {
+    let (id, vis) = org_item(s, kind, org, name).await?;
+    if vis != "selected" {
+        return Err(not_selected());
+    }
+    let (_, table, col) = kind.table();
+    if add {
+        let owned: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM repositories WHERE id = $1 AND owner_id = $2)")
+            .bind(repo_id)
+            .bind(org.id)
+            .fetch_one(&s.db)
+            .await?;
+        if !owned {
+            return Err(ApiError::not_found());
+        }
+        sqlx::query(sqlx::AssertSqlSafe(format!("INSERT INTO {table} ({col}, repo_id) VALUES ($1, $2) ON CONFLICT DO NOTHING")))
+            .bind(id)
+            .bind(repo_id)
+            .execute(&s.db)
+            .await?;
+    } else {
+        sqlx::query(sqlx::AssertSqlSafe(format!("DELETE FROM {table} WHERE {col} = $1 AND repo_id = $2")))
+            .bind(id)
+            .bind(repo_id)
+            .execute(&s.db)
+            .await?;
+    }
+    Ok(())
+}
+
+/// SQL condition: the org item (alias `i`) is visible to repository `r`.
+pub const VISIBLE_TO_REPO: &str = "(COALESCE(i.visibility, 'private') = 'all'
+    OR (COALESCE(i.visibility, 'private') = 'private' AND r.visibility <> 'public')
+    OR (i.visibility = 'selected' AND EXISTS (SELECT 1 FROM {sel} x WHERE x.{col} = i.id AND x.repo_id = r.id)))";
+
+/// SQL condition for `kind` with the selected-table placeholders filled in.
+pub fn visible_to_repo(kind: Selected) -> String {
+    let (_, sel, col) = kind.table();
+    VISIBLE_TO_REPO.replace("{sel}", sel).replace("{col}", col)
+}
+
+/// Org secrets shared with a repository (names only), paginated.
+pub async fn repo_org_secrets(s: &AppState, ctx: &RepoCtx, p: PageParams) -> ApiResult<(Vec<SecretRow>, i64)> {
+    let cond = visible_to_repo(Selected::Secret);
+    let from = format!("FROM actions_secrets i JOIN repositories r ON r.id = $1 WHERE i.org_id = r.owner_id AND {cond}");
+    let total: i64 = sqlx::query_scalar(sqlx::AssertSqlSafe(format!("SELECT count(*) {from}"))).bind(ctx.repo.id).fetch_one(&s.db).await?;
+    let rows = sqlx::query_as(sqlx::AssertSqlSafe(format!(
+        "SELECT i.name, i.visibility, i.created_at, i.updated_at {from} ORDER BY i.name LIMIT $2 OFFSET $3"
+    )))
+    .bind(ctx.repo.id)
+    .bind(p.limit())
+    .bind(p.offset())
+    .fetch_all(&s.db)
+    .await?;
+    Ok((rows, total))
+}
+
+/// Org variables shared with a repository, paginated.
+pub async fn repo_org_variables(s: &AppState, ctx: &RepoCtx, p: PageParams) -> ApiResult<(Vec<VariableRow>, i64)> {
+    let cond = visible_to_repo(Selected::Variable);
+    let from = format!("FROM actions_variables i JOIN repositories r ON r.id = $1 WHERE i.org_id = r.owner_id AND {cond}");
+    let total: i64 = sqlx::query_scalar(sqlx::AssertSqlSafe(format!("SELECT count(*) {from}"))).bind(ctx.repo.id).fetch_one(&s.db).await?;
+    let rows = sqlx::query_as(sqlx::AssertSqlSafe(format!(
+        "SELECT i.name, i.value, i.visibility, i.created_at, i.updated_at {from} ORDER BY i.name LIMIT $2 OFFSET $3"
+    )))
+    .bind(ctx.repo.id)
+    .bind(p.limit())
+    .bind(p.offset())
+    .fetch_all(&s.db)
+    .await?;
+    Ok((rows, total))
 }
 
 pub async fn delete_secret(s: &AppState, scope: &Scope, name: &str) -> ApiResult<()> {
@@ -390,6 +569,20 @@ pub struct VariableInput {
     pub name: Option<String>,
     pub value: Option<String>,
     pub visibility: Option<String>,
+    pub selected_repository_ids: Option<Vec<i64>>,
+}
+
+async fn selected_ids(s: &AppState, scope: &Scope, ids: &Option<Vec<i64>>) -> ApiResult<Option<Vec<i64>>> {
+    match (ids, scope) {
+        (Some(ids), Scope::Org(o)) => Ok(Some(org_repo_ids(s, o, ids).await?)),
+        _ => Ok(None),
+    }
+}
+
+async fn set_variable_selected(s: &AppState, scope: &Scope, name: &str, ids: Option<Vec<i64>>) -> ApiResult<()> {
+    let (Some(ids), Scope::Org(o)) = (ids, scope) else { return Ok(()) };
+    let (id, _) = org_item(s, Selected::Variable, o, name).await?;
+    replace_selected(s, Selected::Variable, id, &ids).await
 }
 
 /// Creates a variable; 409 when one with that name exists (gh then PATCHes).
@@ -398,6 +591,7 @@ pub async fn create_variable(s: &AppState, scope: &Scope, input: VariableInput) 
     valid_name("Variable", &name)?;
     let value = input.value.ok_or_else(|| ApiError::validation("Variable", "value", "missing_field"))?;
     let visibility = valid_visibility(scope, input.visibility.as_deref())?;
+    let selected = selected_ids(s, scope, &input.selected_repository_ids).await?;
     let row: Option<VariableRow> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "INSERT INTO actions_variables (repo_id, org_id, environment, name, value, visibility)
          VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING RETURNING {VAR_COLS}"
@@ -410,7 +604,9 @@ pub async fn create_variable(s: &AppState, scope: &Scope, input: VariableInput) 
     .bind(&visibility)
     .fetch_optional(&s.db)
     .await?;
-    row.ok_or_else(|| ApiError::conflict("Already exists - Variable already exists"))
+    let row = row.ok_or_else(|| ApiError::conflict("Already exists - Variable already exists"))?;
+    set_variable_selected(s, scope, &row.name, selected).await?;
+    Ok(row)
 }
 
 pub async fn update_variable(s: &AppState, scope: &Scope, name: &str, input: VariableInput) -> ApiResult<()> {
@@ -426,6 +622,7 @@ pub async fn update_variable(s: &AppState, scope: &Scope, name: &str, input: Var
         Some(v) => valid_visibility(scope, Some(v))?,
         None => cur.visibility.clone(),
     };
+    let selected = selected_ids(s, scope, &input.selected_repository_ids).await?;
     sqlx::query(sqlx::AssertSqlSafe(format!(
         "UPDATE actions_variables SET name = $5, value = $6, visibility = $7, updated_at = now() WHERE {OWNER_FILTER} AND name = $4"
     )))
@@ -442,7 +639,7 @@ pub async fn update_variable(s: &AppState, scope: &Scope, name: &str, input: Var
         sqlx::Error::Database(d) if d.is_unique_violation() => ApiError::conflict("Already exists - Variable already exists"),
         e => e.into(),
     })?;
-    Ok(())
+    set_variable_selected(s, scope, &new_name, selected).await
 }
 
 pub async fn delete_variable(s: &AppState, scope: &Scope, name: &str) -> ApiResult<()> {
@@ -594,12 +791,6 @@ async fn org_delete_secret(State(s): State<AppState>, AuthUser(u): AuthUser, Pat
     delete_secret(&s, &org_scope(&s, &u, &org).await?, &n).await?;
     Ok(no_content())
 }
-/// Selected-repository access lists are not tracked: always empty.
-async fn org_secret_repos(State(s): State<AppState>, AuthUser(u): AuthUser, Path((org, n)): Path<(String, String)>) -> ApiResult<Json<Value>> {
-    let sc = org_scope(&s, &u, &org).await?;
-    get_secret(&s, &sc, &n).await?;
-    Ok(Json(total_envelope("repositories", vec![], 0)))
-}
 async fn org_list_variables(State(s): State<AppState>, AuthUser(u): AuthUser, uri: OriginalUri, Path(org): Path<String>, Query(p): Query<PageParams>) -> ApiResult<Response> {
     let sc = org_scope(&s, &u, &org).await?;
     list_variables_resp(&s, &sc, p, &uri).await
@@ -619,8 +810,85 @@ async fn org_delete_variable(State(s): State<AppState>, AuthUser(u): AuthUser, P
     delete_variable(&s, &org_scope(&s, &u, &org).await?, &n).await?;
     Ok(no_content())
 }
-async fn org_variable_repos(State(s): State<AppState>, AuthUser(u): AuthUser, Path((org, n)): Path<(String, String)>) -> ApiResult<Json<Value>> {
-    let sc = org_scope(&s, &u, &org).await?;
-    get_variable(&s, &sc, &n).await?;
-    Ok(Json(total_envelope("repositories", vec![], 0)))
+fn org_of(sc: &Scope) -> &User {
+    match sc {
+        Scope::Org(o) => o,
+        Scope::Repo { .. } => unreachable!("org scope"),
+    }
+}
+
+#[derive(Deserialize)]
+struct SelectedIds {
+    selected_repository_ids: Option<Vec<i64>>,
+}
+
+async fn selected_list_resp(s: &AppState, u: &User, org: &str, kind: Selected, name: &str, p: PageParams, uri: &OriginalUri) -> ApiResult<Response> {
+    let sc = org_scope(s, u, org).await?;
+    let (repos, total) = list_selected(s, kind, org_of(&sc), name, p).await?;
+    let (api, base) = (s.api_url(), s.base_url().to_string());
+    let items = repos.iter().map(|c| crate::json::repo::repo(&api, &base, c)).collect();
+    Ok(envelope(s, uri, p, "repositories", items, total))
+}
+async fn selected_set_resp(s: &AppState, u: &User, org: &str, kind: Selected, name: &str, b: SelectedIds) -> ApiResult<Response> {
+    let sc = org_scope(s, u, org).await?;
+    let ids = b.selected_repository_ids.ok_or_else(|| ApiError::validation("Repository", "selected_repository_ids", "missing_field"))?;
+    set_selected(s, kind, org_of(&sc), name, &ids).await?;
+    Ok(no_content())
+}
+async fn selected_one_resp(s: &AppState, u: &User, org: &str, kind: Selected, name: &str, repo_id: i64, add: bool) -> ApiResult<Response> {
+    let sc = org_scope(s, u, org).await?;
+    add_selected(s, kind, org_of(&sc), name, repo_id, add).await?;
+    Ok(no_content())
+}
+
+type OrgNameP = Path<(String, String)>;
+type OrgNameRepoP = Path<(String, String, i64)>;
+
+async fn org_secret_repos(State(s): State<AppState>, AuthUser(u): AuthUser, uri: OriginalUri, Path((org, n)): OrgNameP, Query(p): Query<PageParams>) -> ApiResult<Response> {
+    selected_list_resp(&s, &u, &org, Selected::Secret, &n, p, &uri).await
+}
+async fn org_secret_set_repos(State(s): State<AppState>, AuthUser(u): AuthUser, Path((org, n)): OrgNameP, Json(b): Json<SelectedIds>) -> ApiResult<Response> {
+    selected_set_resp(&s, &u, &org, Selected::Secret, &n, b).await
+}
+async fn org_secret_add_repo(State(s): State<AppState>, AuthUser(u): AuthUser, Path((org, n, id)): OrgNameRepoP) -> ApiResult<Response> {
+    selected_one_resp(&s, &u, &org, Selected::Secret, &n, id, true).await
+}
+async fn org_secret_remove_repo(State(s): State<AppState>, AuthUser(u): AuthUser, Path((org, n, id)): OrgNameRepoP) -> ApiResult<Response> {
+    selected_one_resp(&s, &u, &org, Selected::Secret, &n, id, false).await
+}
+async fn org_variable_repos(State(s): State<AppState>, AuthUser(u): AuthUser, uri: OriginalUri, Path((org, n)): OrgNameP, Query(p): Query<PageParams>) -> ApiResult<Response> {
+    selected_list_resp(&s, &u, &org, Selected::Variable, &n, p, &uri).await
+}
+async fn org_variable_set_repos(State(s): State<AppState>, AuthUser(u): AuthUser, Path((org, n)): OrgNameP, Json(b): Json<SelectedIds>) -> ApiResult<Response> {
+    selected_set_resp(&s, &u, &org, Selected::Variable, &n, b).await
+}
+async fn org_variable_add_repo(State(s): State<AppState>, AuthUser(u): AuthUser, Path((org, n, id)): OrgNameRepoP) -> ApiResult<Response> {
+    selected_one_resp(&s, &u, &org, Selected::Variable, &n, id, true).await
+}
+async fn org_variable_remove_repo(State(s): State<AppState>, AuthUser(u): AuthUser, Path((org, n, id)): OrgNameRepoP) -> ApiResult<Response> {
+    selected_one_resp(&s, &u, &org, Selected::Variable, &n, id, false).await
+}
+
+/// `GET /repos/{o}/{r}/actions/organization-secrets` and `-variables`: what the org shares with
+/// the repository (repository admins, like repository secrets).
+async fn repo_org_secrets_h(State(s): State<AppState>, AuthUser(u): AuthUser, uri: OriginalUri, Path((o, r)): RepoP, Query(p): Query<PageParams>) -> ApiResult<Response> {
+    let ctx = db::load_repo(&s.db, Some(&u), &o, &r).await?;
+    ctx.require(Perm::Admin)?;
+    let (rows, total) = repo_org_secrets(&s, &ctx, p).await?;
+    let items = rows
+        .iter()
+        .map(|r| json!({ "name": r.name, "created_at": crate::json::ts(r.created_at), "updated_at": crate::json::ts(r.updated_at) }))
+        .collect();
+    Ok(envelope(&s, &uri, p, "secrets", items, total))
+}
+async fn repo_org_variables_h(State(s): State<AppState>, AuthUser(u): AuthUser, uri: OriginalUri, Path((o, r)): RepoP, Query(p): Query<PageParams>) -> ApiResult<Response> {
+    let ctx = db::load_repo(&s.db, Some(&u), &o, &r).await?;
+    ctx.require(Perm::Admin)?;
+    let p = PageParams { page: p.page, per_page: Some(p.per_page.unwrap_or(10).clamp(1, 30)) };
+    let (rows, total) = repo_org_variables(&s, &ctx, p).await?;
+    let items = rows
+        .iter()
+        .map(|r| json!({ "name": r.name, "value": r.value, "created_at": crate::json::ts(r.created_at), "updated_at": crate::json::ts(r.updated_at) }))
+        .collect();
+    Ok(envelope(&s, &uri, p, "variables", items, total))
 }

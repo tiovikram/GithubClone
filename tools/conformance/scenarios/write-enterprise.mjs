@@ -1,7 +1,7 @@
 // Area "enterprise" scenarios (docs/BUILDOUT.md): GHES enterprise administration — users
 // (create, rename, impersonation, promote/demote, suspend), global webhooks, public keys, LDAP
-// mapping, statistics, license, announcement, pre-receive environments and hooks, the
-// enterprise Actions policy and runner groups, audit log and streams, code security,
+// mapping, statistics, license, announcement, pre-receive environments and hooks, enterprise
+// self-hosted runners, audit log and streams, code security,
 // custom properties, billing, enterprise teams, SCIM, live migrations and the Manage API.
 //
 // The harness token must belong to a site administrator (forge: `forge admin create-user
@@ -160,45 +160,10 @@ export const scenarios = [
     },
   },
   {
-    name: 'enterprise: Actions policy, runner groups, runners',
-    requires: ['login', 'entOrgId'],
-    run: async (t, s) => {
-      await t.call('enterprise-admin/get-github-actions-permissions-enterprise', { params: E() });
-      await t.call('enterprise-admin/set-github-actions-permissions-enterprise', { params: E(), body: { enabled_organizations: 'selected', allowed_actions: 'selected' } });
-      await t.call('enterprise-admin/set-selected-organizations-enabled-github-actions-enterprise', { params: E(), body: { selected_organization_ids: [s.entOrgId] } });
-      await t.call('enterprise-admin/list-selected-organizations-enabled-github-actions-enterprise', { params: E(), minItems: 1, itemsKey: 'organizations' });
-      await t.call('enterprise-admin/disable-selected-organization-github-actions-enterprise', { params: E({ org_id: s.entOrgId }) });
-      await t.call('enterprise-admin/enable-selected-organization-github-actions-enterprise', { params: E({ org_id: s.entOrgId }) });
-      await t.call('enterprise-admin/get-github-actions-permissions-enterprise', { params: E() });
-      await t.call('enterprise-admin/set-allowed-actions-enterprise', { params: E(), body: { github_owned_allowed: true, verified_allowed: false, patterns_allowed: ['octo-org/*'] } });
-      await t.call('enterprise-admin/get-allowed-actions-enterprise', { params: E() });
-      await t.call('enterprise-admin/set-github-actions-permissions-enterprise', { params: E(), body: { enabled_organizations: 'all', allowed_actions: 'all' } });
-      await t.call('enterprise-admin/set-artifact-and-log-retention-settings', { params: E(), body: { days: 60 } });
-      await t.call('enterprise-admin/get-artifact-and-log-retention-settings', { params: E() });
-      await t.call('enterprise-admin/set-artifact-and-log-retention-settings', { params: E(), body: { days: 90 } });
-      await t.call('enterprise-admin/set-fork-pr-contributor-approval-permissions', { params: E(), body: { approval_policy: 'all_external_contributors' } });
-      await t.call('enterprise-admin/get-fork-pr-contributor-approval-permissions', { params: E() });
-      await t.call('enterprise-admin/set-fork-pr-contributor-approval-permissions', { params: E(), body: { approval_policy: 'first_time_contributors' } });
-      await t.call('enterprise-admin/set-private-repo-fork-pr-workflows-settings', { params: E(), body: { run_workflows_from_fork_pull_requests: true, require_approval_for_fork_pr_workflows: true } });
-      await t.call('enterprise-admin/get-private-repo-fork-pr-workflows-settings', { params: E() });
-      await t.call('enterprise-admin/set-private-repo-fork-pr-workflows-settings', { params: E(), body: { run_workflows_from_fork_pull_requests: false } });
-      await t.call('enterprise-admin/set-self-hosted-runners-permissions', { params: E(), body: { disable_self_hosted_runners_for_all_orgs: false } });
-      await t.call('enterprise-admin/get-self-hosted-runners-permissions', { params: E() });
-
-      const g = await t.call('enterprise-admin/create-self-hosted-runner-group-for-enterprise', {
-        params: E(), body: { name: `ent-rg-${s.runId}`, visibility: 'selected', selected_organization_ids: [s.entOrgId], runners: [] }, expect: [201], fixture: true,
-      });
-      const gp = E({ runner_group_id: g.body.id });
-      await t.call('enterprise-admin/list-self-hosted-runner-groups-for-enterprise', { params: E(), minItems: 2, itemsKey: 'runner_groups' });
-      await t.call('enterprise-admin/get-self-hosted-runner-group-for-enterprise', { params: gp });
-      await t.call('enterprise-admin/update-self-hosted-runner-group-for-enterprise', { params: gp, body: { allows_public_repositories: true } });
-      await t.call('enterprise-admin/list-org-access-to-self-hosted-runner-group-in-enterprise', { params: gp, minItems: 1, itemsKey: 'organizations' });
-      await t.call('enterprise-admin/remove-org-access-to-self-hosted-runner-group-in-enterprise', { params: { ...gp, org_id: s.entOrgId } });
-      await t.call('enterprise-admin/add-org-access-to-self-hosted-runner-group-in-enterprise', { params: { ...gp, org_id: s.entOrgId } });
-      await t.call('enterprise-admin/set-org-access-to-self-hosted-runner-group-in-enterprise', { params: gp, body: { selected_organization_ids: [] } });
-      await t.call('enterprise-admin/set-self-hosted-runners-in-group-for-enterprise', { params: gp, body: { runners: [] } });
-      await t.call('enterprise-admin/list-self-hosted-runners-in-group-for-enterprise', { params: gp, itemsKey: 'runners' });
-
+    // The enterprise Actions policy and runner groups are exercised by write-actions-settings.mjs.
+    name: 'enterprise: self-hosted runners',
+    requires: ['login'],
+    run: async (t) => {
       const runners = await t.call('enterprise-admin/list-self-hosted-runners-for-enterprise', { params: E() });
       await t.call('enterprise-admin/list-runner-applications-for-enterprise', { params: E(), minItems: 1 });
       await t.call('enterprise-admin/create-registration-token-for-enterprise', { params: E(), expect: [201] });
@@ -213,10 +178,7 @@ export const scenarios = [
         await t.call('enterprise-admin/set-custom-labels-for-self-hosted-runner-for-enterprise', { params: rp, body: { labels: ['conf-a', 'conf-b'] } });
         await t.call('enterprise-admin/remove-custom-label-from-self-hosted-runner-for-enterprise', { params: { ...rp, name: 'conf-b' } });
         await t.call('enterprise-admin/remove-all-custom-labels-from-self-hosted-runner-for-enterprise', { params: rp });
-        await t.call('enterprise-admin/add-self-hosted-runner-to-group-for-enterprise', { params: { ...gp, runner_id: r.id } });
-        await t.call('enterprise-admin/remove-self-hosted-runner-from-group-for-enterprise', { params: { ...gp, runner_id: r.id } });
       }
-      await t.call('enterprise-admin/delete-self-hosted-runner-group-from-enterprise', { params: gp });
     },
   },
   {

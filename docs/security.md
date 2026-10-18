@@ -33,6 +33,7 @@ Severity reflects impact on a multi-tenant instance where anyone can sign up.
 | 21 | Low | **The login throttle was per pod** (in memory), so N replicas allowed N times the limit. | The counters are in Postgres (`login_throttle(key, window_start, count)`, migration 0970). Each attempt costs one indexed read. A failure costs one atomic upsert for both keys (sorted, so no deadlocks; an expired window restarts at 1). A success costs one delete. About 1 in 64 failures also prunes expired rows. Logins in keys are capped at 256 chars. | `login_throttle_is_shared_between_replicas` (two servers, one database) |
 | 22 | Low | **Free-text issue search with no repo qualifier was an ILIKE scan** over every visible issue. | Migration 0970 adds `pg_trgm` GIN indexes on `issues.title`, `issues.body` and `issue_comments.body`, plus `issues(number)`. Without a `repo:`/`user:`/`org:` qualifier, each word becomes `i.id IN (… UNION …)`, one indexed arm per field (title, body, the existing full-text index, comments with `in:comments`, issue number), so the same matches are found through indexes. Scoped searches keep the old form. On 200k issues, an unscoped word search runs in about 20 ms using bitmap index scans. Words shorter than 3 characters can't use trigrams. | `unscoped_issue_search_keeps_semantics` |
 | 23 | Low | **Diff and patch output was generated in memory without a byte cap.** Covers `.diff`/`.patch` for commits, compare (including unrelated histories) and PRs, plus the patches inside commit/compare/PR-files JSON. | `FORGE_MAX_DIFF_BYTES` (default 10 MiB): git's stdout is read up to the cap, and git is killed past it. Past the cap:<br>- `.diff`/`.patch` responses return 406 `{"errors":[{"resource":…,"field":"diff","code":"too_large"}]}`, like GitHub's "diff too large".<br>- Commit/compare JSON keeps its complete file list and stats but leaves out `patch`.<br>- The PR file list is cut at the last complete file (GitHub also truncates huge PR file lists). | `diff_output_is_capped` |
+| 24 | Medium | **Listings and search leaked private org repositories to members without access.** With the org base permission `none`, a member with no team, role or collaborator grant still saw a private repo's name and metadata (and its issues) in `/orgs/{o}/repos`, `/user/repos`, `/users/{u}/repos`, `/issues`, `/orgs/{o}/issues`, starred/watched lists, forks, search (repositories, issues, code, commits), GraphQL owner repository lists and issue search. Every filter had its own `EXISTS(org_members …)` copy. | One visibility rule for SQL: the Postgres function `forge_repo_readable(repo_id, user_id)` (migration 1201), used through `db::readable_sql` / `forge_repo_readable(r.id, $n)` by every list and search query. It mirrors `orgs::perm` / `db::permission`: public repos, site admins, the owner, collaborators, org owners, members when the base permission is not `none`, team grants (child teams inherit), and org roles with a repository base role (direct or through a team). The repos-area feeds and notification fan-out use the same rule. | `base_permission_none_hides_private_org_repos_from_lists_and_search` (repos_extra.rs: every list agrees with the direct permission check under base `none`, after a team grant, after removing it, and under base `read`) |
 
 ## Checked and OK
 - **Objects addressed by global id are verified to belong to the repo in the path:**
@@ -66,16 +67,20 @@ Severity reflects impact on a multi-tenant instance where anyone can sign up.
   repository roles, organization roles (`all_repo_*`, `security_manager`, custom base roles) and
   collaborator grants. Members who create or fork a repo into the org get admin on it, like on
   GitHub. Tests: `crates/forge/tests/orgs_extra.rs`.
-  **Remaining gap (for the security area):** listing/search SQL filters across `api/*` and
-  `graphql/*` still treat any org membership as visibility of *private* org repositories
-  (`EXISTS(SELECT 1 FROM org_members ...)`). With base permission `none`, a member without a team
-  or collaborator grant can therefore see a private repo's *name/metadata in listings and search*
-  (e.g. `/orgs/{o}/repos`, `/user/repos`, search), although every direct access path (`load_repo`,
-  git, SSH, GraphQL `repository`/`node`) returns 404. Fix: replace those filters with a shared SQL
-  predicate that mirrors `orgs::perm::org_repo_permissions`.
+  The listing/search side of this (members seeing private repos they can't access) is #24.
+  Still open: issue assignability (`push_assignable`) and PR reviewer eligibility
+  (`pulls::is_collaborator`) count any org member, regardless of the base permission.
 - **Unverified emails** drive commit attribution (`users_by_email`), and `simple-user` JSON includes `email`, so `/users` lists every email. GitHub requires verified emails and exposes only public ones. This needs an email-verification feature.
 - **The repo advisory lock is held while a slow client uploads its pack** (HTTP and SSH push). A slow pusher blocks other writes to that repo until the request ends or times out. Bounded by `FORGE_MAX_PUSH_BYTES` and the SSH inactivity timeout (1 h). A future fix is to receive into a quarantine first, then lock.
 - **The timeline loads all items before paging** (diff/patch output is capped since #23).
+- **Pages share the forge's origin** (`{base}/pages/{owner}/{repo}/`, GHES's path-based layout
+  without subdomain isolation). Site files are served with
+  `Content-Security-Policy: sandbox allow-scripts allow-forms allow-popups allow-modals allow-downloads`,
+  so page scripts run in an opaque origin and can't read forge cookies or call the API with the
+  visitor's session. A separate Pages domain would be stronger.
+- **Pages artifact deployments** (`POST /pages/deployments`) only fetch artifacts stored on this
+  forge (release assets the caller can read), never arbitrary URLs (no SSRF). The `oidc_token` is
+  only checked for presence until forge has an OIDC issuer.
 - **Webhooks honour system proxy settings** (`HTTPS_PROXY`). If a proxy is configured, the SSRF guard relies on the proxy's own egress policy.
 
 ## Enterprise administration (enterprise area)

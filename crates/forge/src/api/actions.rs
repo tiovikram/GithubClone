@@ -48,7 +48,7 @@ pub fn routes() -> Router<AppState> {
         .route(&format!("{r}/caches"), get(caches).delete(delete_caches_by_key))
         .route(&format!("{r}/caches/{{cache_id}}"), axum::routing::delete(delete_cache))
         .route(&format!("{r}/runners"), get(runners))
-        .route(&format!("{r}/permissions"), get(permissions))
+    // `{r}/permissions*` lives in actions_settings::policy.
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -267,6 +267,9 @@ async fn dispatch_workflow(
 ) -> ApiResult<Response> {
     let ctx = repo(&s, Some(&u), &owner, &name).await?;
     let w = find_workflow(&s, &ctx, &id).await?;
+    if !super::actions_settings::actions_allowed(&s, ctx.repo.id).await {
+        return Err(ApiError::unprocessable("Actions has been disabled for this repository."));
+    }
     let git_ref = body.git_ref.filter(|r| !r.is_empty()).ok_or_else(|| ApiError::validation("Workflow", "ref", "missing_field"))?;
     dispatch(&s, &ctx, &u, &w, &git_ref, body.inputs).await?;
     Ok(no_content())
@@ -617,10 +620,4 @@ async fn runners(State(s): State<AppState>, MaybeUser(u): MaybeUser, Path((owner
     let ctx = repo(&s, u.as_ref(), &owner, &name).await?;
     ctx.require(Perm::Admin)?;
     Ok(Json(total_envelope("runners", vec![], 0)))
-}
-
-async fn permissions(State(s): State<AppState>, MaybeUser(u): MaybeUser, Path((owner, name)): Path<(String, String)>) -> ApiResult<Json<Value>> {
-    let ctx = repo(&s, u.as_ref(), &owner, &name).await?;
-    ctx.require(Perm::Admin)?;
-    Ok(Json(json!({ "enabled": false, "allowed_actions": "all", "selected_actions_url": null })))
 }

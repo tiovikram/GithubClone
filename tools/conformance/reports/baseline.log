@@ -1,0 +1,60 @@
+-- identity & meta
+-- repository: create (fixture)
+-- repository: metadata
+-- contents API
+-- git data & refs
+-- branches, merges, protection, archives
+-- commits, compare, statuses, checks, commit comments
+-- labels & milestones
+-- issues
+-- issue comments & reactions
+-- pull requests: create, review comments, reviews
+  N/I POST   404 reactions/create-for-pull-request-review-comment
+        404 for a route that should exist (expected 200/201)
+  N/I GET    404 reactions/list-for-pull-request-review-comment
+        404 for a route that should exist (expected 200)
+-- pull requests: update-branch & close
+-- pull requests: merge
+-- releases & assets
+-- deployments & webhooks
+-- stars, watching, notifications, events
+-- collaborators
+-- template & fork
+-- users & ssh keys
+-- organizations
+-- gists
+-- actions (read)
+-- search
+-- misc endpoints
+-- cleanup
+
+== Conformance summary ==
+overall   224/1105  conforming =  20.3%   (tested 226: 0 nonconforming, 2 not implemented; 99.1% of tested conform)
+tier 1    102/104   conforming =  98.1%   (tested 102: 0 nonconforming, 0 not implemented; 100% of tested conform)
+tier 2    120/129   conforming =    93%   (tested 122: 0 nonconforming, 2 not implemented; 98.4% of tested conform)
+tier 3      2/872   conforming =   0.2%   (tested 2: 0 nonconforming, 0 not implemented; 100% of tested conform)
+
+per tag (tested tags only):
+  repos              75/193 (38.9%), tested 75, nonconf 0, n/i 0
+  actions            2/160 (1.3%), tested 2, nonconf 0, n/i 0
+  orgs               7/89 (7.9%), tested 7, nonconf 0, n/i 0
+  issues             38/47 (80.9%), tested 38, nonconf 0, n/i 0
+  users              13/37 (35.1%), tested 13, nonconf 0, n/i 0
+  teams              1/35 (2.9%), tested 1, nonconf 0, n/i 0
+  activity           13/32 (40.6%), tested 13, nonconf 0, n/i 0
+  pulls              26/27 (96.3%), tested 26, nonconf 0, n/i 0
+  gists              5/20 (25%), tested 5, nonconf 0, n/i 0
+  reactions          12/15 (80%), tested 14, nonconf 0, n/i 2
+  git                13/13 (100%), tested 13, nonconf 0, n/i 0
+  checks             2/12 (16.7%), tested 2, nonconf 0, n/i 0
+  search             7/7 (100%), tested 7, nonconf 0, n/i 0
+  meta               4/4 (100%), tested 4, nonconf 0, n/i 0
+  licenses           2/3 (66.7%), tested 2, nonconf 0, n/i 0
+  gitignore          1/2 (50%), tested 1, nonconf 0, n/i 0
+  markdown           1/2 (50%), tested 1, nonconf 0, n/i 0
+  emojis             1/1 (100%), tested 1, nonconf 0, n/i 0
+  rate-limit         1/1 (100%), tested 1, nonconf 0, n/i 0
+
+HTTP requests: 269
+report: reports/baseline.json
+summary: reports/baseline.md
