@@ -54,7 +54,7 @@ export function RulesSection({ level, section = "rules", tabs = true }: { level:
       {tabs && (
         <nav className="tabnav ra-tabnav" aria-label="Rules">
           <Link className={`tabnav-tab${tab === "rulesets" ? " selected" : ""}`} to={level.root}>Rulesets</Link>
-          <Link className={`tabnav-tab${tab === "insights" ? " selected" : ""}`} to={`${level.root}/insights`}>Insights</Link>
+          {level.kind !== "enterprise" && <Link className={`tabnav-tab${tab === "insights" ? " selected" : ""}`} to={`${level.root}/insights`}>Insights</Link>}
           <Link className={`tabnav-tab${tab === "bypass" ? " selected" : ""}`} to={`${level.root}/bypass-requests`}>Bypass requests</Link>
         </nav>
       )}

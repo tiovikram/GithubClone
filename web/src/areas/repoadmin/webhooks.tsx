@@ -196,9 +196,9 @@ function HookForm({ level, hook, onSaved }: { level: HookLevel; hook?: Hook; onS
         </fieldset>
         <fieldset className="form-group">
           <legend>Which events would you like to trigger this webhook?</legend>
-          <label className="radio-row"><input type="radio" name="evmode" checked={mode === "push"} onChange={() => setMode("push")} /> Just the <code>push</code> event.</label>
-          <label className="radio-row"><input type="radio" name="evmode" checked={mode === "all"} onChange={() => setMode("all")} /> Send me <strong>everything</strong>.</label>
-          <label className="radio-row"><input type="radio" name="evmode" checked={mode === "pick"} onChange={() => setMode("pick")} /> Let me select individual events.</label>
+          <label className="radio-row"><input id="hook-ev-push" type="radio" name="evmode" checked={mode === "push"} onChange={() => setMode("push")} /> Just the <code>push</code> event.</label>
+          <label className="radio-row"><input id="hook-ev-all" type="radio" name="evmode" checked={mode === "all"} onChange={() => setMode("all")} /> Send me <strong>everything</strong>.</label>
+          <label className="radio-row"><input id="hook-ev-pick" type="radio" name="evmode" checked={mode === "pick"} onChange={() => setMode("pick")} /> Let me select individual events.</label>
           {mode === "pick" && (
             <div className="ra-events" data-testid="hook-events">
               {list.map(([k, l]) => (

@@ -385,7 +385,6 @@ const COMMUNITY: [string, string, string][] = [
   ["code_of_conduct", "Code of conduct", "CODE_OF_CONDUCT.md"],
   ["contributing", "Contributing", "CONTRIBUTING.md"],
   ["license", "License", "LICENSE"],
-  ["security", "Security policy", "SECURITY.md"],
   ["issue_template", "Issue templates", ".github/ISSUE_TEMPLATE/bug_report.md"],
   ["pull_request_template", "Pull request template", ".github/pull_request_template.md"],
 ];

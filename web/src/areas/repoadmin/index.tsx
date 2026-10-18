@@ -39,8 +39,10 @@ export function enterpriseSlug(): Promise<string> {
   slugCache ??= request<{ slug: string }>("/api/forge/enterprise").then((r) => r.slug, () => "forge");
   return slugCache;
 }
-function useEnterprise() {
-  return useAsync(() => enterpriseSlug(), []);
+/** The enterprise slug: from the admin shell's context when it provides one, else /api/forge/enterprise. */
+function useEnterprise(ctx?: AdminCtx) {
+  const given = (ctx as (AdminCtx & { enterprise?: string }) | undefined)?.enterprise;
+  return useAsync(() => (given ? Promise.resolve(given) : enterpriseSlug()), [given]);
 }
 
 // ---------- repo settings sections ----------
@@ -83,16 +85,16 @@ const orgSettings: SettingsSection<OrgCtx>[] = [
 
 // ---------- site admin sections (rendered by the admin area's shell) ----------
 
-function EnterpriseRules() {
-  const e = useEnterprise();
+function EnterpriseRules({ ctx }: { ctx: AdminCtx }) {
+  const e = useEnterprise(ctx);
   return <Async state={e}>{(slug) => <RulesSection section="rulesets" level={{ kind: "enterprise", api: `/enterprises/${enc(slug)}`, root: "/site-admin/rulesets" }} />}</Async>;
 }
-function EnterpriseProperties() {
-  const e = useEnterprise();
+function EnterpriseProperties({ ctx }: { ctx: AdminCtx }) {
+  const e = useEnterprise(ctx);
   return <Async state={e}>{(slug) => <PropertyDefinitions api={`/enterprises/${enc(slug)}`} title="Enterprise custom properties" />}</Async>;
 }
-function EnterpriseBypass() {
-  const e = useEnterprise();
+function EnterpriseBypass({ ctx }: { ctx: AdminCtx }) {
+  const e = useEnterprise(ctx);
   return <Async state={e}>{(slug) => <div className="settings"><BypassList level={{ kind: "enterprise", api: `/enterprises/${enc(slug)}`, root: "/site-admin/bypass-requests" }} /></div>}</Async>;
 }
 
