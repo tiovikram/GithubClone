@@ -50,6 +50,13 @@ pub mod autolinks;
 pub mod rulesets;
 pub mod signing_keys;
 pub mod webhooks;
+pub mod ent_actions;
+pub mod ent_admin;
+pub mod ent_enterprise;
+pub mod ent_manage;
+pub mod ent_prereceive;
+pub mod ent_scim;
+pub mod ent_teams;
 
 use axum::extract::{OriginalUri, Request};
 use axum::http::{header, HeaderMap, HeaderName, HeaderValue, StatusCode, Uri};
@@ -106,6 +113,13 @@ pub fn routes() -> Router<AppState> {
         .merge(review_reactions::routes())
         .merge(actions_secrets::routes())
         .merge(ref_dispatch::routes())
+        .merge(ent_admin::routes())
+        .merge(ent_prereceive::routes())
+        .merge(ent_actions::routes())
+        .merge(ent_enterprise::routes())
+        .merge(ent_teams::routes())
+        .merge(ent_scim::routes())
+        .merge(ent_manage::routes())
         .fallback(|| async { crate::error::ApiError::not_found() })
 }
 

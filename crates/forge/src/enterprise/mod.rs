@@ -4,7 +4,9 @@
 //!
 //! Service layer used by the REST handlers in `api/ent_*.rs` (and callable by other areas):
 //! - settings: [`get_setting`] / [`set_setting`] (key/value JSON in `ent_settings`);
-//! - audit log: [`audit`] records an event in `ent_audit_log`;
+//! - audit log: [`audit`] records an instance-level event in `ent_audit_log`; organization
+//!   events go to the orgs area's `org_audit_log` (`crate::orgs::audit`). The enterprise
+//!   audit-log endpoint reads both;
 //! - global webhooks: [`emit_global`] delivers an event to every active global hook through the
 //!   standard webhook queue;
 //! - users: [`admin_create_user`], [`rename_user`], [`delete_user`], [`set_suspended`],
@@ -219,7 +221,7 @@ pub async fn org_event(state: &AppState, action: &str, org: &User, actor: Option
 /// Hook for code that creates organizations (POST /admin/organizations, ...): audit + global
 /// `organization.created` event.
 pub async fn org_created(state: &AppState, org: &User, actor: Option<&User>) {
-    audit(state, "org.create", actor, json!({"org": org.login, "org_id": org.id})).await;
+    crate::orgs::audit_quiet(&state.db, org, actor, "org.create", json!({})).await;
     org_event(state, "created", org, actor, json!({})).await;
 }
 
@@ -289,7 +291,7 @@ pub async fn rename_user(state: &AppState, actor: &User, user: &User, new_login:
 
 pub async fn rename_org(state: &AppState, actor: &User, org: &User, new_login: &str) -> ApiResult<User> {
     let o = rename_account(state, org, new_login).await?;
-    audit(state, "org.rename", Some(actor), json!({"org": o.login, "org_id": o.id, "old_login": org.login})).await;
+    crate::orgs::audit_quiet(&state.db, &o, Some(actor), "org.rename", json!({"old_login": org.login})).await;
     org_event(state, "renamed", &o, Some(actor), json!({"changes": {"login": {"from": org.login}}})).await;
     Ok(o)
 }
@@ -554,4 +556,12 @@ pub async fn record_heartbeat(db: &sqlx::PgPool) -> ApiResult<()> {
     .execute(db)
     .await?;
     Ok(())
+}
+
+/// Whether self-service signup is allowed (management console `signup_enabled`, default true).
+pub async fn signup_enabled(state: &AppState) -> bool {
+    match get_setting(&state.db, "manage_settings").await {
+        Ok(Some(v)) => v.get("signup_enabled").and_then(Value::as_bool).unwrap_or(true),
+        _ => true,
+    }
 }

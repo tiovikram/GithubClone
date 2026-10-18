@@ -166,22 +166,22 @@ CREATE TABLE ent_scim_users (
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE UNIQUE INDEX ent_scim_users_external ON ent_scim_users (external_id) WHERE external_id IS NOT NULL;
+-- A SCIM group is mirrored as an enterprise-wide `external_groups` row (orgs area, org_id NULL)
+-- whose `external_group_members` are the group's members, so org teams can link to it.
+-- (No FK: external_groups is created by a later-numbered migration.)
 CREATE TABLE ent_scim_groups (
     id           TEXT PRIMARY KEY,
+    external_group_id BIGINT NOT NULL,
     external_id  TEXT,
     display_name TEXT NOT NULL,
     created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE UNIQUE INDEX ent_scim_groups_external ON ent_scim_groups (external_id) WHERE external_id IS NOT NULL;
-CREATE TABLE ent_scim_group_members (
-    group_id TEXT NOT NULL REFERENCES ent_scim_groups(id) ON DELETE CASCADE,
-    user_id  BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    PRIMARY KEY (group_id, user_id)
-);
 
--- Enterprise custom properties (kind 'repo': repository properties defined at enterprise
--- level; kind 'org': organization properties) and organization property values.
+-- Enterprise custom property definitions (kind 'repo': repository properties defined at
+-- enterprise level; kind 'org': organization properties, whose values live in the orgs area's
+-- org_custom_property_values).
 CREATE TABLE ent_custom_properties (
     kind                    TEXT NOT NULL CHECK (kind IN ('repo', 'org')),
     property_name           TEXT NOT NULL,
@@ -194,12 +194,6 @@ CREATE TABLE ent_custom_properties (
     require_explicit_values BOOLEAN NOT NULL DEFAULT FALSE,
     created_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
     PRIMARY KEY (kind, property_name)
-);
-CREATE TABLE ent_org_property_values (
-    org_id        BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    property_name TEXT NOT NULL,
-    value         JSONB NOT NULL,
-    PRIMARY KEY (org_id, property_name)
 );
 
 -- Enterprise Actions policy: organizations selected when enabled_organizations = 'selected',
@@ -223,15 +217,6 @@ CREATE TABLE ent_runner_group_orgs (
     group_id BIGINT NOT NULL REFERENCES ent_runner_groups(id) ON DELETE CASCADE,
     org_id   BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     PRIMARY KEY (group_id, org_id)
-);
-
--- Security products enabled per repository by the enterprise-wide enablement endpoint.
-CREATE TABLE ent_repo_security (
-    repo_id    BIGINT NOT NULL REFERENCES repositories(id) ON DELETE CASCADE,
-    product    TEXT NOT NULL,
-    enabled    BOOLEAN NOT NULL,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    PRIMARY KEY (repo_id, product)
 );
 
 -- Live migrations (records and state machine; forge transfers no data to the target).
