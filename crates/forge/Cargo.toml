@@ -12,19 +12,23 @@ async-graphql = { version = "7.2.1", features = ["chrono", "dataloader"] }
 async-graphql-axum = "7.2.1"
 axum = { version = "0.8.9", features = ["macros"] }
 base64 = "0.23.1"
+blake2 = "0.11.0"
 bytes = "1.12.1"
 chrono = { version = "0.4.45", features = ["serde"] }
 clap = { version = "4.6.7", features = ["derive", "env"] }
+curve25519-dalek = "5.0.0"
 comrak = { version = "0.56.0", default-features = false }
 futures = "0.3.34"
 hex = "0.4.3"
 hmac = "0.13"
 mime_guess = "2.0.5"
 object_store = { version = "0.14.2", features = ["aws"] }
+poly1305 = "0.9.1"
 percent-encoding = "2.3.2"
 rand = "0.10.3"
 russh = "0.64.1"
 reqwest = { version = "0.13.5", features = ["json"] }
+salsa20 = "0.11.0"
 rust-embed = { version = "8.13.0", features = ["include-exclude"] }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.154"
