@@ -279,6 +279,23 @@ async fn pinned_comment_in_lists_and_issue_templates() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn transfer_issue_returns_the_new_number() {
+    let s = TestServer::start().await;
+    let u = s.user().await;
+    let src = s.create_repo(&u, true).await;
+    let dest = s.create_repo(&u, true).await;
+    issue(&s, &u, &src, "one").await;
+    issue(&s, &u, &src, "two").await;
+    let i = issue(&s, &u, &src, "three").await;
+    let d = data(&s, &u, "query($o:String!,$r:String!){repository(owner:$o,name:$r){id}}", json!({"o": u.login, "r": dest})).await;
+    let q = "mutation($i:ID!,$r:ID!){transferIssue(input:{issueId:$i,repositoryId:$r}){issue{number title repository{nameWithOwner}}}}";
+    let d = data(&s, &u, q, json!({"i": i["node_id"], "r": d["repository"]["id"]})).await;
+    let moved = &d["transferIssue"]["issue"];
+    assert_eq!(moved["number"], 1, "{moved}");
+    assert_eq!(moved["repository"]["nameWithOwner"], format!("{}/{dest}", u.login));
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn discussions_lock_and_unlock() {
     let s = TestServer::start().await;
     let u = s.user().await;

@@ -448,7 +448,13 @@ impl GhMutation {
         let moved = issue_ops::transfer_issue(st(ctx), &src, actor(ctx), &row, &dest, input.create_labels_if_missing.unwrap_or(false))
             .await
             .map_err(api_err)?;
-        Ok(Some(TransferIssuePayload { client_mutation_id: input.client_mutation_id, issue: reload_issue(ctx, moved.id).await? }))
+        // Fresh row: the request's dataloader still caches the issue as it was before the move.
+        let fresh: IssueRow = sqlx::query_as("SELECT * FROM issues WHERE id = $1").bind(moved.id).fetch_one(&st(ctx).db).await?;
+        let issue = match issue::materialize(ctx, vec![fresh]).await?.pop() {
+            Some(IssueOrPullRequest::Issue(i)) => Some(i),
+            _ => None,
+        };
+        Ok(Some(TransferIssuePayload { client_mutation_id: input.client_mutation_id, issue }))
     }
 
     async fn pin_issue(&self, ctx: &Context<'_>, input: PinIssueInput) -> async_graphql::Result<Option<PinIssuePayload>> {
