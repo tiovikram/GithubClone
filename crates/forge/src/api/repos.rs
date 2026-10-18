@@ -149,7 +149,10 @@ pub async fn create_repo(state: &AppState, owner: &User, creator: &User, req: Cr
     super::labels::on_repo_created(state, repo.id, creator).await?;
     crate::orgs::grant_creator_admin(&state.db, owner, repo.id, creator).await?;
     let repo = db::repo_by_id(&state.db, repo.id).await?;
-    Ok(RepoCtx { repo, owner: owner.clone(), perm: Perm::Admin })
+    let ctx = RepoCtx { repo, owner: owner.clone(), perm: Perm::Admin };
+    // advsec: default code security configuration for new org repositories.
+    crate::advsec::code_security::on_repo_created(state, &ctx).await;
+    Ok(ctx)
 }
 
 fn gitignore_for(template: &str) -> String {
@@ -268,6 +271,10 @@ pub async fn full_json(s: &AppState, viewer: Option<&User>, ctx: &RepoCtx) -> Ap
     }
     let mut v = json::repo::full(&s.api_url(), s.base_url(), ctx, parent.as_ref(), source.as_ref());
     v["subscribers_count"] = serde_json::json!(subscribers_count(s, ctx.repo.id).await?);
+    // advsec: the security settings, shown to admins (as on GitHub).
+    if ctx.perm >= Perm::Admin {
+        v["security_and_analysis"] = crate::advsec::security_and_analysis_json(&s.db, ctx.repo.id).await;
+    }
     Ok(v)
 }
 
@@ -308,6 +315,7 @@ struct UpdateRepo {
     allow_auto_merge: Option<bool>,
     delete_branch_on_merge: Option<bool>,
     archived: Option<bool>,
+    security_and_analysis: Option<Value>,
 }
 
 async fn update_repo(
@@ -331,6 +339,9 @@ async fn update_repo(
             }
             crate::events::set_default_branch(&s, ctx.repo.id, b).await?;
         }
+    }
+    if let Some(sa) = &p.security_and_analysis {
+        crate::advsec::apply_security_and_analysis(&s, &ctx, sa).await?;
     }
     let private = p.private.or(p.visibility.as_deref().map(|v| v != "public"));
     let r: Repo = sqlx::query_as(

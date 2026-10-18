@@ -24,5 +24,7 @@ pub async fn after_refs_changed(
     }
     // repos area: ref activity log, ruleset rule suites, Pages builds.
     crate::api::repos_stats::on_refs_changed(state, ctx, actor, changed).await;
+    // advsec area: secret scanning of new commits, Dependabot re-match.
+    crate::advsec::on_refs_changed(state, ctx, actor, changed).await;
     Ok(())
 }

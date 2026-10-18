@@ -169,6 +169,8 @@ pub fn routes() -> Router<AppState> {
         // packages build-out area
         .merge(packages::routes())
         .merge(projects_v2_rest::routes())
+        // advsec area
+        .merge(crate::advsec::routes())
         .fallback(|| async { crate::error::ApiError::not_found() })
 }
 

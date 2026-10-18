@@ -241,6 +241,11 @@ async fn receive_pack(
             return plain(StatusCode::INTERNAL_SERVER_ERROR, "push failed");
         }
     };
+    // advsec: secret scanning push protection (pre-receive hook chained after protection).
+    let ss_guard = crate::advsec::secret_scanning::push_guard(&state, &ctx, &pusher).await.unwrap_or_else(|e| {
+        tracing::error!(error = %format!("{e:#}"), "push protection setup failed");
+        None
+    });
     let mut reader = body_reader(&parts.headers, body, crate::security::max_push_bytes());
     let git = state.git.git.clone();
     let repo_id = ctx.repo.id;
@@ -263,6 +268,9 @@ async fn receive_pack(
             }
             if let Some(h) = &ent_hooks {
                 h.apply(&mut cmd);
+            }
+            if let Some(g) = &ss_guard {
+                g.apply(&mut cmd);
             }
             let mut child = cmd.spawn()?;
             let mut stdin = child.stdin.take().unwrap();

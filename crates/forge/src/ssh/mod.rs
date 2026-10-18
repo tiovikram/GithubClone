@@ -495,6 +495,7 @@ async fn serve_push(
     let git = state.git.git.clone();
     let guard = crate::protection::push_guard(state, ctx).await?;
     let ent_hooks = crate::enterprise::prereceive::hook_guard(state, ctx, pusher, "git push", None).await?;
+    let ss_guard = crate::advsec::secret_scanning::push_guard(state, ctx, pusher).await?;
     let tap = Arc::new(Mutex::new(PushRequestParser::default()));
     let tap2 = tap.clone();
     let result = state
@@ -514,6 +515,10 @@ async fn serve_push(
             }
             if let Some(h) = &ent_hooks {
                 h.apply(&mut cmd);
+            }
+            // advsec push protection last: its hook chains the enterprise / protection hooks.
+            if let Some(g) = &ss_guard {
+                g.apply(&mut cmd);
             }
             let mut child = cmd.spawn()?;
             let stdin = child.stdin.take().unwrap();

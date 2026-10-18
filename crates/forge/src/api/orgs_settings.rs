@@ -462,6 +462,7 @@ async fn security_product(State(s): State<AppState>, AuthUser(u): AuthUser, Path
     .execute(&s.db)
     .await?;
     audit_quiet(&s.db, &o, Some(&u), &format!("org.{}_{product}", if enabled { "enable" } else { "disable" }), json!({})).await;
+    crate::advsec::on_products_changed(&s, o.id, &product, enabled).await;
     Ok(no_content())
 }
 
