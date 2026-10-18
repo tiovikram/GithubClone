@@ -4,8 +4,8 @@
 //! The graph of a commit is built from the manifests in its tree (`package.json`,
 //! `package-lock.json`, `Cargo.toml`, `Cargo.lock`, `go.mod`, `requirements.txt`) plus the
 //! latest submitted snapshot per job correlator (for the commit, or for the ref when building
-//! the default branch SBOM). Vulnerability data belongs to the advisory database (advsec area),
-//! so `vulnerabilities` is empty.
+//! the default branch SBOM). `compare` reports each changed version's known vulnerabilities from
+//! the advisory database (advsec area).
 use std::collections::{BTreeMap, BTreeSet};
 
 use axum::extract::{Path, Query, State};
@@ -388,10 +388,15 @@ async fn compare(State(s): State<AppState>, MaybeUser(u): MaybeUser, Path((o, r,
     let key = |d: &Dep| (d.manifest.clone(), d.ecosystem.clone(), d.name.clone(), d.version.clone());
     let old_keys: BTreeMap<_, &Dep> = old.iter().map(|d| (key(d), d)).collect();
     let new_keys: BTreeMap<_, &Dep> = new.iter().map(|d| (key(d), d)).collect();
+    // Known vulnerabilities of each version (advisory database), keyed like `key`.
+    let deps: Vec<&Dep> = old_keys.values().chain(new_keys.values()).copied().collect();
+    let vulns = crate::advsec::advisories::vulnerabilities_of(&s, &deps.iter().map(|d| (d.ecosystem.as_str(), d.name.as_str(), d.version.as_str())).collect::<Vec<_>>()).await?;
+    let vuln_of: BTreeMap<_, Value> = deps.iter().zip(vulns).map(|(d, v)| (key(d), Value::Array(v))).collect();
     let render = |kind: &str, d: &Dep| {
         json!({
             "change_type": kind, "manifest": d.manifest, "ecosystem": d.ecosystem, "name": d.name, "version": d.version,
-            "package_url": d.purl, "license": null, "source_repository_url": null, "vulnerabilities": [], "scope": d.scope,
+            "package_url": d.purl, "license": null, "source_repository_url": null,
+            "vulnerabilities": vuln_of.get(&key(d)).cloned().unwrap_or(json!([])), "scope": d.scope,
         })
     };
     for (k, d) in &old_keys {
