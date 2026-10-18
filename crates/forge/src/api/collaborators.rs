@@ -2,7 +2,7 @@
 //! matches GHES 3.22's documented `204` for `PUT /collaborators/{username}`; the invitations
 //! list is therefore always empty.
 use axum::extract::{OriginalUri, Path, Query, State};
-use axum::response::Response;
+use axum::response::{IntoResponse, Response};
 use axum::routing::get;
 use axum::Router;
 use serde::Deserialize;
@@ -22,7 +22,6 @@ pub fn routes() -> Router<AppState> {
         .route("/repos/{owner}/{repo}/collaborators", get(list))
         .route("/repos/{owner}/{repo}/collaborators/{username}", get(check).put(add_handler).delete(remove_handler))
         .route("/repos/{owner}/{repo}/collaborators/{username}/permission", get(permission))
-        .route("/repos/{owner}/{repo}/invitations", get(invitations))
 }
 
 /// GitHub's `role_name` for a permission level.
@@ -239,6 +238,15 @@ async fn add_handler(
 ) -> ApiResult<Response> {
     let ctx = load_ctx(&s, Some(&u), &owner, &repo).await?;
     let target = db::user_by_login(&s.db, &username).await?;
+    // github.com behaviour (opt-in): invite users who have no access yet (repos area).
+    if super::invitations::invitations_enabled() && ctx.perm >= Perm::Admin && target.kind == "User" {
+        let cur = db::permission(&s.db, Some(&target), &ctx.repo, &ctx.owner).await?;
+        if cur < Perm::Triage && target.id != u.id {
+            let inv = super::invitations::create_invitation(&s, &ctx, &u, &target, b.permission.as_deref().unwrap_or("push")).await?;
+            let v = super::invitations::invitations_json(&s, &u, &[inv]).await?.remove(0);
+            return Ok((axum::http::StatusCode::CREATED, axum::Json(v)).into_response());
+        }
+    }
     add_collaborator(&s, &ctx, &target, b.permission.as_deref()).await?;
     Ok(no_content())
 }
@@ -269,6 +277,7 @@ async fn permission(
     })))
 }
 
+#[allow(dead_code)]
 async fn invitations(
     State(s): State<AppState>,
     uri: OriginalUri,

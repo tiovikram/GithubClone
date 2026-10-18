@@ -17,7 +17,6 @@ use crate::state::AppState;
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/user", get(get_me).patch(patch_me))
-        .route("/user/emails", get(my_emails))
         .route("/user/orgs", get(my_orgs))
         .route("/users", get(list_users))
         .route("/users/{username}", get(get_user))
@@ -75,6 +74,7 @@ async fn patch_me(State(s): State<AppState>, AuthUser(u): AuthUser, Json(p): Jso
     Ok(Json(json::user::private(&s.api_url(), s.base_url(), &u, public, private)))
 }
 
+#[allow(dead_code)]
 async fn my_emails(AuthUser(u): AuthUser) -> Json<Value> {
     let email = u.email.unwrap_or_else(|| format!("{}@users.noreply.forge", u.login));
     Json(json!([{ "email": email, "primary": true, "verified": true, "visibility": "public" }]))

@@ -1443,6 +1443,7 @@ dependencies = [
  "chrono",
  "clap",
  "comrak",
+ "flate2",
  "futures",
  "hex",
  "hmac",

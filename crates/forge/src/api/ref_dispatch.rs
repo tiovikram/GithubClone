@@ -28,6 +28,7 @@ fn inner_routes() -> Router<AppState> {
     Router::new()
         .merge(super::branches::branch_ref_routes())
         .merge(super::repo_extras::protection_routes())
+        .merge(super::repos_rules::protection_routes())
         .merge(super::commits::commit_ref_routes())
         .merge(super::statuses::commit_ref_routes())
         .merge(super::commit_comments::commit_ref_routes())

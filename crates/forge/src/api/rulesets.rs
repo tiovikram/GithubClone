@@ -181,7 +181,7 @@ pub async fn create_ruleset(s: &AppState, level: &Level, actor: &User, input: Ru
     require_admin(s, level, actor).await?;
     validate(&input, true)?;
     let (repo_id, org_id) = level_ids(level);
-    Ok(sqlx::query_as(
+    let row: RulesetRow = sqlx::query_as(
         "INSERT INTO rulesets (repo_id, org_id, name, target, enforcement, conditions, rules, bypass_actors)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *",
     )
@@ -194,7 +194,9 @@ pub async fn create_ruleset(s: &AppState, level: &Level, actor: &User, input: Ru
     .bind(input.rules.unwrap_or_else(|| json!([])))
     .bind(input.bypass_actors.unwrap_or_else(|| json!([])))
     .fetch_one(&s.db)
-    .await?)
+    .await?;
+    super::repos_rules::record_version(s, &row, level, actor).await?;
+    Ok(row)
 }
 
 /// Rulesets visible at `level`. For a repository, `includes_parents` adds the owning
@@ -231,7 +233,7 @@ pub async fn update_ruleset(s: &AppState, level: &Level, actor: &User, id: i64, 
     require_admin(s, level, actor).await?;
     validate(&input, false)?;
     let cur = own_ruleset(s, level, id).await?;
-    Ok(sqlx::query_as(
+    let row: RulesetRow = sqlx::query_as(
         "UPDATE rulesets SET name = $2, target = $3, enforcement = $4, conditions = $5, rules = $6, bypass_actors = $7,
                 updated_at = now() WHERE id = $1 RETURNING *",
     )
@@ -243,7 +245,9 @@ pub async fn update_ruleset(s: &AppState, level: &Level, actor: &User, id: i64, 
     .bind(input.rules.unwrap_or(cur.rules))
     .bind(input.bypass_actors.unwrap_or(cur.bypass_actors))
     .fetch_one(&s.db)
-    .await?)
+    .await?;
+    super::repos_rules::record_version(s, &row, level, actor).await?;
+    Ok(row)
 }
 
 pub async fn delete_ruleset(s: &AppState, level: &Level, actor: &User, id: i64) -> ApiResult<()> {

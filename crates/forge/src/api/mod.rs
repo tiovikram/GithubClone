@@ -43,6 +43,19 @@ pub mod autolinks;
 pub mod rulesets;
 pub mod signing_keys;
 pub mod webhooks;
+// repos build-out area
+pub mod repos_env;
+pub mod repos_settings;
+pub mod repos_rules;
+pub mod repos_stats;
+pub mod repos_pages;
+pub mod users_extra;
+pub mod issues_extra;
+pub mod gist_comments;
+pub mod notifications;
+pub mod invitations;
+pub mod activity_extra;
+pub mod dependency_graph;
 
 use axum::extract::{OriginalUri, Request};
 use axum::http::{header, HeaderMap, HeaderName, HeaderValue, StatusCode, Uri};
@@ -92,6 +105,19 @@ pub fn routes() -> Router<AppState> {
         .merge(actions::routes())
         .merge(actions_secrets::routes())
         .merge(ref_dispatch::routes())
+        // repos build-out area
+        .merge(repos_env::routes())
+        .merge(repos_settings::routes())
+        .merge(repos_rules::routes())
+        .merge(repos_stats::routes())
+        .merge(repos_pages::routes())
+        .merge(users_extra::routes())
+        .merge(issues_extra::routes())
+        .merge(gist_comments::routes())
+        .merge(notifications::routes())
+        .merge(invitations::routes())
+        .merge(activity_extra::routes())
+        .merge(dependency_graph::routes())
         .fallback(|| async { crate::error::ApiError::not_found() })
 }
 
