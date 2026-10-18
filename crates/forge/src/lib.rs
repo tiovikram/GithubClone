@@ -11,6 +11,7 @@ pub mod enterprise;
 pub mod error;
 pub mod events;
 pub mod extract;
+pub mod forge_admin;
 pub mod forge_api;
 pub mod git;
 pub mod graphql;
