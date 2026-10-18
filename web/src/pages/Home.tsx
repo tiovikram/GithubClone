@@ -6,6 +6,7 @@ import { Async, Avatar, Blankslate, ErrorBox, ItemIcon, RelTime, Spinner } from 
 import { LockIcon, LogoIcon, RepoIcon } from "../components/icons";
 import { useAsync, useTitle } from "../hooks";
 import { Slot } from "../areas";
+import { DashboardFeed } from "../areas/social/dashboard";
 
 function Landing() {
   return (
@@ -102,6 +103,7 @@ function Dashboard({ user }: { user: User }) {
             )
           }
         </Async>
+        <DashboardFeed user={user} />
       </section>
     </div>
   );
