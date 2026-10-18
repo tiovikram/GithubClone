@@ -50,7 +50,7 @@ function HeaderSearch() {
   const [q, setQ] = useState("");
   // Inside a repo, scope the search to it like github.com does.
   const m = loc.pathname.match(/^\/([^/]+)\/([^/]+)/);
-  const reserved = ["settings", "search", "login", "signup", "new"];
+  const reserved = ["settings", "search", "login", "signup", "new", "orgs", "organizations"];
   const scope = m && !reserved.includes(m[1]) ? `repo:${m[1]}/${m[2]} ` : "";
   return (
     <form className="header-search" role="search" onSubmit={(e) => {

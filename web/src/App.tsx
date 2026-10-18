@@ -41,6 +41,8 @@ export function App() {
             <Route path="search" element={<SearchPage />} />
             <Route path="settings" element={<UserSettingsPage />} />
             <Route path="settings/*" element={<UserSettingsPage />} />
+            {/* one-segment sections (/settings/x) would otherwise tie with :owner/:repo and lose */}
+            <Route path="settings/:section" element={<UserSettingsPage />} />
             {topRoutes()}
             <Route path=":owner" element={<ProfilePage />} />
             <Route path=":owner/:repo" element={<RepoLayout />}>

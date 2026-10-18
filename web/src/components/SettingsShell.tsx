@@ -48,7 +48,9 @@ export function SettingsShell<C>({ root, sections, ctx, label, container = true 
   /** Wrap in `.container` (top-level pages) or not (inside the repository layout). */
   container?: boolean;
 }) {
-  const { "*": splat = "" } = useParams();
+  const params = useParams();
+  // `settings/*` routes give the splat; `settings/:section` (App.tsx) the single segment
+  const splat = params["*"] ?? params.section ?? "";
   const section = pickSection(sections, ctx, splat);
   const El = section?.element;
   return (
