@@ -20,7 +20,6 @@ pub fn routes() -> Router<AppState> {
         .route("/repos/{owner}/{repo}/deployments/{deployment_id}", get(get_one).delete(delete))
         .route("/repos/{owner}/{repo}/deployments/{deployment_id}/statuses", get(list_statuses).post(create_status))
         .route("/repos/{owner}/{repo}/deployments/{deployment_id}/statuses/{status_id}", get(get_status))
-        .route("/repos/{owner}/{repo}/environments", get(list_environments))
 }
 
 #[derive(Debug, Clone, sqlx::FromRow)]
@@ -166,6 +165,8 @@ pub async fn create_deployment(s: &AppState, ctx: &RepoCtx, actor: &User, req: C
         _ => json!({}),
     };
     let _ = (req.auto_merge, req.required_contexts);
+    // Deploying to a new environment name creates the environment (GitHub behaviour).
+    super::repos_env::ensure_environment(s, ctx.repo.id, &env).await?;
     let d: DeploymentRow = sqlx::query_as(
         "INSERT INTO deployments (repo_id, sha, ref, task, payload, environment, original_environment, description,
             creator_id, transient_environment, production_environment)
@@ -385,31 +386,4 @@ async fn get_status(
         .await?
         .ok_or_else(ApiError::not_found)?;
     Ok(Json(statuses_json(&s, &ctx, std::slice::from_ref(&st)).await?.remove(0)))
-}
-
-/// Environments derived from deployments (forge has no separate environment configuration).
-async fn list_environments(State(s): State<AppState>, MaybeUser(u): MaybeUser, Path((owner, repo)): Path<(String, String)>) -> ApiResult<Json<Value>> {
-    let ctx = db::load_repo(&s.db, u.as_ref(), &owner, &repo).await?;
-    let rows: Vec<(String, DateTime<Utc>, DateTime<Utc>, i64)> = sqlx::query_as(
-        "SELECT environment, min(created_at), max(updated_at), min(id) FROM deployments WHERE repo_id = $1 GROUP BY environment ORDER BY environment",
-    )
-    .bind(ctx.repo.id)
-    .fetch_all(&s.db)
-    .await?;
-    let api = s.api_url();
-    let base = s.base_url();
-    let full = ctx.full_name();
-    let envs: Vec<Value> = rows
-        .iter()
-        .map(|(name, c, u, id)| {
-            json!({
-                "id": id, "node_id": crate::ids::encode("Environment", *id), "name": name,
-                "url": format!("{api}/repos/{full}/environments/{}", crate::json::release::seg(name)),
-                "html_url": format!("{base}/{full}/deployments/activity_log?environments_filter={}", crate::json::release::seg(name)),
-                "created_at": crate::json::ts(*c), "updated_at": crate::json::ts(*u),
-                "protection_rules": [], "deployment_branch_policy": null,
-            })
-        })
-        .collect();
-    Ok(Json(json!({ "total_count": envs.len(), "environments": envs })))
 }

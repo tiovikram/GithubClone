@@ -18,6 +18,7 @@ pub mod apps_enterprise;
 pub mod apps_forge;
 pub mod apps_migrations;
 pub mod apps_oauth;
+pub mod actions_settings;
 pub mod commit_comments;
 pub mod deployments;
 pub mod discussions;
@@ -55,6 +56,20 @@ pub mod autolinks;
 pub mod rulesets;
 pub mod signing_keys;
 pub mod webhooks;
+// repos build-out area
+pub mod repos_env;
+pub mod repos_settings;
+pub mod repos_rules;
+pub mod repos_stats;
+pub mod repos_pages;
+pub mod users_extra;
+pub mod issues_extra;
+pub mod gist_comments;
+pub mod notifications;
+pub mod invitations;
+pub mod activity_extra;
+pub mod dependency_graph;
+pub mod events_emit;
 
 use axum::extract::{OriginalUri, Request};
 use axum::http::{header, HeaderMap, HeaderName, HeaderValue, StatusCode, Uri};
@@ -107,6 +122,8 @@ pub fn routes() -> Router<AppState> {
         .merge(rulesets::routes())
         .merge(signing_keys::routes())
         .merge(actions::routes())
+        .merge(actions_settings::routes())
+        .merge(actions_settings::enterprise_routes())
         .merge(checks::routes())
         .merge(review_reactions::routes())
         .merge(actions_secrets::routes())
@@ -115,6 +132,19 @@ pub fn routes() -> Router<AppState> {
         .merge(apps_oauth::routes())
         .merge(apps_enterprise::routes())
         .merge(apps_migrations::routes())
+        // repos build-out area
+        .merge(repos_env::routes())
+        .merge(repos_settings::routes())
+        .merge(repos_rules::routes())
+        .merge(repos_stats::routes())
+        .merge(repos_pages::routes())
+        .merge(users_extra::routes())
+        .merge(issues_extra::routes())
+        .merge(gist_comments::routes())
+        .merge(notifications::routes())
+        .merge(invitations::routes())
+        .merge(activity_extra::routes())
+        .merge(dependency_graph::routes())
         .fallback(|| async { crate::error::ApiError::not_found() })
 }
 

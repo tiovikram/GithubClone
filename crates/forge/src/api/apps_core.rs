@@ -150,7 +150,7 @@ async fn hook_of(s: &AppState, app: &AppRow) -> ApiResult<HookRow> {
 
 async fn get_hook_config(State(s): State<AppState>, AppJwt(app): AppJwt) -> ApiResult<Json<Value>> {
     let h = hook_of(&s, &app).await?;
-    Ok(Json(super::webhooks::config_json(&h.config)))
+    Ok(Json(apps::hooks::config_json(&h.config)))
 }
 
 async fn update_hook_config(State(s): State<AppState>, AppJwt(app): AppJwt, Json(patch): Json<Value>) -> ApiResult<Json<Value>> {
@@ -173,7 +173,15 @@ async fn update_hook_config(State(s): State<AppState>, AppJwt(app): AppJwt, Json
                 cfg.insert(k, v);
             }
             "secret" => {
-                cfg.insert(k, v);
+                cfg.remove("secret");
+                match v.as_str().filter(|x| !x.is_empty()) {
+                    Some(sec) => {
+                        cfg.insert("secret_sealed".into(), json!(apps::hooks::seal_secret(&s, app.id, sec).await?));
+                    }
+                    None => {
+                        cfg.remove("secret_sealed");
+                    }
+                }
             }
             "insecure_ssl" => {
                 let val = match v {
@@ -193,7 +201,7 @@ async fn update_hook_config(State(s): State<AppState>, AppJwt(app): AppJwt, Json
         .bind(active)
         .fetch_one(&s.db)
         .await?;
-    Ok(Json(super::webhooks::config_json(&h.config)))
+    Ok(Json(apps::hooks::config_json(&h.config)))
 }
 
 fn delivery_item(d: &DeliveryRow) -> Value {

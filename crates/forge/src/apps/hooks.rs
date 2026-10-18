@@ -14,6 +14,29 @@ pub async fn app_hook(s: &AppState, app_id: i64) -> sqlx::Result<Option<HookRow>
     sqlx::query_as("SELECT * FROM webhooks WHERE app_id = $1 ORDER BY id LIMIT 1").bind(app_id).fetch_optional(&s.db).await
 }
 
+/// Seals an app webhook secret with the app's key (`actions_settings::crypto`, master-key
+/// protected) for storage in the hook config as `secret_sealed`.
+pub async fn seal_secret(s: &AppState, app_id: i64, secret: &str) -> crate::error::ApiResult<String> {
+    let (_, pk) = crate::api::actions_settings::crypto::public_key(s, "app", app_id).await?;
+    crate::api::actions_settings::crypto::seal_for(&pk, secret)
+}
+
+/// The plaintext app webhook secret (`secret_sealed` in the config), for signing deliveries.
+pub async fn open_secret(s: &AppState, app_id: i64, config: &Value) -> Option<String> {
+    let sealed = config.get("secret_sealed").and_then(Value::as_str)?;
+    let (_, sk) = crate::api::actions_settings::crypto::private_key(s, "app", app_id).await.ok()??;
+    crate::api::actions_settings::crypto::open_sealed(&sk, sealed)
+}
+
+/// `webhook-config` JSON of an app hook (sealed secret shown masked).
+pub fn config_json(config: &Value) -> Value {
+    let mut v = crate::api::webhooks::config_json(config);
+    if config.get("secret_sealed").and_then(Value::as_str).is_some_and(|x| !x.is_empty()) {
+        v["secret"] = json!("********");
+    }
+    v
+}
+
 fn deliverable(h: &HookRow) -> bool {
     h.active && h.config.get("url").and_then(Value::as_str).is_some_and(|u| !u.is_empty())
 }

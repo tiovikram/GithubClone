@@ -296,7 +296,7 @@ pub async fn create_app(s: &AppState, actor: &User, owner: &User, m: Manifest) -
         .bind(&key.fingerprint)
         .execute(&mut *tx)
         .await?;
-    let mut cfg = json!({ "content_type": "json", "insecure_ssl": "0", "secret": webhook_secret });
+    let mut cfg = json!({ "content_type": "json", "insecure_ssl": "0" });
     if let Some(u) = &hook_url {
         cfg["url"] = json!(u);
     }
@@ -309,6 +309,12 @@ pub async fn create_app(s: &AppState, actor: &User, owner: &User, m: Manifest) -
         .execute(&mut *tx)
         .await?;
     tx.commit().await?;
+    let sealed = hooks::seal_secret(s, app.id, &webhook_secret).await?;
+    sqlx::query("UPDATE webhooks SET config = config || jsonb_build_object('secret_sealed', $2::text) WHERE app_id = $1")
+        .bind(app.id)
+        .bind(sealed)
+        .execute(&s.db)
+        .await?;
     Ok((app, AppSecrets { client_secret, webhook_secret: Some(webhook_secret), pem: Some(key.pem) }))
 }
 
@@ -361,6 +367,7 @@ pub async fn delete_app(s: &AppState, app: &AppRow) -> ApiResult<()> {
     let mut tx = s.db.begin().await?;
     sqlx::query("DELETE FROM tokens WHERE id IN (SELECT token_id FROM oauth_authorizations WHERE app_id = $1)").bind(app.id).execute(&mut *tx).await?;
     sqlx::query("DELETE FROM apps WHERE id = $1").bind(app.id).execute(&mut *tx).await?;
+    sqlx::query("DELETE FROM actions_public_keys WHERE owner_kind = 'app' AND owner_id = $1").bind(app.id).execute(&mut *tx).await?;
     if let Some(b) = app.bot_user_id {
         sqlx::query("DELETE FROM users WHERE id = $1 AND kind = 'Bot'").bind(b).execute(&mut *tx).await?;
     }
@@ -847,6 +854,20 @@ pub async fn create_installation_token(s: &AppState, app: &AppRow, inst: &Instal
     }
     let _ = app;
     Ok(v)
+}
+
+/// GitHub Apps with an active installation covering `repo`.
+pub async fn apps_installed_on(db: &PgPool, repo: &db::Repo) -> ApiResult<Vec<AppRow>> {
+    Ok(sqlx::query_as(
+        "SELECT a.* FROM apps a JOIN app_installations i ON i.app_id = a.id
+          WHERE a.kind = 'app' AND i.target_id = $1 AND i.suspended_at IS NULL
+            AND (i.repository_selection = 'all' OR EXISTS (SELECT 1 FROM app_installation_repos r WHERE r.installation_id = i.id AND r.repo_id = $2))
+          ORDER BY a.id",
+    )
+    .bind(repo.owner_id)
+    .bind(repo.id)
+    .fetch_all(db)
+    .await?)
 }
 
 /// Installations visible to `u`: on their own account and on orgs they belong to.

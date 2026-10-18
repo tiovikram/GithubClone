@@ -258,6 +258,12 @@ async fn manifest_flow_and_user_to_server_tokens() {
     };
     let (st, _) = req(&s, None, "POST", &format!("/app-manifests/{code}/conversions"), None).await;
     assert_eq!(st, 404, "codes are single-use");
+    // the webhook secret is stored sealed, never in plaintext
+    let cfg: Value = sqlx::query_scalar("SELECT config FROM webhooks WHERE app_id = $1").bind(app.id).fetch_one(&s.state.db).await.unwrap();
+    assert!(cfg.get("secret").is_none(), "{cfg}");
+    assert_eq!(forge::apps::hooks::open_secret(&s.state, app.id, &cfg).await.as_deref(), v["webhook_secret"].as_str());
+    let (_, hc) = req(&s, Some(&app.jwt()), "GET", "/app/hook/config", None).await;
+    assert_eq!(hc["secret"], "********");
     let (st, _) = req(&s, Some(&app.jwt()), "GET", "/app", None).await;
     assert_eq!(st, 200);
 

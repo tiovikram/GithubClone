@@ -27,7 +27,6 @@ pub fn routes() -> Router<AppState> {
         .route("/gists/{gist_id}/star", get(is_starred).put(star).delete(unstar))
         .route("/gists/{gist_id}/forks", get(list_forks).post(fork))
         .route("/gists/{gist_id}/commits", get(list_commits))
-        .route("/gists/{gist_id}/comments", get(list_comments))
         .route("/gists/{gist_id}/{sha}", get(get_revision))
 }
 
@@ -589,6 +588,7 @@ async fn list_commits(State(s): State<AppState>, uri: OriginalUri, Path(id): Pat
     Ok(Paged::new(&uri, &s, p, None, items))
 }
 
+#[allow(dead_code)]
 async fn list_comments(State(s): State<AppState>, Path(id): Path<String>) -> ApiResult<Json<Value>> {
     load_gist(&s, &id).await?;
     Ok(Json(json!([])))

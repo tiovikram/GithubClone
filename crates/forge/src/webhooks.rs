@@ -116,6 +116,8 @@ pub async fn enqueue_event_ctx(state: &AppState, ctx: &RepoCtx, event: &str, mut
         }
         crate::activity::record(state, kind, actor_id, Some(ctx), ap).await?;
     }
+    // repos area: notification threads for watchers and participants.
+    crate::api::notifications::on_event(state, ctx, event, &payload).await;
     if let Some(o) = payload.as_object_mut() {
         o.entry("repository").or_insert_with(|| repo_payload(state, ctx));
         if ctx.owner.kind == "Organization" {
@@ -291,7 +293,12 @@ pub async fn deliver(state: &AppState, delivery_id: i64) -> anyhow::Result<()> {
         ("X-GitHub-Enterprise-Host".into(), state.cfg.host()),
         ("X-GitHub-Enterprise-Version".into(), "3.14.0".into()),
     ];
-    if let Some(secret) = cfg_str(&hook.config, "secret") {
+    // App webhook secrets are stored sealed (apps area).
+    let app_secret = match hook.app_id {
+        Some(app) => crate::apps::hooks::open_secret(state, app, &hook.config).await,
+        None => None,
+    };
+    if let Some(secret) = cfg_str(&hook.config, "secret").or(app_secret.as_deref()) {
         headers.push(("X-Hub-Signature".into(), signature_1(secret, &body)));
         headers.push(("X-Hub-Signature-256".into(), signature_256(secret, &body)));
     }
