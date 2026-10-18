@@ -103,6 +103,7 @@ async fn check_vuln(State(s): State<AppState>, AuthUser(u): AuthUser, Path((o, r
 async fn enable_vuln(State(s): State<AppState>, AuthUser(u): AuthUser, Path((o, r)): Path<(String, String)>) -> ApiResult<Response> {
     let ctx = admin_ctx(&s, &u, &o, &r).await?;
     set_flag(&s, ctx.repo.id, "vulnerability_alerts", true).await?;
+    crate::advsec::on_vulnerability_alerts_changed(&s, ctx.repo.id, true).await;
     Ok(no_content())
 }
 

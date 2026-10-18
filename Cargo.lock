@@ -1538,6 +1538,7 @@ dependencies = [
  "percent-encoding",
  "poly1305 0.9.1",
  "rand 0.10.3",
+ "regex",
  "reqwest",
  "russh",
  "rust-embed",

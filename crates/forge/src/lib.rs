@@ -1,6 +1,7 @@
 #![recursion_limit = "512"]
 //! forge: a GitHub-compatible code forge. See docs/ARCHITECTURE.md.
 pub mod activity;
+pub mod advsec;
 pub mod api;
 pub mod auth;
 pub mod config;
@@ -78,7 +79,7 @@ pub fn app(state: AppState) -> Router {
         .route("/api/v3/", get(api::meta::root_handler))
         .nest("/api/v3", api)
         .nest("/api/graphql", graphql)
-        .nest("/api/forge", forge_api::routes().merge(oauth_device::forge_routes()))
+        .nest("/api/forge", forge_api::routes().merge(oauth_device::forge_routes()).merge(advsec::forge_routes()))
         .merge(oauth_device::routes())
         .nest(
             "/api/uploads",

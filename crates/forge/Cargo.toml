@@ -28,6 +28,7 @@ object_store = { version = "0.14.2", features = ["aws"] }
 poly1305 = "0.9.1"
 percent-encoding = "2.3.2"
 rand = "0.10.3"
+regex = "1.13.1"
 russh = "0.64.1"
 reqwest = { version = "0.13.5", features = ["json"] }
 salsa20 = "0.11.0"

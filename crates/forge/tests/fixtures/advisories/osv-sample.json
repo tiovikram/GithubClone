@@ -1,0 +1,140 @@
+[
+  {
+    "schema_version": "1.4.0",
+    "id": "GHSA-p6mc-m468-83gw",
+    "modified": "2024-03-01T00:00:00Z",
+    "published": "2020-07-15T19:15:48Z",
+    "aliases": ["CVE-2020-8203"],
+    "summary": "Prototype Pollution in lodash",
+    "details": "Versions of lodash prior to 4.17.19 are vulnerable to Prototype Pollution. The functions `pick`, `set`, `setWith`, `update`, `updateWith`, and `zipObjectDeep` allow a malicious user to modify the prototype of Object if the property identifiers are user-supplied.",
+    "severity": [{ "type": "CVSS_V3", "score": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:H/A:H" }],
+    "affected": [
+      {
+        "package": { "ecosystem": "npm", "name": "lodash" },
+        "ranges": [{ "type": "ECOSYSTEM", "events": [{ "introduced": "3.7.0" }, { "fixed": "4.17.19" }] }],
+        "ecosystem_specific": { "affected_functions": ["lodash.pick", "lodash.set", "lodash.zipObjectDeep"] }
+      }
+    ],
+    "references": [
+      { "type": "ADVISORY", "url": "https://nvd.nist.gov/vuln/detail/CVE-2020-8203" },
+      { "type": "PACKAGE", "url": "https://github.com/lodash/lodash" }
+    ],
+    "database_specific": {
+      "cwe_ids": ["CWE-1321", "CWE-770"],
+      "severity": "HIGH",
+      "github_reviewed": true,
+      "github_reviewed_at": "2020-07-15T19:15:00Z",
+      "nvd_published_at": "2020-07-15T17:15:00Z"
+    }
+  },
+  {
+    "schema_version": "1.4.0",
+    "id": "GHSA-xvch-5gv4-984h",
+    "modified": "2024-02-01T00:00:00Z",
+    "published": "2022-03-18T00:01:09Z",
+    "aliases": ["CVE-2021-44906"],
+    "summary": "Prototype Pollution in minimist",
+    "details": "Minimist <=1.2.5 is vulnerable to Prototype Pollution via file index.js, function setKey() (lines 69-95).",
+    "severity": [{ "type": "CVSS_V3", "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H" }],
+    "affected": [
+      {
+        "package": { "ecosystem": "npm", "name": "minimist" },
+        "ranges": [{ "type": "ECOSYSTEM", "events": [{ "introduced": "0" }, { "fixed": "0.2.4" }] }]
+      },
+      {
+        "package": { "ecosystem": "npm", "name": "minimist" },
+        "ranges": [{ "type": "ECOSYSTEM", "events": [{ "introduced": "1.0.0" }, { "fixed": "1.2.6" }] }]
+      }
+    ],
+    "references": [{ "type": "ADVISORY", "url": "https://nvd.nist.gov/vuln/detail/CVE-2021-44906" }],
+    "database_specific": { "cwe_ids": ["CWE-1321"], "severity": "CRITICAL", "github_reviewed": true, "github_reviewed_at": "2022-03-18T00:00:00Z", "nvd_published_at": "2022-03-17T16:15:00Z" }
+  },
+  {
+    "schema_version": "1.4.0",
+    "id": "GHSA-c2qf-rxjj-qqgw",
+    "modified": "2024-01-01T00:00:00Z",
+    "published": "2023-06-21T06:30:28Z",
+    "aliases": ["CVE-2022-25883"],
+    "summary": "semver vulnerable to Regular Expression Denial of Service",
+    "details": "Versions of the package semver before 7.5.2 are vulnerable to Regular Expression Denial of Service (ReDoS) via the function new Range, when untrusted user data is provided as a range.",
+    "severity": [{ "type": "CVSS_V3", "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L" }],
+    "affected": [
+      {
+        "package": { "ecosystem": "npm", "name": "semver" },
+        "ranges": [{ "type": "ECOSYSTEM", "events": [{ "introduced": "7.0.0" }, { "fixed": "7.5.2" }] }]
+      }
+    ],
+    "references": [{ "type": "ADVISORY", "url": "https://nvd.nist.gov/vuln/detail/CVE-2022-25883" }],
+    "database_specific": { "cwe_ids": ["CWE-1333"], "severity": "MODERATE", "github_reviewed": true, "github_reviewed_at": "2023-06-21T00:00:00Z", "nvd_published_at": "2023-06-21T05:15:00Z" }
+  },
+  {
+    "schema_version": "1.4.0",
+    "id": "GHSA-j8r2-6x86-q33q",
+    "modified": "2024-01-01T00:00:00Z",
+    "published": "2023-05-22T20:36:32Z",
+    "aliases": ["CVE-2023-32681"],
+    "summary": "Unintended leak of Proxy-Authorization header in requests",
+    "details": "Requests 2.3.0 to 2.30.0 leak Proxy-Authorization headers to destination servers when redirected to an HTTPS endpoint.",
+    "severity": [{ "type": "CVSS_V3", "score": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:C/C:H/I:N/A:N" }],
+    "affected": [
+      {
+        "package": { "ecosystem": "PyPI", "name": "requests" },
+        "ranges": [{ "type": "ECOSYSTEM", "events": [{ "introduced": "2.3.0" }, { "fixed": "2.31.0" }] }]
+      }
+    ],
+    "references": [{ "type": "ADVISORY", "url": "https://nvd.nist.gov/vuln/detail/CVE-2023-32681" }],
+    "database_specific": { "cwe_ids": ["CWE-200"], "severity": "MODERATE", "github_reviewed": true, "github_reviewed_at": "2023-05-22T20:36:00Z", "nvd_published_at": "2023-05-26T18:15:00Z" }
+  },
+  {
+    "schema_version": "1.4.0",
+    "id": "GHSA-wcg3-cvx6-7396",
+    "modified": "2023-06-13T00:00:00Z",
+    "published": "2021-08-25T20:47:03Z",
+    "aliases": ["CVE-2020-26235"],
+    "summary": "Segmentation fault in time",
+    "details": "Unix-like operating systems may segfault due to dereferencing a dangling pointer in specific circumstances.",
+    "severity": [{ "type": "CVSS_V3", "score": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:H" }],
+    "affected": [
+      {
+        "package": { "ecosystem": "crates.io", "name": "time" },
+        "ranges": [{ "type": "SEMVER", "events": [{ "introduced": "0.2.7" }, { "fixed": "0.2.23" }] }]
+      }
+    ],
+    "references": [{ "type": "ADVISORY", "url": "https://rustsec.org/advisories/RUSTSEC-2020-0071" }],
+    "database_specific": { "cwe_ids": ["CWE-476"], "severity": "MODERATE", "github_reviewed": true, "github_reviewed_at": "2021-08-18T00:00:00Z", "nvd_published_at": "2020-12-18T00:00:00Z" }
+  },
+  {
+    "schema_version": "1.4.0",
+    "id": "GHSA-4374-p667-p6c8",
+    "modified": "2024-02-16T00:00:00Z",
+    "published": "2023-10-11T22:22:38Z",
+    "aliases": ["CVE-2023-39325"],
+    "summary": "HTTP/2 rapid reset can cause excessive work in net/http",
+    "details": "A malicious HTTP/2 client which rapidly creates requests and immediately resets them can cause excessive server resource consumption.",
+    "severity": [{ "type": "CVSS_V3", "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H" }],
+    "affected": [
+      {
+        "package": { "ecosystem": "Go", "name": "golang.org/x/net" },
+        "ranges": [{ "type": "SEMVER", "events": [{ "introduced": "0" }, { "fixed": "0.17.0" }] }]
+      }
+    ],
+    "references": [{ "type": "ADVISORY", "url": "https://nvd.nist.gov/vuln/detail/CVE-2023-39325" }],
+    "database_specific": { "cwe_ids": ["CWE-400", "CWE-770"], "severity": "HIGH", "github_reviewed": true, "github_reviewed_at": "2023-10-11T22:22:00Z", "nvd_published_at": "2023-10-11T22:15:00Z" }
+  },
+  {
+    "schema_version": "1.4.0",
+    "id": "PYSEC-2099-1",
+    "modified": "2024-01-01T00:00:00Z",
+    "published": "2024-01-01T00:00:00Z",
+    "aliases": ["GHSA-fake-forg-e000", "CVE-2099-0001"],
+    "summary": "Fixture: advisory imported through its GHSA alias",
+    "details": "A test record that is not itself a GHSA record.",
+    "affected": [
+      {
+        "package": { "ecosystem": "PyPI", "name": "Forge_Fixture_Pkg" },
+        "versions": ["1.0.0", "1.0.1"]
+      }
+    ],
+    "database_specific": { "severity": "LOW", "github_reviewed": false }
+  }
+]

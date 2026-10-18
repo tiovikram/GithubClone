@@ -359,6 +359,9 @@ pub async fn write_file(s: &AppState, ctx: &RepoCtx, actor: &User, w: FileWrite)
     let git = s.git.git.clone();
     let branch = w.branch.clone().filter(|b| !b.is_empty()).unwrap_or_else(|| ctx.repo.default_branch.clone());
     crate::protection::check_direct_write(s, ctx, &branch, false).await?;
+    if let Some(c) = &w.content {
+        crate::advsec::secret_scanning::check_api_push(s, ctx, actor, &branch, &[(w.path.as_str(), c.as_slice())]).await?;
+    }
     let refname = format!("refs/heads/{branch}");
     let b2 = branch.clone();
     let (fc, updates) = s

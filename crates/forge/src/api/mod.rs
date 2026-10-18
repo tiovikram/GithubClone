@@ -136,6 +136,8 @@ pub fn routes() -> Router<AppState> {
         .merge(invitations::routes())
         .merge(activity_extra::routes())
         .merge(dependency_graph::routes())
+        // advsec area
+        .merge(crate::advsec::routes())
         .fallback(|| async { crate::error::ApiError::not_found() })
 }
 

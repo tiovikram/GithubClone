@@ -21,6 +21,23 @@ enum Cmd {
         #[command(subcommand)]
         cmd: AdminCmd,
     },
+    /// Advisory database (advsec): import GitHub Advisory Database / OSV records.
+    Advisories {
+        #[command(subcommand)]
+        cmd: AdvisoriesCmd,
+    },
+    /// Git hooks run by `git receive-pack` (internal; e.g. secret scanning push protection).
+    #[command(hide = true)]
+    Hook { name: String },
+}
+
+#[derive(Subcommand)]
+enum AdvisoriesCmd {
+    /// Import OSV advisories from a directory, .json, .zip, or an http(s) URL of either.
+    Sync {
+        #[arg(long)]
+        from: String,
+    },
 }
 
 #[derive(Subcommand)]
@@ -94,6 +111,18 @@ async fn main() -> anyhow::Result<()> {
             axum::serve(listener, app.into_make_service_with_connect_info::<std::net::SocketAddr>())
                 .with_graceful_shutdown(shutdown())
                 .await?;
+        }
+        Cmd::Hook { name } => {
+            let code = match name.as_str() {
+                "pre-receive" => forge::advsec::secret_scanning::hook_pre_receive().await,
+                _ => 0,
+            };
+            std::process::exit(code);
+        }
+        Cmd::Advisories { cmd: AdvisoriesCmd::Sync { from } } => {
+            let state = forge::build_state(cfg).await?;
+            let n = forge::advsec::advisories::sync_from(&state, &from).await?;
+            println!("imported {n} advisories");
         }
         Cmd::Migrate => {
             let state = forge::build_state(cfg).await?;
