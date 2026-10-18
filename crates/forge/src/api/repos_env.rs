@@ -388,24 +388,14 @@ fn policy_json(p: &PolicyRow) -> Value {
     json!({"id": p.id, "node_id": crate::ids::encode("DeploymentBranchPolicy", p.id), "name": p.name, "type": p.kind})
 }
 
-/// `custom-deployment-rule-app` for a GitHub App id, if the App exists. Apps are owned by the
-/// apps area; until it provides a table this resolves nothing.
+/// `custom-deployment-rule-app` for a GitHub App id, if the App exists (apps area).
 async fn rule_app(s: &AppState, integration_id: i64) -> ApiResult<Option<Value>> {
-    let table: Option<String> = sqlx::query_scalar(
-        "SELECT t FROM unnest(ARRAY['github_apps', 'apps']) t WHERE to_regclass('public.' || t) IS NOT NULL LIMIT 1",
-    )
-    .fetch_optional(&s.db)
-    .await?;
-    let Some(table) = table else { return Ok(None) };
-    let row: Option<(i64, String)> = sqlx::query_as(sqlx::AssertSqlSafe(format!("SELECT id, slug FROM {table} WHERE id = $1")))
-        .bind(integration_id)
-        .fetch_optional(&s.db)
-        .await
-        .unwrap_or(None);
-    Ok(row.map(|(id, slug)| {
-        json!({"id": id, "slug": slug, "node_id": crate::ids::encode("Integration", id),
-            "integration_url": format!("{}/apps/{slug}", s.api_url())})
-    }))
+    Ok(crate::apps::app_by_id(&s.db, integration_id).await.ok().filter(|a| a.kind == "app").map(|a| rule_app_json(s, &a)))
+}
+
+fn rule_app_json(s: &AppState, a: &crate::apps::AppRow) -> Value {
+    json!({"id": a.id, "slug": a.slug, "node_id": crate::ids::encode("Integration", a.id),
+        "integration_url": format!("{}/apps/{}", s.api_url(), a.slug)})
 }
 
 async fn rule_json(s: &AppState, r: &RuleRow) -> ApiResult<Value> {
@@ -624,7 +614,8 @@ async fn create_rule(
     ctx.require(Perm::Admin)?;
     let e = load_env(&s, &ctx, &env).await?;
     let id = input.integration_id.ok_or_else(|| ApiError::validation("DeploymentProtectionRule", "integration_id", "missing_field"))?;
-    if rule_app(&s, id).await?.is_none() {
+    let installed = crate::apps::apps_installed_on(&s.db, &ctx.repo).await?;
+    if rule_app(&s, id).await?.is_none() || !installed.iter().any(|a| a.id == id) {
         return Err(invalid(format!("Integration {id} is not installed on this repository or does not exist")));
     }
     let row: RuleRow = sqlx::query_as(
@@ -647,9 +638,9 @@ async fn list_rule_apps(
     let ctx = read_ctx(&s, Some(&u), &owner, &repo).await?;
     ctx.require(Perm::Admin)?;
     load_env(&s, &ctx, &env).await?;
-    // Apps with the deployment-protection-rule capability installed on the repository: forge
-    // has no GitHub Apps yet, so none are available.
-    Ok(Json(json!({"total_count": 0, "available_custom_deployment_protection_rule_integrations": []})))
+    // GitHub Apps installed on the repository (they can act as deployment protection rules).
+    let items: Vec<Value> = crate::apps::apps_installed_on(&s.db, &ctx.repo).await?.iter().map(|a| rule_app_json(&s, a)).collect();
+    Ok(Json(json!({"total_count": items.len(), "available_custom_deployment_protection_rule_integrations": items})))
 }
 
 async fn load_rule(s: &AppState, e: &EnvRow, id: i64) -> ApiResult<RuleRow> {

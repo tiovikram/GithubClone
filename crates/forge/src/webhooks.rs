@@ -32,6 +32,9 @@ pub struct HookRow {
     pub updated_at: DateTime<Utc>,
     pub name: String,
     pub last_response: Value,
+    /// Set for a GitHub App's webhook (apps area).
+    #[sqlx(default)]
+    pub app_id: Option<i64>,
 }
 
 #[derive(Debug, Clone, sqlx::FromRow)]
@@ -138,6 +141,8 @@ pub async fn enqueue_event_ctx(state: &AppState, ctx: &RepoCtx, event: &str, mut
         }
         create_delivery(state, &h, event, Some(ctx.repo.id), p, false).await?;
     }
+    // GitHub Apps installed on the repository and subscribed to the event.
+    crate::apps::hooks::fan_out(state, ctx, event, &payload).await?;
     Ok(())
 }
 
@@ -274,14 +279,16 @@ pub async fn deliver(state: &AppState, delivery_id: i64) -> anyhow::Result<()> {
     } else {
         json_body
     };
-    let target_type = if hook.org_id.is_some() {
+    let target_type = if hook.app_id.is_some() {
+        "integration" // GitHub App webhook (apps area)
+    } else if hook.org_id.is_some() {
         "organization"
     } else if hook.repo_id.is_some() {
         "repository"
     } else {
         "business" // global (enterprise) webhook
     };
-    let target_id = hook.org_id.or(hook.repo_id).unwrap_or(0);
+    let target_id = hook.app_id.or(hook.org_id).or(hook.repo_id).unwrap_or(0);
     let mut headers: Vec<(String, String)> = vec![
         ("Accept".into(), "*/*".into()),
         ("Content-Type".into(), if form { "application/x-www-form-urlencoded" } else { "application/json" }.into()),
@@ -294,7 +301,12 @@ pub async fn deliver(state: &AppState, delivery_id: i64) -> anyhow::Result<()> {
         ("X-GitHub-Enterprise-Host".into(), state.cfg.host()),
         ("X-GitHub-Enterprise-Version".into(), "3.14.0".into()),
     ];
-    if let Some(secret) = cfg_str(&hook.config, "secret") {
+    // App webhook secrets are stored sealed (apps area).
+    let app_secret = match hook.app_id {
+        Some(app) => crate::apps::hooks::open_secret(state, app, &hook.config).await,
+        None => None,
+    };
+    if let Some(secret) = cfg_str(&hook.config, "secret").or(app_secret.as_deref()) {
         headers.push(("X-Hub-Signature".into(), signature_1(secret, &body)));
         headers.push(("X-Hub-Signature-256".into(), signature_256(secret, &body)));
     }
