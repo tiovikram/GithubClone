@@ -39,7 +39,7 @@ function StarButton({ repo, onChange }: { repo: Repo; onChange: (count: number) 
         aria-pressed={starred} data-testid="star-button">
         <StarIcon className={starred ? "icon c-star" : "icon"} /> {starred ? "Starred" : "Star"}
       </button>
-      <span className="btn btn-sm btn-counter" title="Stars" data-testid="star-count">{repo.stargazers_count}</span>
+      <Link to={`/${owner}/${repo.name}/stargazers`} className="btn btn-sm btn-counter" title="Stars" data-testid="star-count">{repo.stargazers_count}</Link>
     </div>
   );
 }

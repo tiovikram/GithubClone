@@ -48,6 +48,7 @@ pub async fn create_comment(state: &AppState, ctx: &RepoCtx, actor: &User, numbe
     if body.trim().is_empty() {
         return Err(ApiError::validation("IssueComment", "body", "missing_field"));
     }
+    super::social_forge::ensure_not_blocked_by_owner(state, ctx.owner.id, actor).await?;
     let issue = get_issue(state, ctx, number).await?;
     if issue.locked && ctx.perm < Perm::Write {
         return Err(locked_error());

@@ -34,7 +34,14 @@ function ThemeToggle() {
     } catch {
       /* storage unavailable */
     }
+    window.dispatchEvent(new Event("forge-theme"));
   }, [theme]);
+  // Settings → Appearance changes the same preference.
+  useEffect(() => {
+    const sync = () => setTheme(readTheme());
+    window.addEventListener("forge-theme", sync);
+    return () => window.removeEventListener("forge-theme", sync);
+  }, []);
   const next: Theme = theme === "auto" ? "light" : theme === "light" ? "dark" : "auto";
   return (
     <button type="button" className="header-btn" onClick={() => setTheme(next)} data-testid="theme-toggle"
@@ -50,7 +57,7 @@ function HeaderSearch() {
   const [q, setQ] = useState("");
   // Inside a repo, scope the search to it like github.com does.
   const m = loc.pathname.match(/^\/([^/]+)\/([^/]+)/);
-  const reserved = ["settings", "search", "login", "signup", "new"];
+  const reserved = ["settings", "search", "login", "signup", "new", "gist", "gists", "notifications"];
   const scope = m && !reserved.includes(m[1]) ? `repo:${m[1]}/${m[2]} ` : "";
   return (
     <form className="header-search" role="search" onSubmit={(e) => {

@@ -40,15 +40,18 @@ export function SettingsSidebar<C>({ root, sections, ctx, label = "Settings", ac
 }
 
 /** A complete settings page: sidebar + the section matched by the route splat. */
-export function SettingsShell<C>({ root, sections, ctx, label, container = true }: {
+export function SettingsShell<C>({ root, sections, ctx, label, container = true, splat: splatProp }: {
   root: string;
   sections: SettingsSection<C>[];
   ctx: C;
   label?: string;
   /** Wrap in `.container` (top-level pages) or not (inside the repository layout). */
   container?: boolean;
+  /** Path below `root` (defaults to the route splat). */
+  splat?: string;
 }) {
-  const { "*": splat = "" } = useParams();
+  const { "*": routeSplat = "" } = useParams();
+  const splat = splatProp ?? routeSplat;
   const section = pickSection(sections, ctx, splat);
   const El = section?.element;
   return (

@@ -1,4 +1,4 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { userSettings } from "../areas";
 import type { SettingsSection, UserSettingsCtx } from "../areas/types";
 import { useAuth } from "../auth";
@@ -25,8 +25,10 @@ export function UserSettingsNav() {
 /** `/settings/*` for sections registered by areas. */
 export function UserSettingsPage() {
   const { user, loading } = useAuth();
+  const loc = useLocation();
   useTitle("Settings");
   if (loading) return <Spinner />;
   if (!user) return <Navigate to={`/login?return_to=${encodeURIComponent(location.pathname)}`} replace />;
-  return <SettingsShell root="/settings" sections={allUserSettings} ctx={{ user }} label="Settings" />;
+  const splat = loc.pathname.replace(/^\/settings\/?/, "");
+  return <SettingsShell root="/settings" sections={allUserSettings} ctx={{ user }} label="Settings" splat={splat} />;
 }

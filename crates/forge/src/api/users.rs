@@ -38,8 +38,28 @@ pub async fn repo_counts(state: &AppState, user_id: i64) -> ApiResult<(i64, i64)
 }
 
 async fn get_me(State(s): State<AppState>, AuthUser(u): AuthUser) -> ApiResult<Json<Value>> {
-    let (public, private) = repo_counts(&s, u.id).await?;
-    Ok(Json(json::user::private(&s.api_url(), s.base_url(), &u, public, private)))
+    Ok(Json(me_json(&s, &u).await?))
+}
+
+/// `private-user` JSON with the counters and fields that need extra queries (followers,
+/// following, gists, hireable).
+pub async fn me_json(s: &AppState, u: &User) -> ApiResult<Value> {
+    let (public, private) = repo_counts(s, u.id).await?;
+    let mut v = json::user::private(&s.api_url(), s.base_url(), u, public, private);
+    let (followers, following) = super::social::follow_counts(&s.db, u.id).await?;
+    let (pub_gists, priv_gists, hireable): (i64, i64, Option<bool>) = sqlx::query_as(
+        "SELECT (SELECT count(*) FROM gists WHERE owner_id = $1 AND public), (SELECT count(*) FROM gists WHERE owner_id = $1 AND NOT public),
+                (SELECT hireable FROM users WHERE id = $1)",
+    )
+    .bind(u.id)
+    .fetch_one(&s.db)
+    .await?;
+    v["followers"] = json!(followers);
+    v["following"] = json!(following);
+    v["public_gists"] = json!(pub_gists);
+    v["private_gists"] = json!(priv_gists);
+    v["hireable"] = json!(hireable);
+    Ok(v)
 }
 
 #[derive(Deserialize)]
@@ -51,9 +71,20 @@ struct PatchMe {
     company: Option<String>,
     location: Option<String>,
     bio: Option<String>,
+    hireable: Option<bool>,
 }
 
 async fn patch_me(State(s): State<AppState>, AuthUser(u): AuthUser, Json(p): Json<PatchMe>) -> ApiResult<Json<Value>> {
+    // Changing the primary address keeps the old one as an additional address.
+    if let Some(new) = p.email.as_deref().filter(|e| !e.is_empty()) {
+        if let Some(old) = u.email.as_deref().filter(|o| !o.is_empty() && !o.eq_ignore_ascii_case(new)) {
+            sqlx::query("INSERT INTO user_emails (user_id, email) VALUES ($1, $2) ON CONFLICT DO NOTHING").bind(u.id).bind(old).execute(&s.db).await?;
+        }
+        sqlx::query("DELETE FROM user_emails WHERE user_id = $1 AND lower(email) = lower($2)").bind(u.id).bind(new).execute(&s.db).await?;
+    }
+    if let Some(h) = p.hireable {
+        sqlx::query("UPDATE users SET hireable = $2 WHERE id = $1").bind(u.id).bind(h).execute(&s.db).await?;
+    }
     let u: User = sqlx::query_as(
         "UPDATE users SET name = COALESCE($2, name), email = COALESCE($3, email), blog = COALESCE($4, blog),
             twitter_username = COALESCE($5, twitter_username), company = COALESCE($6, company),
@@ -70,8 +101,7 @@ async fn patch_me(State(s): State<AppState>, AuthUser(u): AuthUser, Json(p): Jso
     .bind(p.bio)
     .fetch_one(&s.db)
     .await?;
-    let (public, private) = repo_counts(&s, u.id).await?;
-    Ok(Json(json::user::private(&s.api_url(), s.base_url(), &u, public, private)))
+    Ok(Json(me_json(&s, &u).await?))
 }
 
 #[allow(dead_code)]
@@ -138,7 +168,15 @@ async fn get_user(State(s): State<AppState>, Path(login): Path<String>) -> ApiRe
     }
     let (public, _) = repo_counts(&s, u.id).await?;
     let (followers, following) = super::social::follow_counts(&s.db, u.id).await?;
-    Ok(Json(json::user::public(&s.api_url(), s.base_url(), &u, public, followers, following)))
+    let mut v = json::user::public(&s.api_url(), s.base_url(), &u, public, followers, following);
+    let (gists, hireable): (i64, Option<bool>) =
+        sqlx::query_as("SELECT (SELECT count(*) FROM gists WHERE owner_id = $1 AND public), (SELECT hireable FROM users WHERE id = $1)")
+            .bind(u.id)
+            .fetch_one(&s.db)
+            .await?;
+    v["public_gists"] = json!(gists);
+    v["hireable"] = json!(hireable);
+    Ok(Json(v))
 }
 
 pub async fn org_json(s: &AppState, o: &User) -> ApiResult<Value> {

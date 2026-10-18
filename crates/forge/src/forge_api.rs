@@ -25,6 +25,7 @@ pub fn routes() -> Router<AppState> {
         .route("/healthz", axum::routing::get(|| async { "ok" }))
         .route("/announcement", axum::routing::get(announcement))
         .merge(crate::forge_admin::routes())
+        .merge(crate::api::social_forge::forge_routes())
         .layer(axum::middleware::from_fn(require_csrf_header))
 }
 

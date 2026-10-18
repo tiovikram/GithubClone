@@ -228,6 +228,7 @@ pub struct CreatePull {
 /// `refs/pull/N/head` (+ `refs/pull/N/merge`) in the base repo.
 pub async fn create_pull(state: &AppState, ctx: &RepoCtx, actor: &User, input: CreatePull) -> ApiResult<Pull> {
     ctx.require(Perm::Read)?;
+    crate::api::social_forge::ensure_not_blocked_by_owner(state, ctx.owner.id, actor).await?;
     if input.head.is_empty() {
         return Err(ApiError::validation("PullRequest", "head", "missing_field"));
     }

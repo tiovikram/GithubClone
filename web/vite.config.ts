@@ -20,6 +20,8 @@ export default defineConfig({
       "^/avatars/": proxyOpts,
       // Actions: signed log / artifact downloads and the runner application
       "^/_actions/": proxyOpts,
+      // gist raw files: /gist/{login}/{id}/raw/...
+      "^/gist/[^/]+/[^/]+/raw/": proxyOpts,
       "^/[^/]+\\.keys$": proxyOpts,
     },
   },

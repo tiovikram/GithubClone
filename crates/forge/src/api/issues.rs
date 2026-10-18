@@ -598,6 +598,7 @@ pub async fn insert_issue_row(conn: &mut PgConnection, repo_id: i64, author_id: 
 /// Creates an issue. Any user who can read the repository may open one.
 pub async fn create_issue(state: &AppState, ctx: &RepoCtx, actor: &User, input: CreateIssue) -> ApiResult<IssueRow> {
     require_issues_enabled(ctx)?;
+    super::social_forge::ensure_not_blocked_by_owner(state, ctx.owner.id, actor).await?;
     if input.title.trim().is_empty() {
         return Err(ApiError::validation("Issue", "title", "missing_field"));
     }
