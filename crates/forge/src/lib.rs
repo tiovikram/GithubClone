@@ -18,6 +18,7 @@ pub mod json;
 pub mod oauth_device;
 pub mod ssh;
 pub mod pulls;
+pub mod runner;
 pub mod security;
 pub mod protection;
 pub mod signed_url;
@@ -92,10 +93,15 @@ pub fn app(state: AppState) -> Router {
         .route("/healthz", get(|| async { "ok" }))
         .route("/readyz", get(readyz))
         .merge(git::http::routes())
+        .merge(runner::protocol::routes())
+        .merge(api::actions::download_routes())
+        .merge(api::runner_runners::download_routes())
         .merge(api::branches::web_routes())
         .fallback(web::spa)
         .layer(middleware::from_fn_with_state(state.clone(), api::keys::dot_keys_middleware))
         .layer(middleware::from_fn(security::nosniff))
+        // runner: requests with a job token (GITHUB_TOKEN) run with that token's repository scope
+        .layer(middleware::from_fn_with_state(state.clone(), runner::token::scope_middleware))
         .layer(TraceLayer::new_for_http())
         .with_state(state)
 }

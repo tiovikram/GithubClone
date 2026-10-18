@@ -16,6 +16,8 @@ enum Cmd {
     Migrate,
     /// Repack repositories and delete unreferenced objects.
     Gc,
+    /// Run a GitHub Actions runner (separate process; jobs never run in `serve`).
+    Runner(forge::runner::agent::RunnerArgs),
     /// Administrative commands.
     Admin {
         #[command(subcommand)]
@@ -41,6 +43,17 @@ enum AdminCmd {
         #[arg(long, default_value = "cli")]
         name: String,
     },
+    /// Create an Actions runner registration token (instance-wide unless --repo/--org).
+    RunnerToken {
+        /// owner/name of a repository
+        #[arg(long)]
+        repo: Option<String>,
+        #[arg(long)]
+        org: Option<String>,
+        /// lifetime in hours (GitHub: 1)
+        #[arg(long, default_value_t = 1)]
+        hours: i64,
+    },
 }
 
 #[tokio::main]
@@ -61,6 +74,10 @@ async fn main() -> anyhow::Result<()> {
             // Background job worker (webhook deliveries, ...); runs in every replica.
             if std::env::var("FORGE_WORKERS").ok().as_deref() != Some("0") {
                 forge::jobs::spawn_worker(state.clone());
+            }
+            // Actions scheduler (cron triggers, lost-runner reaping); one replica works at a time.
+            if std::env::var("FORGE_ACTIONS_SCHEDULER").ok().as_deref() != Some("0") {
+                forge::runner::trigger::spawn_scheduler(state.clone());
             }
             let app = forge::app(state);
             // Optional unix socket listener (used by gh's `http_unix_socket` in tests).
@@ -94,6 +111,9 @@ async fn main() -> anyhow::Result<()> {
             let state = forge::build_state(cfg).await?;
             forge::git::gc::run(&state).await?;
         }
+        Cmd::Runner(args) => {
+            forge::runner::agent::main(args).await?;
+        }
         Cmd::Admin { cmd } => {
             let state = forge::build_state(cfg).await?;
             match cmd {
@@ -102,6 +122,33 @@ async fn main() -> anyhow::Result<()> {
                         .await
                         .map_err(|e| anyhow::anyhow!("{}: {:?}", e.message, e.errors))?;
                     println!("created user {} (id {})", u.login, u.id);
+                }
+                AdminCmd::RunnerToken { repo, org, hours } => {
+                    use forge::runner::token::RunnerScope;
+                    let scope = if let Some(r) = repo {
+                        let (o, n) = r.split_once('/').ok_or_else(|| anyhow::anyhow!("--repo must be owner/name"))?;
+                        let ctx = forge::db::load_repo(&state.db, None, o, n).await;
+                        let id = match ctx {
+                            Ok(c) => c.repo.id,
+                            Err(_) => {
+                                let owner = forge::db::user_by_login(&state.db, o).await.map_err(|e| anyhow::anyhow!(e.message))?;
+                                sqlx::query_scalar("SELECT id FROM repositories WHERE owner_id = $1 AND lower(name) = lower($2)")
+                                    .bind(owner.id)
+                                    .bind(n)
+                                    .fetch_one(&state.db)
+                                    .await?
+                            }
+                        };
+                        RunnerScope::Repo(id)
+                    } else if let Some(o) = org {
+                        RunnerScope::Org(forge::db::user_by_login(&state.db, &o).await.map_err(|e| anyhow::anyhow!(e.message))?.id)
+                    } else {
+                        RunnerScope::Enterprise
+                    };
+                    let (t, _) = forge::runner::token::create_runner_token(&state.db, "registration", &scope, hours * 3600)
+                        .await
+                        .map_err(|e| anyhow::anyhow!(e.message))?;
+                    println!("{t}");
                 }
                 AdminCmd::CreateToken { login, name } => {
                     let u = forge::db::user_by_login(&state.db, &login).await.map_err(|e| anyhow::anyhow!(e.message))?;

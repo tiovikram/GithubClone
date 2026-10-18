@@ -16,15 +16,19 @@ bytes = "1.12.1"
 chrono = { version = "0.4.45", features = ["serde"] }
 clap = { version = "4.6.7", features = ["derive", "env"] }
 comrak = { version = "0.56.0", default-features = false }
+flate2 = "1.1.10"
+crc32fast = "1.5.2"
 futures = "0.3.34"
 hex = "0.4.3"
 hmac = "0.13"
+libc = "0.2.190"
 mime_guess = "2.0.5"
 object_store = { version = "0.14.2", features = ["aws"] }
 percent-encoding = "2.3.2"
 rand = "0.10.3"
 russh = "0.64.1"
-reqwest = { version = "0.13.5", features = ["json"] }
+reqwest = { version = "0.13.5", features = ["json", "stream"] }
+regex = "1.13.1"
 rust-embed = { version = "8.13.0", features = ["include-exclude"] }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.154"
@@ -39,6 +43,7 @@ tower-http = { version = "0.7.1", features = ["trace", "cors", "compression-gzip
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter", "json"] }
 url = "2.5.8"
+yaml-rust2 = "0.13.0"
 uuid = { version = "1.28.0", features = ["v4"] }
 
 [dev-dependencies]

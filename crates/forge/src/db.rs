@@ -148,6 +148,10 @@ pub async fn repo_by_id(db: &PgPool, id: i64) -> ApiResult<Repo> {
 pub async fn permission(db: &PgPool, viewer: Option<&User>, repo: &Repo, owner: &User) -> ApiResult<Perm> {
     let base = if repo.private { Perm::None } else { Perm::Read };
     let Some(u) = viewer else { return Ok(base) };
+    // runner: github-actions[bot] only has the permission of the request's job token.
+    if crate::runner::token::is_actions_bot(u) {
+        return Ok(crate::runner::token::scoped_permission(repo));
+    }
     if u.site_admin || u.id == owner.id {
         return Ok(Perm::Admin);
     }
