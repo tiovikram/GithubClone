@@ -534,6 +534,16 @@ async fn enterprise_runner_environment_reviews_and_repository_dispatch() {
     let (st, env) = s.call(Some(&u), "PUT", &format!("{rp}/environments/prod"), Some(json!({"reviewers": [{"type": "User", "id": adm.id}]}))).await;
     assert_eq!(st, 200, "{env}");
     let wf = "name: Deploy\non:\n  workflow_dispatch:\n  repository_dispatch:\n    types: [go]\njobs:\n  ship:\n    runs-on: ubuntu-latest\n    environment: prod\n    steps:\n      - run: echo shipped-${{ github.event_name }}\n";
+    // More older queued jobs than one claim page, in a repository outside the runner group's
+    // org: the enterprise runner below may not take them and must still reach this org's job.
+    let other = format!("/repos/{}/{}", u.login, common::unique("o"));
+    let (st, _) = s.call(Some(&u), "POST", "/user/repos", Some(json!({"name": other.rsplit('/').next().unwrap(), "auto_init": true}))).await;
+    assert_eq!(st, 201);
+    put_file(&s, &u, &other, ".github/workflows/b.yml", "on: workflow_dispatch\njobs:\n  b:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo b\n").await;
+    for _ in 0..21 {
+        let (st, _) = s.call(Some(&u), "POST", &format!("{other}/actions/workflows/b.yml/dispatches"), Some(json!({"ref": "main"}))).await;
+        assert_eq!(st, 204);
+    }
     put_file(&s, &u, &rp, ".github/workflows/deploy.yml", wf).await;
     let (st, _) = s.call(Some(&u), "POST", &format!("{rp}/actions/workflows/deploy.yml/dispatches"), Some(json!({"ref": "main"}))).await;
     assert_eq!(st, 204);

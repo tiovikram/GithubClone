@@ -204,39 +204,47 @@ pub async fn claim(s: &AppState, r: &RunnerRow) -> ApiResult<Option<JobRow>> {
     let labels: Vec<String> = all_labels(r).into_iter().map(|l| l.to_lowercase()).collect();
     let mut tx = s.db.begin().await?;
     // Candidates by scope and labels, locked; then Actions policy (self-hosted runners allowed,
-    // runner group) decides which one this runner takes. Other candidates unlock on commit.
-    let cands: Vec<(i64, i64, String)> = sqlx::query_as(
-        "SELECT j.id, j.repo_id, u.login || '/' || rp.name || '/' || r.workflow_path || '@' || COALESCE(r.git_ref, '')
-           FROM actions_jobs j JOIN repositories rp ON rp.id = j.repo_id JOIN users u ON u.id = rp.owner_id
-           JOIN actions_runs r ON r.id = j.run_id
-          WHERE j.status = 'queued'
-            AND ($1::bigint IS NULL OR j.repo_id = $1)
-            AND ($2::bigint IS NULL OR rp.owner_id = $2)
-            AND NOT EXISTS (SELECT 1 FROM unnest(j.labels) l
-                             WHERE NOT (lower(l) = ANY($3) OR lower(l) ~ '^(ubuntu|macos|windows)-' OR lower(l) IN ('ubuntu', 'github-hosted')))
-          ORDER BY j.id LIMIT 20 FOR UPDATE OF j SKIP LOCKED",
-    )
-    .bind(r.repo_id)
-    .bind(r.org_id)
-    .bind(&labels)
-    .fetch_all(&mut *tx)
-    .await?;
-    for (id, repo_id, wref) in cands {
-        if !super::settings::runner_may_take(s, r, repo_id, Some(&wref)).await {
-            continue;
-        }
-        let job: JobRow = sqlx::query_as(
-            "UPDATE actions_jobs j SET status = 'in_progress', runner_id = $2, runner_name = $3, started_at = now(), heartbeat_at = now(),
-                    timeout_at = now() + make_interval(mins => COALESCE(NULLIF(j.definition->>'timeout-minutes', '')::float8::int, 360))
-              WHERE j.id = $1 RETURNING j.*",
+    // runner group) decides which one this runner takes. Candidates are paged by id, so jobs
+    // the policy rejects (e.g. other orgs' jobs for a group-restricted enterprise runner)
+    // cannot starve the ones it may take. Rejected candidates unlock on commit.
+    let mut after = 0i64;
+    loop {
+        let cands: Vec<(i64, i64, String)> = sqlx::query_as(
+            "SELECT j.id, j.repo_id, u.login || '/' || rp.name || '/' || r.workflow_path || '@' || COALESCE(r.git_ref, '')
+               FROM actions_jobs j JOIN repositories rp ON rp.id = j.repo_id JOIN users u ON u.id = rp.owner_id
+               JOIN actions_runs r ON r.id = j.run_id
+              WHERE j.status = 'queued' AND j.id > $4
+                AND ($1::bigint IS NULL OR j.repo_id = $1)
+                AND ($2::bigint IS NULL OR rp.owner_id = $2)
+                AND NOT EXISTS (SELECT 1 FROM unnest(j.labels) l
+                                 WHERE NOT (lower(l) = ANY($3) OR lower(l) ~ '^(ubuntu|macos|windows)-' OR lower(l) IN ('ubuntu', 'github-hosted')))
+              ORDER BY j.id LIMIT 20 FOR UPDATE OF j SKIP LOCKED",
         )
-        .bind(id)
-        .bind(r.id)
-        .bind(&r.name)
-        .fetch_one(&mut *tx)
+        .bind(r.repo_id)
+        .bind(r.org_id)
+        .bind(&labels)
+        .bind(after)
+        .fetch_all(&mut *tx)
         .await?;
-        tx.commit().await?;
-        return Ok(Some(job));
+        let Some(last) = cands.last().map(|c| c.0) else { break };
+        after = last;
+        for (id, repo_id, wref) in cands {
+            if !super::settings::runner_may_take(s, r, repo_id, Some(&wref)).await {
+                continue;
+            }
+            let job: JobRow = sqlx::query_as(
+                "UPDATE actions_jobs j SET status = 'in_progress', runner_id = $2, runner_name = $3, started_at = now(), heartbeat_at = now(),
+                        timeout_at = now() + make_interval(mins => COALESCE(NULLIF(j.definition->>'timeout-minutes', '')::float8::int, 360))
+                  WHERE j.id = $1 RETURNING j.*",
+            )
+            .bind(id)
+            .bind(r.id)
+            .bind(&r.name)
+            .fetch_one(&mut *tx)
+            .await?;
+            tx.commit().await?;
+            return Ok(Some(job));
+        }
     }
     tx.commit().await?;
     Ok(None)
