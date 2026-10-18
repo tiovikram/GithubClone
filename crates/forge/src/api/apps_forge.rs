@@ -200,6 +200,7 @@ async fn create_oauth_app(State(s): State<AppState>, AuthUser(u): AuthUser, Json
     let (app, secrets) = apps::create_oauth_app(&s, &u, &owner, b.name.as_deref().unwrap_or(""), b.url.as_deref().unwrap_or(""), b.callback_url.as_deref()).await?;
     Ok(created(json!({
         "id": app.id,
+        "slug": app.slug,
         "name": app.name,
         "url": app.external_url,
         "client_id": app.client_id,

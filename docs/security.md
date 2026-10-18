@@ -58,8 +58,27 @@ Severity reflects impact on a multi-tenant instance where anyone can sign up.
   - Deploy keys are scoped to their repo and read-only unless created otherwise.
   - Repo paths come from DB ids, never from URL names. Names like `..` are rejected at creation, and the SSH path parser only allows `[A-Za-z0-9._-]`.
 - **Most user revisions go through `read::safe_rev` and `--end-of-options`**, and commit-search words follow `-e`.
+- **GitHub App credentials** (apps area, `crates/forge/tests/apps.rs`):
+  - App private keys are generated server-side and returned once; only public keys are stored.
+    JWTs must be RS256 (no `none`/HMAC), verify against a stored key, and live ≤ 10 minutes.
+  - Client secrets are stored as sha256 and compared in constant time; app webhook secrets are
+    sealed with the master key (`actions_settings::crypto`).
+  - Installation tokens (`ghs_`) and user-to-server tokens (`ghu_`) are confined to their
+    repositories and permissions on every surface that takes a token (REST, uploads, GraphQL, git
+    smart HTTP, web routes) by one middleware; the bot user never has more than public read
+    outside a token scope (`restrict` is fail-closed). Writes beyond the grant get 403 "Resource
+    not accessible by integration"; private repositories outside the scope stay 404.
+  - App tokens cannot reach `/api/forge` (no minting PATs), `/user` (bots), or the legacy
+    authorizations API, so they cannot be escalated into broader credentials. Manifest codes are
+    single-use, hashed and expire after 1 hour.
+- **Migrations**: archive downloads use short-lived HMAC-signed URLs (`signing_secrets`
+  `migration`); locked repositories refuse REST writes and pushes (HTTP, SSH), answering 404
+  instead of the lock message to callers who can't see the repository.
 
 ## Known gaps / accepted risks (not fixed)
+- **App tokens and GraphQL:** installation and user-to-server tokens get read-only GraphQL (forge
+  can't map arbitrary mutations to app permissions yet); GraphQL mutations also don't check
+  migration locks.
 - **Token scopes:** every token carries all scopes (documented in ARCHITECTURE). There are no fine-grained or read-only tokens.
 - ~~**Org members get Write on every org repo.**~~ Fixed by the orgs build-out: `PATCH /orgs/{org}`
   `default_repository_permission` (`read` default, `write`, `admin`, `none`) is honoured by
