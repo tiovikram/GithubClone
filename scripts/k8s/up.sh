@@ -7,7 +7,8 @@
 #
 # Only the "create cluster" step differs between flavors; images and manifests are identical.
 # Env: CLUSTER (default forge), FORGE_HOST_PORT (default 8080; must match FORGE_BASE_URL in
-# deploy/base/kustomization.yaml), SKIP_BUILD=1 to reuse an existing forge:dev image.
+# deploy/base/kustomization.yaml), SKIP_BUILD=1 to reuse existing forge:dev + forge-runner:dev
+# images, SMOKE_FULL=1 to also run scripts/k8s/smoke-full.sh (Actions, OCI, npm).
 set -euo pipefail
 FLAVOR=${1:?usage: up.sh k3d|kind}
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
@@ -15,6 +16,7 @@ CLUSTER=${CLUSTER:-forge}
 PORT=${FORGE_HOST_PORT:-8080}
 NODE_PORT=30080
 IMAGE=forge:dev
+RUNNER_IMAGE=forge-runner:dev   # same Dockerfile, target forge-runner
 DEP_IMAGES=(postgres:16 cgr.dev/chainguard/minio:latest cgr.dev/chainguard/minio-client:latest)
 ARCH=$(docker version --format '{{.Server.Arch}}')
 STATE="$ROOT/data/k8s"
@@ -68,10 +70,11 @@ log "cluster ready ($(since))"
 
 # ---------------------------------------------------------------- 2. images (no registry)
 if [ "${SKIP_BUILD:-0}" != 1 ]; then
-  log "building $IMAGE (linux/$ARCH)"
-  docker build --provenance=false --sbom=false -t "$IMAGE" "$ROOT"
+  log "building $IMAGE and $RUNNER_IMAGE (linux/$ARCH, one Dockerfile, two targets)"
+  docker build --provenance=false --sbom=false --target forge -t "$IMAGE" "$ROOT"
+  docker build --provenance=false --sbom=false --target forge-runner -t "$RUNNER_IMAGE" "$ROOT"
 fi
-echo "$IMAGE id: $(docker image inspect "$IMAGE" --format '{{.Id}}')"
+for img in "$IMAGE" "$RUNNER_IMAGE"; do echo "$img id: $(docker image inspect "$img" --format '{{.Id}}')"; done
 log "importing images into $FLAVOR"
 for img in "${DEP_IMAGES[@]}"; do
   docker image inspect "$img" >/dev/null 2>&1 || docker pull -q --platform "linux/$ARCH" "$img"
@@ -79,7 +82,7 @@ done
 # Single-platform archives: Docker Desktop's containerd store keeps multi-arch indexes whose
 # other-platform blobs are absent, which `kind load docker-image` / `k3d image import` choke on.
 TARS=()
-for img in "$IMAGE" "${DEP_IMAGES[@]}"; do
+for img in "$IMAGE" "$RUNNER_IMAGE" "${DEP_IMAGES[@]}"; do
   tar="$STATE/$(echo "$img" | tr '/:' '__').tar"
   docker save --platform "linux/$ARCH" -o "$tar" "$img"
   TARS+=("$tar")
@@ -97,11 +100,12 @@ $K -n forge get deploy forge >/dev/null 2>&1 && existed=1
 log "kubectl apply -k deploy/overlays/$FLAVOR"
 $K apply -k "$ROOT/deploy/overlays/$FLAVOR"
 # Same tag, new image content: restart so pods pick up the freshly imported image.
-[ $existed = 1 ] && $K -n forge rollout restart deploy/forge
+[ $existed = 1 ] && $K -n forge rollout restart deploy/forge deploy/forge-runner
 $K -n forge rollout status statefulset/postgres --timeout=300s
 $K -n forge rollout status statefulset/minio --timeout=300s
 $K -n forge wait --for=condition=complete job/minio-create-bucket --timeout=300s
 $K -n forge rollout status deploy/forge --timeout=300s
+$K -n forge rollout status deploy/forge-runner --timeout=300s
 log "rollout complete ($(since))"
 $K -n forge get pods -o wide
 
@@ -147,6 +151,7 @@ echo "git clone x3 -> HEAD matches, fsck clean"
 contents=$(api "$BASE/api/v3/repos/admin/$repo" | jq -r .full_name)
 [ "$contents" = "admin/$repo" ] || fail "GET /repos/admin/$repo"
 echo "GET /api/v3/repos/admin/$repo -> ok"
+if [ "${SMOKE_FULL:-0}" = 1 ]; then "$ROOT/scripts/k8s/smoke-full.sh" "$FLAVOR"; fi
 log "forge is up on $FLAVOR at $BASE  (total $(since))"
 echo "  export FORGE_URL=$BASE FORGE_TOKEN=$TOKEN"
 echo "  load test:  tests/load/run.sh $BASE \$FORGE_TOKEN"

@@ -2,6 +2,7 @@
 # what a fixed-replica benchmark needs changed:
 #   - no HPA (replicas are set explicitly by tests/baseline/k8s.sh: 1 or 3)
 #   - no gc CronJob (it runs hourly; it must not fire in the middle of a measurement)
+#   - no forge-runner Deployment (Actions; see below)
 #   - FORGE_BASE_URL on the benchmark host port 8088
 # Pod resources stay exactly as in deploy/base (forge 250m/256Mi request, 2 CPU/1Gi limit;
 # Postgres 4 CPU/1536Mi limit), which tests/baseline/forgejo/ mirrors for Forgejo.
@@ -26,3 +27,10 @@ patches:
       apiVersion: batch/v1
       kind: CronJob
       metadata: {name: forge-gc, namespace: forge}
+  # No Actions runner: the benchmark measures the API/git server, and Forgejo runs none either
+  # (an idle runner long-polls /acquire and would add load and a pod to the comparison).
+  - patch: |-
+      $patch: delete
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata: {name: forge-runner, namespace: forge}
