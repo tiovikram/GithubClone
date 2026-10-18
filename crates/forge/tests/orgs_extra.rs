@@ -9,8 +9,17 @@ use serde_json::{json, Value};
 
 async fn org_with(s: &TestServer, owner: &TestUser, members: &[&TestUser]) -> String {
     let org = unique("org");
-    let (st, v) = s.call(Some(owner), "POST", "/admin/organizations", Some(json!({ "login": org }))).await;
-    assert_eq!(st, 201, "{v}");
+    // POST /admin/organizations is site-admin only; normal users create orgs via /api/forge/orgs.
+    let res = s
+        .client()
+        .post(format!("{}/api/forge/orgs", s.base))
+        .header("Authorization", format!("token {}", owner.token))
+        .json(&json!({ "login": org }))
+        .send()
+        .await
+        .unwrap();
+    let st = res.status().as_u16();
+    assert_eq!(st, 201, "{}", res.text().await.unwrap_or_default());
     for m in members {
         let (st, v) = s.call(Some(owner), "PUT", &format!("/orgs/{org}/memberships/{}", m.login), Some(json!({ "role": "member" }))).await;
         assert_eq!(st, 200, "{v}");
