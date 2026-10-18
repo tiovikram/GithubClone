@@ -2,6 +2,7 @@
 //! forge: a GitHub-compatible code forge. See docs/ARCHITECTURE.md.
 pub mod activity;
 pub mod api;
+pub mod apps;
 pub mod auth;
 pub mod config;
 pub mod db;
@@ -14,6 +15,7 @@ pub mod graphql;
 pub mod hooks;
 pub mod ids;
 pub mod jobs;
+pub mod migration;
 pub mod json;
 pub mod oauth_device;
 pub mod orgs;
@@ -78,7 +80,7 @@ pub fn app(state: AppState) -> Router {
         .route("/api/v3/", get(api::meta::root_handler))
         .nest("/api/v3", api)
         .nest("/api/graphql", graphql)
-        .nest("/api/forge", forge_api::routes().merge(oauth_device::forge_routes()))
+        .nest("/api/forge", forge_api::routes().merge(oauth_device::forge_routes()).merge(api::apps_forge::forge_routes()))
         .merge(oauth_device::routes())
         .nest(
             "/api/uploads",
@@ -95,6 +97,7 @@ pub fn app(state: AppState) -> Router {
         .merge(git::http::routes())
         .merge(api::branches::web_routes())
         .fallback(web::spa)
+        .layer(middleware::from_fn_with_state(state.clone(), apps::scope::middleware))
         .layer(middleware::from_fn_with_state(state.clone(), api::keys::dot_keys_middleware))
         .layer(middleware::from_fn(security::nosniff))
         .layer(TraceLayer::new_for_http())

@@ -86,6 +86,7 @@ async fn finish(db: &sqlx::PgPool, job: &Job, result: anyhow::Result<()>) -> sql
 async fn dispatch(state: &AppState, job: &Job) -> anyhow::Result<()> {
     match job.queue.as_str() {
         crate::webhooks::QUEUE => crate::webhooks::run_delivery_job(state, job).await,
+        crate::migration::QUEUE => crate::migration::run_job(state, job).await,
         other => anyhow::bail!("unknown queue {other}"),
     }
 }

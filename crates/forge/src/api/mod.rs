@@ -13,6 +13,11 @@ pub mod meta;
 pub mod pulls;
 pub mod actions;
 pub mod actions_secrets;
+pub mod apps_core;
+pub mod apps_enterprise;
+pub mod apps_forge;
+pub mod apps_migrations;
+pub mod apps_oauth;
 pub mod commit_comments;
 pub mod deployments;
 pub mod discussions;
@@ -106,6 +111,10 @@ pub fn routes() -> Router<AppState> {
         .merge(review_reactions::routes())
         .merge(actions_secrets::routes())
         .merge(ref_dispatch::routes())
+        .merge(apps_core::routes())
+        .merge(apps_oauth::routes())
+        .merge(apps_enterprise::routes())
+        .merge(apps_migrations::routes())
         .fallback(|| async { crate::error::ApiError::not_found() })
 }
 

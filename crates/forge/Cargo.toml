@@ -8,6 +8,7 @@ ammonia = "4.2.3"
 anyhow = "1.0.104"
 argon2 = "0.6.0"
 async-compression = { version = "0.4.50", features = ["tokio", "gzip"] }
+aws-lc-rs = "1.18.2"
 async-graphql = { version = "7.2.1", features = ["chrono", "dataloader"] }
 async-graphql-axum = "7.2.1"
 axum = { version = "0.8.9", features = ["macros"] }
@@ -18,6 +19,7 @@ chrono = { version = "0.4.45", features = ["serde"] }
 clap = { version = "4.6.7", features = ["derive", "env"] }
 curve25519-dalek = "5.0.0"
 comrak = { version = "0.56.0", default-features = false }
+flate2 = "1.1.10"
 futures = "0.3.34"
 hex = "0.4.3"
 hmac = "0.13"
@@ -35,6 +37,7 @@ serde_json = "1.0.154"
 sha1 = "0.11"
 sha2 = "0.11.1"
 sqlx = { version = "0.9.0", features = ["runtime-tokio", "postgres", "chrono", "migrate", "json", "macros"] }
+tar = "0.4"
 thiserror = "2.0.21"
 tokio = { version = "1.53.2", features = ["full"] }
 tokio-util = { version = "0.7.20", features = ["io", "compat"] }

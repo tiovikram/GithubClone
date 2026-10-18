@@ -32,6 +32,9 @@ pub struct HookRow {
     pub updated_at: DateTime<Utc>,
     pub name: String,
     pub last_response: Value,
+    /// Set for a GitHub App's webhook (apps area).
+    #[sqlx(default)]
+    pub app_id: Option<i64>,
 }
 
 #[derive(Debug, Clone, sqlx::FromRow)]
@@ -136,6 +139,8 @@ pub async fn enqueue_event_ctx(state: &AppState, ctx: &RepoCtx, event: &str, mut
         }
         create_delivery(state, &h, event, Some(ctx.repo.id), p, false).await?;
     }
+    // GitHub Apps installed on the repository and subscribed to the event.
+    crate::apps::hooks::fan_out(state, ctx, event, &payload).await?;
     Ok(())
 }
 
@@ -272,8 +277,8 @@ pub async fn deliver(state: &AppState, delivery_id: i64) -> anyhow::Result<()> {
     } else {
         json_body
     };
-    let target_type = if hook.org_id.is_some() { "organization" } else { "repository" };
-    let target_id = hook.org_id.or(hook.repo_id).unwrap_or(0);
+    let target_type = if hook.app_id.is_some() { "integration" } else if hook.org_id.is_some() { "organization" } else { "repository" };
+    let target_id = hook.app_id.or(hook.org_id).or(hook.repo_id).unwrap_or(0);
     let mut headers: Vec<(String, String)> = vec![
         ("Accept".into(), "*/*".into()),
         ("Content-Type".into(), if form { "application/x-www-form-urlencoded" } else { "application/json" }.into()),
