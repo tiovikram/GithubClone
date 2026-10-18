@@ -252,7 +252,7 @@ async fn add_handler(
     let ctx = load_ctx(&s, Some(&u), &owner, &repo).await?;
     let target = db::user_by_login(&s.db, &username).await?;
     // github.com behaviour (opt-in): invite users who have no access yet (repos area).
-    if super::invitations::invitations_enabled() && ctx.perm >= Perm::Admin && target.kind == "User" {
+    if ctx.perm >= Perm::Admin && target.kind == "User" && super::invitations::invitations_enabled(&s).await {
         let cur = db::permission(&s.db, Some(&target), &ctx.repo, &ctx.owner).await?;
         if cur < Perm::Triage && target.id != u.id {
             let inv = super::invitations::create_invitation(&s, &ctx, &u, &target, b.permission.as_deref().unwrap_or("push")).await?;

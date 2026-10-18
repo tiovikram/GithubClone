@@ -7,6 +7,8 @@
 //!   cache; there are no GHES-style replicas (replication is the storage layer's job);
 //! - settings: stored in `ent_settings` and applied immediately (a config apply run is recorded
 //!   and completes at once); `signup_enabled` is enforced by `/api/forge/signup`;
+//!   `repository_invitations.enabled` (forge-only; default `FORGE_REPO_INVITATIONS`) switches
+//!   `PUT /collaborators/{u}` to the invitation flow;
 //! - maintenance mode: real (503 for everyone but site admins / the IP exception list);
 //! - license: forge has no license; it reports an unlimited, perpetual one;
 //! - SSH access keys, upgrades: recorded; forge is upgraded by deploying a new image.
@@ -224,6 +226,8 @@ fn settings_defaults(s: &AppState) -> Value {
         "mapping": {"enabled": false, "tileserver": null, "basemap": "", "token": null},
         "load_balancer": null,
         "prometheus": {"enabled": false, "trusted_ips": null},
+        // forge: repository invitations (github.com flow) instead of GHES's direct collaborator add.
+        "repository_invitations": {"enabled": ent::repo_invitations_env_default()},
     })
 }
 
@@ -276,14 +280,23 @@ async fn put_settings(State(s): State<AppState>, SiteAdmin(u): SiteAdmin, Json(b
     if obj.get("signup_enabled").is_some_and(|v| !v.is_boolean()) {
         return Err(ApiError::bad_request("signup_enabled must be a boolean"));
     }
-    let mut stored = ent::get_setting(&s.db, "manage_settings").await?.unwrap_or_else(|| json!({}));
+    if let Some(ri) = obj.get("repository_invitations") {
+        if !ri.is_object() || ri.get("enabled").is_some_and(|v| !v.is_boolean()) {
+            return Err(ApiError::bad_request("repository_invitations.enabled must be a boolean"));
+        }
+    }
     let mut clean = b.clone();
     if let Some(o) = clean.as_object_mut() {
         o.remove("configuration_run_count");
         o.remove("admin_password");
     }
+    // Read-modify-write under a row lock so concurrent PUTs of different keys don't lose updates.
+    let mut tx = s.db.begin().await?;
+    sqlx::query("INSERT INTO ent_settings (key, value) VALUES ('manage_settings', '{}'::jsonb) ON CONFLICT (key) DO NOTHING").execute(&mut *tx).await?;
+    let mut stored: Value = sqlx::query_scalar("SELECT value FROM ent_settings WHERE key = 'manage_settings' FOR UPDATE").fetch_one(&mut *tx).await?;
     merge(&mut stored, &clean);
-    ent::set_setting(&s.db, "manage_settings", &stored).await?;
+    sqlx::query("UPDATE ent_settings SET value = $1, updated_at = now() WHERE key = 'manage_settings'").bind(&stored).execute(&mut *tx).await?;
+    tx.commit().await?;
     ent::audit(&s, "business.manage_settings_update", Some(&u), json!({"keys": obj.keys().collect::<Vec<_>>()})).await;
     Ok(StatusCode::NO_CONTENT.into_response())
 }

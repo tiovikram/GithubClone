@@ -866,25 +866,17 @@ async fn pat_grant_repos(State(s): State<AppState>, AuthUser(u): AuthUser, Path(
 }
 
 // ---------------------------------------------------------------------------------------------
-// Push-rule bypass requests (forge does not enforce push rulesets, so none are ever raised)
+// Push-rule bypass requests of the organization's repositories (crate::rules::bypass)
 
-#[derive(Deserialize, Default)]
-struct BypassQuery {
-    time_period: Option<String>,
-    request_status: Option<String>,
-}
-
-async fn push_bypass_requests(State(s): State<AppState>, AuthUser(u): AuthUser, Path(org): Path<String>, Query(q): Query<BypassQuery>) -> ApiResult<Json<Value>> {
+async fn push_bypass_requests(
+    State(s): State<AppState>,
+    AuthUser(u): AuthUser,
+    Path(org): Path<String>,
+    Query(q): Query<crate::rules::bypass::ListFilter>,
+) -> ApiResult<Json<Value>> {
     let o = org_by_login(&s, &org).await?;
     require_capability(&s, &o, &u, &["manage_organization_ref_rules"]).await?;
-    if !matches!(q.time_period.as_deref(), None | Some("hour") | Some("day") | Some("week") | Some("month")) {
-        return Err(ApiError::validation("BypassRequest", "time_period", "invalid"));
-    }
-    let statuses = ["completed", "cancelled", "approved", "expired", "deleted", "denied", "open", "all"];
-    if q.request_status.as_deref().is_some_and(|x| !statuses.contains(&x)) {
-        return Err(ApiError::validation("BypassRequest", "request_status", "invalid"));
-    }
-    Ok(Json(json!([])))
+    Ok(Json(Value::Array(crate::rules::bypass::list(&s, None, Some(o.id), &q).await?)))
 }
 
 // ---------------------------------------------------------------------------------------------

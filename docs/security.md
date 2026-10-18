@@ -72,13 +72,14 @@ Severity reflects impact on a multi-tenant instance where anyone can sign up.
     authorizations API, so they cannot be escalated into broader credentials. Manifest codes are
     single-use, hashed and expire after 1 hour.
 - **Migrations**: archive downloads use short-lived HMAC-signed URLs (`signing_secrets`
-  `migration`); locked repositories refuse REST writes and pushes (HTTP, SSH), answering 404
-  instead of the lock message to callers who can't see the repository.
+  `migration`); locked repositories refuse REST writes, pushes (HTTP, SSH) and GraphQL
+  mutations (the `graphql/archived.rs` extension maps node ids to repositories; `type:
+  FORBIDDEN`, "Repository has been locked for migration."), answering 404 / not found instead of
+  the lock message to callers who can't see the repository.
 
 ## Known gaps / accepted risks (not fixed)
 - **App tokens and GraphQL:** installation and user-to-server tokens get read-only GraphQL (forge
-  can't map arbitrary mutations to app permissions yet); GraphQL mutations also don't check
-  migration locks.
+  can't map arbitrary mutations to app permissions yet).
 - **Token scopes:** every token carries all scopes (documented in ARCHITECTURE). There are no fine-grained or read-only tokens.
 - ~~**Org members get Write on every org repo.**~~ Fixed by the orgs build-out: `PATCH /orgs/{org}`
   `default_repository_permission` (`read` default, `write`, `admin`, `none`) is honoured by
@@ -99,8 +100,85 @@ Severity reflects impact on a multi-tenant instance where anyone can sign up.
   visitor's session. A separate Pages domain would be stronger.
 - **Pages artifact deployments** (`POST /pages/deployments`) only fetch artifacts stored on this
   forge (release assets the caller can read), never arbitrary URLs (no SSRF). The `oidc_token` is
-  only checked for presence until forge has an OIDC issuer.
+  only checked for presence (it is not yet verified against forge's OIDC issuer).
 - **Webhooks honour system proxy settings** (`HTTPS_PROXY`). If a proxy is configured, the SSRF guard relies on the proxy's own egress policy.
+
+## Repository rulesets (finish area, `crates/forge/src/rules/`)
+Repository and organization rulesets (`/repos/{o}/{r}/rulesets`, `/orgs/{org}/rulesets`) are
+enforced, not just recorded. Tests: `crates/forge/tests/rulesets.rs`.
+- **Where.** Git pushes over HTTP and SSH: the branch-protection `pre-receive` hook
+  (`protection.rs`) writes the ref updates plus git's quarantine variables into a per-push
+  directory (`FORGE_RULESET_DIR`). The server that spawned receive-pack polls the directory,
+  evaluates the updates in-process (`rules::hook`), and answers `ok`/`reject` with the text to
+  print. The hook stays a plain `sh` script with no database access or extra binary, and it
+  keeps the enterprise pre-receive and push-protection chain intact. API writes call
+  `rules::enforce_api` inside the git write, after the new commit exists and before the ref
+  moves. Covered: the contents API (409), `POST /merges` (409), git refs create/update/delete
+  (422), pull request merges (405) and update-branch. A PR whose base rules (`pull_request`
+  approvals, required checks/deployments/workflows) are unmet shows as `blocked`.
+- **Rule types.** creation, update, deletion, non_fast_forward, required_linear_history,
+  required_signatures, pull_request (direct pushes rejected; merges need
+  `required_approving_review_count` approvals and an allowed merge method),
+  required_status_checks (commit statuses or check runs, optional `integration_id`,
+  `do_not_enforce_on_create`, strict on merge), required_deployments (latest deployment status
+  `success`), workflows (a successful run of the workflow file on the commit), code_scanning (an
+  analysis from the tool on the PR head), commit_message / commit_author_email /
+  committer_email / branch_name / tag_name patterns (`starts_with`, `ends_with`, `contains`,
+  `regex`, `negate`; name patterns apply when the ref is created), and the push rules
+  file_path_restriction, max_file_path_length, file_extension_restriction and max_file_size
+  (checked on every file the new commits change). `merge_queue` and `copilot_code_review` always
+  pass: forge has no merge queue and no Copilot.
+- **Scope.** Branch and tag rulesets select refs by `ref_name` (`~DEFAULT_BRANCH`, `~ALL`,
+  globs). Push rulesets apply to every branch and tag of the push. Organization rulesets also
+  select repositories by `repository_name`, `repository_id` or `repository_property` (custom
+  properties, plus `visibility`/`fork`).
+- **Modes and bypass.** `active` blocks, `evaluate` only records, `disabled` is ignored.
+  Repository admins do not bypass by default, as on GitHub. Bypass actors are matched as follows:
+  - `RepositoryRole` (2 maintain, 4 write, 5 admin; or higher)
+  - `Team` (direct members)
+  - `User`
+  - `Integration` (the app of an installation token, e.g. `github-actions` for `GITHUB_TOKEN`
+    pushes)
+  - `DeployKey` (SSH pushes with a deploy key)
+  - `OrganizationAdmin`
+  - `EnterpriseOwner` (site admins)
+
+  `bypass_mode` `always` bypasses everywhere, `pull_request` only when merging a PR, and
+  `exempt` skips the ruleset (no evaluation recorded). Bypassed pushes print GitHub's
+  "Bypassed rule violations" notice. `current_user_can_bypass` is computed for the viewer.
+- **Rule suites** are recorded for every evaluated ref update, including rejected ones:
+  - `result`: `fail` if an active rule blocked the update, `bypass` if active failures were
+    bypassed, `pass` otherwise.
+  - `evaluation_result`: `null` unless an evaluate-mode ruleset ran.
+  - Per-rule `details` hold the failure message.
+- **Reject messages** follow GitHub's `GH013: Repository rule violations found for <ref>.`
+  format, with a link to `/{o}/{r}/rules?ref=…` and one `- <message>` line per violation (with
+  the offending shas or paths). API errors read `Repository rule violations found\n\n<messages>`.
+- **Signatures** (`rules/sig.rs`). A commit counts as verified when its signature verifies
+  against a signing key of the user who owns the committer email (primary email, verified
+  `/user/emails`, or the forge noreply address):
+  - SSH signatures: verified in-process against `/user/ssh_signing_keys` (ed25519 and ECDSA),
+    with `ssh-keygen -Y verify` as the fallback for RSA.
+  - OpenPGP signatures: verified with `gpg` in a throwaway home directory, only when `gpg` is
+    installed (the default image has none, so they count as unverified there).
+  - x509 signatures are not supported.
+  - Commits forge creates itself (contents API, merges) count as signed, like GitHub's web-flow
+    signature.
+- **Delegated bypass for push rulesets.** A push ruleset with bypass actors uses delegated
+  bypass. A blocked pusher who is not a bypass actor gets a `pending` push bypass request for
+  the commit, and the GH013 output links it. The request is listed by
+  `/repos/{o}/{r}/bypass-requests/push-rules[/{n}]`, `/orgs/{org}/…` and `/enterprises/{e}/…`.
+  A bypass actor of the ruleset (or a repository admin, never the requester) approves or
+  denies it with the forge extension `PATCH /repos/{o}/{r}/bypass-requests/push-rules/{n}`
+  `{"status": "approve" | "deny"}`. GitHub does this in its web UI. The requester cancels it
+  with `DELETE`. Pushing the same commit again while the approval is valid (7 days) succeeds and
+  marks the request `completed`. API writes create a new commit on every attempt, so an
+  approval can't be reused for them; delegated bypass is effectively for git pushes.
+- **Limits.** The `update` rule's `update_allows_fetch_and_merge`, `pull_request`'s
+  `require_code_owner_review`, `require_last_push_approval`, `required_review_thread_resolution`
+  and `required_reviewers`, and enterprise-level rulesets are not enforced. Ruleset evaluation
+  fails closed: if the evaluation errors, the push is rejected. A push waits at most 60 s for
+  the server's answer.
 
 ## Enterprise administration (enterprise area)
 - **Site admins are the enterprise owners.** Every `/admin/*`, `/enterprise/*`, `/enterprises/{e}/*`,
@@ -118,6 +196,14 @@ Severity reflects impact on a multi-tenant instance where anyone can sign up.
   web UI) except site admins, addresses on the IP exception list, `/healthz`, `/readyz`, the
   session endpoint (so admins can sign in) and `/api/v3/manage/*`. The state is read from Postgres
   by every pod (cached 2 s).
+- **Repository invitations** are a site setting (`PUT /manage/v1/config/settings`
+  `{"repository_invitations": {"enabled": true}}`, default `FORGE_REPO_INVITATIONS`): off, a repo
+  admin's `PUT /collaborators/{u}` adds the user directly (GHES); on, it creates an invitation the
+  invitee accepts or declines (`/user/repository_invitations`). Settings writes are a row-locked
+  read-modify-write, so concurrent changes to different keys don't overwrite each other.
+- **Announcement banner**: `GET /api/forge/announcement` (public, like the GHES banner shown on
+  every page) returns the current `/enterprise/announcement` with its markdown rendered through
+  the sanitizing renderer of `POST /markdown`; the web UI shows it above every page.
 - **Pre-receive hooks: trust model.** Hook scripts and environments are **site-admin code**: only
   site admins can create or change hooks, choose their script repository/path or create
   environments; org owners and repo admins can only change the enforcement of hooks that allow
@@ -197,10 +283,27 @@ request when a workflow runs on `pull_request`.
   GitHub's blob-storage redirects. Artifact downloads require authentication even on public
   repositories (GitHub does the same). Uploads stream to object storage and are capped by
   `FORGE_ACTIONS_MAX_UPLOAD` (2 GiB).
+- **OIDC ID tokens** (`runner/oidc.rs`). Only jobs whose effective `permissions:` grant
+  `id-token: write` (job or workflow level, or `write-all`; never by default, and not for fork
+  pull requests unless the fork policy sends write tokens) get `ACTIONS_ID_TOKEN_REQUEST_URL` and
+  `ACTIONS_ID_TOKEN_REQUEST_TOKEN`. The request token (`fid_` + 40, sha256-stored with the job's
+  claims, masked in logs) works only while its job is `in_progress` and until the job token
+  expiry. `GET {url}&audience=X` returns `{"count":1,"value":<jwt>}`: RS256, 5 minutes,
+  `iss` = `{base}/_services/token` (GHES's issuer), `aud` = the requested audience or the owner URL
+  `{base}/{owner}`, `sub` from the repository / organization subject template
+  (`include_claim_keys`, default `repo:o/r:ref:<ref>`, `…:environment:<env>`, `…:pull_request`),
+  plus GitHub's claims (`repository*`, `ref*`, `sha`, `workflow*`, `job_workflow_*`, `run_*`,
+  `actor*`, `event_name`, `head_ref`, `base_ref`, `environment`, `runner_environment` =
+  `self-hosted`, `enterprise`, `jti`). Discovery and JWKS are public at
+  `{base}/_services/token/.well-known/openid-configuration` and `.../.well-known/jwks`. The
+  signing key is one RSA-2048 key per site (`actions_oidc_keys`, created once by the first pod);
+  its PKCS#8 private key is sealed for the `('oidc', 0)` X25519 key of
+  `api::actions_settings::crypto`, itself sealed with the master key (`FORGE_SECRET_KEY`), so a
+  database dump alone does not reveal it. No key rotation yet (rotate by deleting the row; tokens
+  signed by the old key then stop verifying). Cloud providers must reach the issuer URL over
+  HTTPS to trust it, so `FORGE_BASE_URL` must be the public HTTPS URL.
 - **Known gaps.**
   - No per-job kernel isolation with the shell executor: jobs on the same runner host can see
     each other's processes. Use one slot per pod (the shipped default), or the docker executor.
-  - No OIDC ID tokens (`ACTIONS_ID_TOKEN_REQUEST_URL`); only the subject-claim settings are
-    stored.
   - First-time-contributor approval for fork pull requests is not enforced, because there is
     no approval UI.

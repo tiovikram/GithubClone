@@ -188,6 +188,7 @@ pub async fn ensure_tag(s: &AppState, ctx: &RepoCtx, actor: &User, tag: &str, ta
     let git = s.git.git.clone();
     let target = target.to_string();
     let rn = refname.clone();
+    let (st, rctx, ractor) = (s.clone(), ctx.clone(), crate::rules::Actor::new(ctx, actor));
     let (_, updates) = s
         .git
         .write(ctx.repo.id, |path| async move {
@@ -196,11 +197,16 @@ pub async fn ensure_tag(s: &AppState, ctx: &RepoCtx, actor: &User, tag: &str, ta
                 .ok_or_else(|| anyhow::anyhow!("target vanished"))?;
             // Another writer may have created the tag meanwhile; keep theirs.
             if plumbing::rev_parse(&git, &path, &rn).await.is_none() {
+                let upd = crate::rules::RefUpdate::new(&rn, None, Some(&sha));
+                crate::rules::enforce_api(&st, &rctx, &ractor, &path, &[upd], crate::rules::Via::RefApi, None)
+                    .await
+                    .map_err(crate::api::gitapi::reject)?;
                 plumbing::update_ref(&git, &path, &rn, &sha, None).await?;
             }
             Ok(())
         })
-        .await?;
+        .await
+        .map_err(crate::api::gitapi::api_err)?;
     let changed = updates.changed();
     if !changed.is_empty() {
         if let Err(e) = crate::hooks::after_refs_changed(s, ctx, Some(actor), &changed).await {

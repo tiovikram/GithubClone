@@ -18,6 +18,7 @@ pub mod exec;
 pub mod expr;
 pub mod glob;
 pub mod logs;
+pub mod oidc;
 pub mod protocol;
 pub mod settings;
 pub mod storage;

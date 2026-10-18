@@ -178,6 +178,7 @@ pub async fn create_ref(s: &AppState, ctx: &RepoCtx, actor: &User, name: &str, s
     }
     let git = s.git.git.clone();
     let (name_c, sha_c) = (name.to_string(), sha.to_lowercase());
+    let (st, rctx, ractor) = (s.clone(), ctx.clone(), crate::rules::Actor::new(ctx, actor));
     let (kind, updates) = s
         .git
         .write(ctx.repo.id, |path| async move {
@@ -186,6 +187,8 @@ pub async fn create_ref(s: &AppState, ctx: &RepoCtx, actor: &User, name: &str, s
             if current_ref(&git, &path, &name_c).await?.is_some() {
                 return Err(reject(ApiError::unprocessable("Reference already exists")));
             }
+            let upd = crate::rules::RefUpdate::new(&name_c, None, Some(&sha_c));
+            crate::rules::enforce_api(&st, &rctx, &ractor, &path, &[upd], crate::rules::Via::RefApi, None).await.map_err(reject)?;
             // A ref can't be created inside or above an existing ref hierarchy.
             if let Err(e) = plumbing::update_ref(&git, &path, &name_c, &sha_c, None).await {
                 tracing::debug!(error = %e, "create ref failed");
@@ -207,6 +210,7 @@ pub async fn update_ref(s: &AppState, ctx: &RepoCtx, actor: &User, name: &str, s
     crate::protection::check_ref_update(s, ctx, name, &sha.to_lowercase()).await?;
     let git = s.git.git.clone();
     let (name_c, sha_c) = (name.to_string(), sha.to_lowercase());
+    let (st, rctx, ractor) = (s.clone(), ctx.clone(), crate::rules::Actor::new(ctx, actor));
     let (kind, updates) = s
         .git
         .write(ctx.repo.id, |path| async move {
@@ -218,6 +222,8 @@ pub async fn update_ref(s: &AppState, ctx: &RepoCtx, actor: &User, name: &str, s
             if !force && old != sha_c && !read::is_ancestor(&git, &path, &old, &sha_c).await? {
                 return Err(reject(ApiError::unprocessable("Update is not a fast forward")));
             }
+            let upd = crate::rules::RefUpdate::new(&name_c, Some(&old), Some(&sha_c));
+            crate::rules::enforce_api(&st, &rctx, &ractor, &path, &[upd], crate::rules::Via::RefApi, None).await.map_err(reject)?;
             plumbing::update_ref(&git, &path, &name_c, &sha_c, Some(&old)).await?;
             Ok(kind)
         })
@@ -231,12 +237,15 @@ pub async fn delete_ref(s: &AppState, ctx: &RepoCtx, actor: &User, name: &str) -
     crate::protection::check_ref_delete(s, ctx, name).await?;
     let git = s.git.git.clone();
     let name_c = name.to_string();
+    let (st, rctx, ractor) = (s.clone(), ctx.clone(), crate::rules::Actor::new(ctx, actor));
     let ((), updates) = s
         .git
         .write(ctx.repo.id, |path| async move {
             let Some(old) = current_ref(&git, &path, &name_c).await? else {
                 return Err(reject(ApiError::unprocessable("Reference does not exist")));
             };
+            let upd = crate::rules::RefUpdate::new(&name_c, Some(&old), None);
+            crate::rules::enforce_api(&st, &rctx, &ractor, &path, &[upd], crate::rules::Via::RefApi, None).await.map_err(reject)?;
             git.run(&path, &["update-ref", "-d", &name_c, &old]).await?;
             Ok(())
         })

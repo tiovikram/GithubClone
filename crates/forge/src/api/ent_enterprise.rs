@@ -339,11 +339,15 @@ async fn delete_stream(State(s): State<AppState>, SiteAdmin(u): SiteAdmin, Path(
     Ok(no_content())
 }
 
-/// forge has no push-ruleset bypass request workflow: the list is always empty (filters are
-/// still validated).
-async fn bypass_requests(State(s): State<AppState>, SiteAdmin(_): SiteAdmin, uri: OriginalUri, Path(e): Path<String>, Query(p): Query<PageParams>) -> ApiResult<Paged> {
+/// Push-ruleset bypass requests of every repository (`crate::rules::bypass`).
+async fn bypass_requests(
+    State(s): State<AppState>,
+    SiteAdmin(_): SiteAdmin,
+    Path(e): Path<String>,
+    Query(q): Query<crate::rules::bypass::ListFilter>,
+) -> ApiResult<Json<Value>> {
     ent::check_enterprise(&e)?;
-    Ok(Paged::new(&uri, &s, p, Some(0), vec![]))
+    Ok(Json(Value::Array(crate::rules::bypass::list(&s, None, None, &q).await?)))
 }
 
 // ---------------------------------------------------------------------------------------------
