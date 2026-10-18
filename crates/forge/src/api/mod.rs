@@ -13,6 +13,11 @@ pub mod meta;
 pub mod pulls;
 pub mod actions;
 pub mod actions_secrets;
+pub mod apps_core;
+pub mod apps_enterprise;
+pub mod apps_forge;
+pub mod apps_migrations;
+pub mod apps_oauth;
 pub mod actions_settings;
 pub mod commit_comments;
 pub mod deployments;
@@ -51,6 +56,13 @@ pub mod autolinks;
 pub mod rulesets;
 pub mod signing_keys;
 pub mod webhooks;
+pub mod ent_actions;
+pub mod ent_admin;
+pub mod ent_enterprise;
+pub mod ent_manage;
+pub mod ent_prereceive;
+pub mod ent_scim;
+pub mod ent_teams;
 // repos build-out area
 pub mod repos_env;
 pub mod repos_settings;
@@ -126,6 +138,17 @@ pub fn routes() -> Router<AppState> {
         .merge(review_reactions::routes())
         .merge(actions_secrets::routes())
         .merge(ref_dispatch::routes())
+        .merge(apps_core::routes())
+        .merge(apps_oauth::routes())
+        .merge(apps_enterprise::routes())
+        .merge(apps_migrations::routes())
+        .merge(ent_admin::routes())
+        .merge(ent_prereceive::routes())
+        .merge(ent_actions::routes())
+        .merge(ent_enterprise::routes())
+        .merge(ent_teams::routes())
+        .merge(ent_scim::routes())
+        .merge(ent_manage::routes())
         // repos build-out area
         .merge(repos_env::routes())
         .merge(repos_settings::routes())
