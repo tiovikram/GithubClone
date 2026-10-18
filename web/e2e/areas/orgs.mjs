@@ -412,7 +412,8 @@ export async function run(t) {
     await click('[data-testid="team-notif-off"]');
     await clickText("Save changes");
     await waitText("Team settings saved.");
-    await sel('[data-testid="no-external-groups"]');
+    // the groups panel: empty, or a picker when SCIM groups exist (e.g. after the admin e2e)
+    await sel('[data-testid="no-external-groups"], #team-group');
     const t1 = await orgApi(`/orgs/${ORG}/teams/${CHILD}`);
     assert(t1.json.description === "Nested team" && t1.json.notification_setting === "notifications_disabled", `team: ${t1.text}`);
     await shot("orgs-21-team-settings");
