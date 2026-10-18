@@ -18,6 +18,8 @@ export default defineConfig({
       // other server-owned paths: archives, raw files, release downloads, avatars, `/{login}.keys`
       "^/[^/]+/[^/]+/(archive|raw|releases/download|releases/latest/download)/": proxyOpts,
       "^/avatars/": proxyOpts,
+      // gist raw files: /gist/{login}/{id}/raw/...
+      "^/gist/[^/]+/[^/]+/raw/": proxyOpts,
       "^/[^/]+\\.keys$": proxyOpts,
     },
   },

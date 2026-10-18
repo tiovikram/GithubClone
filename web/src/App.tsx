@@ -41,6 +41,9 @@ export function App() {
             <Route path="search" element={<SearchPage />} />
             <Route path="settings" element={<UserSettingsPage />} />
             <Route path="settings/*" element={<UserSettingsPage />} />
+            {/* Rank above `:owner/:repo` (whose index route ties with `settings/*`). */}
+            <Route path="settings/:section" element={<UserSettingsPage />} />
+            <Route path="settings/:section/*" element={<UserSettingsPage />} />
             {topRoutes()}
             <Route path=":owner" element={<ProfilePage />} />
             <Route path=":owner/:repo" element={<RepoLayout />}>
