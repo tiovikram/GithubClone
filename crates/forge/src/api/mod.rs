@@ -18,6 +18,7 @@ pub mod runner_runners;
 pub mod apps_core;
 pub mod apps_enterprise;
 pub mod apps_forge;
+pub mod apps_manage;
 pub mod apps_migrations;
 pub mod apps_oauth;
 pub mod actions_settings;
@@ -86,6 +87,7 @@ pub mod dependency_graph;
 pub mod events_emit;
 // packages build-out area
 pub mod packages;
+pub mod packages_forge;
 pub mod projects_v2_rest;
 
 use axum::extract::{OriginalUri, Request};

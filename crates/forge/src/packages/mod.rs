@@ -213,6 +213,18 @@ pub async fn package_perm(state: &AppState, viewer: Option<&User>, pkg: &Package
     if pkg.visibility == "internal" && owner.kind == "Organization" && crate::orgs::is_member(&state.db, owner, v).await? {
         best = best.max(PkgPerm::Read);
     }
+    // Granular access ("Manage access"): a role granted on this package.
+    let granted: Option<String> = sqlx::query_scalar("SELECT role FROM package_access WHERE package_id = $1 AND user_id = $2")
+        .bind(pkg.id)
+        .bind(v.id)
+        .fetch_optional(&state.db)
+        .await?;
+    best = best.max(match granted.as_deref() {
+        Some("admin") => PkgPerm::Admin,
+        Some("write") => PkgPerm::Write,
+        Some("read") => PkgPerm::Read,
+        _ => PkgPerm::None,
+    });
     if pkg.inherit_access {
         if let Some(ctx) = linked_repo(state, Some(v), pkg).await? {
             best = best.max(match ctx.perm {

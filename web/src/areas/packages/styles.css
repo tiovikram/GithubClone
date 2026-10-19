@@ -1,0 +1,63 @@
+/* packages area: packages, GitHub Apps, OAuth apps, private registries */
+.pkg-page { padding-top: 24px; padding-bottom: 40px; }
+.pkg-row { align-items: flex-start; }
+.pkg-row-title { margin: 0 0 4px; overflow-wrap: anywhere; }
+.pkg-row-meta, .pkg-details { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+.pkg-details { flex-direction: column; list-style: none; padding: 0; margin: 8px 0 16px; }
+.pkg-filters .input { min-width: 0; }
+.pkg-header { margin-bottom: 8px; }
+.pkg-title-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pkg-title { margin: 0; overflow-wrap: anywhere; }
+.pkg-title .slash { margin: 0 4px; color: var(--fg-muted); }
+.pkg-org-head { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; }
+.pkg-org-head h1 { margin: 0; }
+.pkg-install .input-group { margin-bottom: 8px; }
+.pkg-install p { margin: 8px 0; }
+.pkg-readme .box-body { overflow-x: auto; }
+.pkg-version-row { align-items: center; }
+.pkg-version-name { font-weight: 600; margin-right: 6px; overflow-wrap: anywhere; }
+.pkg-version-title { display: flex; gap: 8px; align-items: center; overflow-wrap: anywhere; }
+.pkg-tag { margin-right: 4px; }
+.pkg-dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 16px; margin: 0; }
+.pkg-dl dt { color: var(--fg-muted); }
+.pkg-dl dd { margin: 0; overflow-wrap: anywhere; min-width: 0; }
+.pkg-wrap { word-break: break-all; }
+.pkg-sidebar h2 { display: flex; gap: 6px; align-items: center; }
+.pkg-sidebar-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 4px; }
+.pkg-sidebar-list li { overflow-wrap: anywhere; }
+.pkg-danger-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; border-top: 1px solid var(--border-muted); }
+.danger-zone > .box-body:first-child { border-top: 0; }
+.pkg-danger-delete { border-top: 1px solid var(--border-muted); }
+.pkg-access-form { display: flex; gap: 8px; flex-wrap: wrap; border-top: 1px solid var(--border-muted); }
+.pkg-access-form .input.grow { min-width: 140px; flex: 1; }
+.pkg-access-row { align-items: center; }
+.pkg-settings .checkbox, .app-form .checkbox, .app-general .checkbox { display: block; }
+.checkbox, .radio { cursor: pointer; }
+.radio { display: block; margin: 6px 0; }
+
+.app-perm-group legend { font-size: 16px; }
+.app-perm-rows { border: 1px solid var(--border); border-radius: var(--radius); }
+.app-perm-row { align-items: center; flex-wrap: wrap; }
+.app-perm-row .grow { min-width: 180px; flex: 1; }
+.app-events { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 4px 16px; }
+.app-event { font-family: var(--mono); font-size: 13px; }
+.app-perm-list { margin: 0 0 8px; padding-left: 20px; }
+.app-logo {
+  width: 48px; height: 48px; border-radius: var(--radius); background: var(--accent-subtle); color: var(--accent);
+  display: inline-flex; align-items: center; justify-content: center; font-weight: 600; font-size: 22px; flex: none;
+}
+.app-public { padding-top: 24px; padding-bottom: 40px; }
+.app-public-head { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; }
+.app-public-head h1 { margin: 0; }
+.app-install { padding-top: 24px; padding-bottom: 40px; }
+.repo-picker { margin: 8px 0 8px 24px; }
+.repo-picker-list { max-height: 260px; overflow-y: auto; border: 1px solid var(--border); border-radius: var(--radius); margin-top: 8px; }
+.pem { white-space: pre-wrap; word-break: break-all; font-size: 11px; max-height: 200px; overflow: auto; background: var(--bg-inset); padding: 8px; border-radius: var(--radius); }
+.device-page { padding-top: 48px; padding-bottom: 48px; }
+.device-page .input-lg { letter-spacing: 2px; text-align: center; }
+.device-done { text-align: center; }
+.form-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+@media (max-width: 600px) {
+  .pkg-dl { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .pkg-dl dd { margin-bottom: 8px; }
+}
