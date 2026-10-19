@@ -21,6 +21,7 @@ pub mod projects;
 pub mod pull;
 pub mod query;
 pub mod repo;
+pub mod review_threads;
 pub mod search;
 pub mod rulesets;
 pub mod services;
@@ -50,7 +51,7 @@ pub use loaders::Ld;
 /// The mutation root: the original subset plus the gh-compatibility additions.
 #[derive(async_graphql::MergedObject)]
 #[graphql(name = "Mutation")]
-pub struct MutationRoot(mutation::Mutation, ghcompat::GhMutation, discussions::DiscussionMutation, projects::ProjectsMutation);
+pub struct MutationRoot(mutation::Mutation, ghcompat::GhMutation, discussions::DiscussionMutation, projects::ProjectsMutation, review_threads::ReviewThreadMutation);
 
 pub type ForgeSchema = Schema<query::Query, MutationRoot, EmptySubscription>;
 
@@ -60,7 +61,7 @@ pub fn schema() -> &'static ForgeSchema {
     SCHEMA.get_or_init(|| {
         Schema::build(
             query::Query,
-            MutationRoot(mutation::Mutation, ghcompat::GhMutation, discussions::DiscussionMutation, projects::ProjectsMutation),
+            MutationRoot(mutation::Mutation, ghcompat::GhMutation, discussions::DiscussionMutation, projects::ProjectsMutation, review_threads::ReviewThreadMutation),
             EmptySubscription,
         )
             .validation_mode(ValidationMode::Fast)

@@ -397,6 +397,8 @@ pub struct CommentFull {
     pub is_pull: bool,
     pub reactions: HashMap<String, i64>,
     pub author_association: String,
+    /// (pinned_at, pinned_by) when the comment is pinned.
+    pub pin: Option<(DateTime<Utc>, Option<User>)>,
 }
 
 /// Batch-loads users, issue numbers, reactions and associations for comments of one repository.
@@ -410,17 +412,22 @@ pub async fn load_comments(db: &PgPool, ctx: &RepoCtx, rows: Vec<CommentRow>) ->
         .fetch_all(db)
         .await?;
     let issues: HashMap<i64, (i64, bool)> = issues.into_iter().map(|(id, n, p)| (id, (n, p))).collect();
+    let pins: Vec<(i64, DateTime<Utc>, Option<i64>)> =
+        sqlx::query_as("SELECT comment_id, pinned_at, pinned_by FROM issue_comment_pins WHERE comment_id = ANY($1)").bind(&ids).fetch_all(db).await?;
     let mut user_ids: Vec<i64> = rows.iter().filter_map(|r| r.user_id).collect();
+    let author_ids = user_ids.clone();
+    user_ids.extend(pins.iter().filter_map(|p| p.2));
     user_ids.sort_unstable();
     user_ids.dedup();
     let users = users_by_ids(db, &user_ids).await?;
-    let assoc = associations(db, ctx, &user_ids).await?;
+    let assoc = associations(db, ctx, &author_ids).await?;
     let mut reactions = reaction_counts(db, "issue_comment", &ids).await?;
     Ok(rows
         .into_iter()
         .map(|row| {
             let (issue_number, is_pull) = issues.get(&row.issue_id).copied().unwrap_or((0, false));
             CommentFull {
+                pin: pins.iter().find(|p| p.0 == row.id).map(|p| (p.1, p.2.and_then(|id| users.get(&id).cloned()))),
                 user: row.user_id.and_then(|id| users.get(&id).cloned()),
                 author_association: row.user_id.and_then(|id| assoc.get(&id).cloned()).unwrap_or_else(|| "NONE".into()),
                 reactions: reactions.remove(&row.id).unwrap_or_default(),
@@ -451,6 +458,10 @@ pub fn comment(api: &str, base: &str, ctx: &RepoCtx, c: &CommentFull) -> Value {
         "author_association": c.author_association,
         "performed_via_github_app": null,
         "reactions": reactions_json(api, &url, &c.reactions),
+        "pin": c.pin.as_ref().map(|(at, by)| json!({
+            "pinned_at": ts(*at),
+            "pinned_by": by.as_ref().map(|u| crate::json::user::simple(api, base, u)),
+        })),
     })
 }
 

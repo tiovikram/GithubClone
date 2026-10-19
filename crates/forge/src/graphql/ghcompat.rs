@@ -75,6 +75,14 @@ async fn lockable(ctx: &Context<'_>, id: i64) -> async_graphql::Result<Option<Lo
     }))
 }
 
+/// Locks/unlocks a Discussion node; `None` when `id` is not a discussion.
+async fn discussion_lockable(ctx: &Context<'_>, id: &ID, locked: bool) -> async_graphql::Result<Option<Lockable>> {
+    let Some(did) = ids::decode_int(id, "Discussion") else { return Ok(None) };
+    let d = super::discussions::discussion_node(ctx, did).await?.ok_or_else(|| unresolvable(id))?;
+    let row = crate::api::discussions::set_locked(st(ctx), &d.repo, &d.row, locked).await.map_err(api_err)?;
+    Ok(Some(Lockable::Discussion(super::discussions::GDiscussion { row: Arc::new(row), repo: d.repo.clone() })))
+}
+
 // ---------------------------------------------------------------------------------------------
 // Unknown mutations
 
@@ -134,6 +142,7 @@ pub fn undefined_mutation_fields(req: &async_graphql::Request) -> Option<Value> 
 pub enum Lockable {
     Issue(GIssue),
     PullRequest(GPull),
+    Discussion(super::discussions::GDiscussion),
 }
 
 #[derive(Enum, Copy, Clone, Eq, PartialEq, Debug)]
@@ -439,7 +448,13 @@ impl GhMutation {
         let moved = issue_ops::transfer_issue(st(ctx), &src, actor(ctx), &row, &dest, input.create_labels_if_missing.unwrap_or(false))
             .await
             .map_err(api_err)?;
-        Ok(Some(TransferIssuePayload { client_mutation_id: input.client_mutation_id, issue: reload_issue(ctx, moved.id).await? }))
+        // Fresh row: the request's dataloader still caches the issue as it was before the move.
+        let fresh: IssueRow = sqlx::query_as("SELECT * FROM issues WHERE id = $1").bind(moved.id).fetch_one(&st(ctx).db).await?;
+        let issue = match issue::materialize(ctx, vec![fresh]).await?.pop() {
+            Some(IssueOrPullRequest::Issue(i)) => Some(i),
+            _ => None,
+        };
+        Ok(Some(TransferIssuePayload { client_mutation_id: input.client_mutation_id, issue }))
     }
 
     async fn pin_issue(&self, ctx: &Context<'_>, input: PinIssueInput) -> async_graphql::Result<Option<PinIssuePayload>> {
@@ -455,6 +470,9 @@ impl GhMutation {
     }
 
     async fn lock_lockable(&self, ctx: &Context<'_>, input: LockLockableInput) -> async_graphql::Result<Option<LockLockablePayload>> {
+        if let Some(d) = discussion_lockable(ctx, &input.lockable_id, true).await? {
+            return Ok(Some(LockLockablePayload { client_mutation_id: input.client_mutation_id, locked_record: Some(d) }));
+        }
         let (rc, row) = subject(ctx, &input.lockable_id, &["Issue", "PullRequest"]).await?;
         let reason = input.lock_reason.map(|r| lock_reason_str(r).to_string());
         crate::api::issues::lock_issue(st(ctx), &rc, actor(ctx), row.number, reason).await.map_err(api_err)?;
@@ -462,6 +480,9 @@ impl GhMutation {
     }
 
     async fn unlock_lockable(&self, ctx: &Context<'_>, input: UnlockLockableInput) -> async_graphql::Result<Option<UnlockLockablePayload>> {
+        if let Some(d) = discussion_lockable(ctx, &input.lockable_id, false).await? {
+            return Ok(Some(UnlockLockablePayload { client_mutation_id: input.client_mutation_id, unlocked_record: Some(d) }));
+        }
         let (rc, row) = subject(ctx, &input.lockable_id, &["Issue", "PullRequest"]).await?;
         crate::api::issues::unlock_issue(st(ctx), &rc, actor(ctx), row.number).await.map_err(api_err)?;
         Ok(Some(UnlockLockablePayload { client_mutation_id: input.client_mutation_id, unlocked_record: lockable(ctx, row.id).await? }))

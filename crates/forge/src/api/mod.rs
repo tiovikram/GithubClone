@@ -77,6 +77,7 @@ pub mod repo_merge_opts;
 pub mod repos_pages;
 pub mod users_extra;
 pub mod issues_extra;
+pub mod sub_issues;
 pub mod gist_comments;
 pub mod notifications;
 pub mod invitations;
@@ -168,6 +169,7 @@ pub fn routes() -> Router<AppState> {
         .merge(repos_pages::routes())
         .merge(users_extra::routes())
         .merge(issues_extra::routes())
+        .merge(sub_issues::routes())
         .merge(gist_comments::routes())
         .merge(notifications::routes())
         .merge(invitations::routes())

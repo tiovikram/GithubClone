@@ -6,31 +6,76 @@ import { Avatar, ErrorBox, LabelPill, RelTime, Spinner, UserLink } from "./commo
 import { useAsync } from "../hooks";
 import { Link, useLocation } from "react-router-dom";
 
-export function CommentBox({ user, body, created, association, repoPath, header }: {
+export function CommentBox({ user, body, created, association, repoPath, header, menu, footer, onSave, renderBody, id, verb = "commented", className }: {
   user: User | null;
   body: string | null;
   created: string;
   association?: string;
   repoPath: string;
   header?: ReactNode;
+  /** Header menu (e.g. a "…" dropdown); `startEdit` switches the box into edit mode. */
+  menu?: (startEdit: () => void) => ReactNode;
+  /** Below the body (e.g. reactions). */
+  footer?: ReactNode;
+  /** Saves an edited body; enables editing. */
+  onSave?: (body: string) => Promise<void>;
+  /** Custom body renderer (e.g. suggestions); defaults to Markdown. */
+  renderBody?: (body: string | null) => ReactNode;
+  id?: string;
+  verb?: string;
+  className?: string;
 }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(body || "");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const startEdit = () => {
+    setDraft(body || "");
+    setErr("");
+    setEditing(true);
+  };
   return (
-    <div className="timeline-item">
+    <div className={"timeline-item" + (className ? ` ${className}` : "")} id={id}>
       <div className="timeline-avatar"><Avatar user={user} size={40} /></div>
       <div className="comment box">
         <div className="comment-header">
           <span>
-            <UserLink user={user} /> <span className="muted">commented <RelTime iso={created} /></span>
+            <UserLink user={user} /> <span className="muted">{verb} <RelTime iso={created} /></span>
           </span>
           <span className="spacer" />
           {header}
           {association && association !== "NONE" && (
             <span className="badge">{association.toLowerCase().replace(/_/g, " ")}</span>
           )}
+          {menu?.(startEdit)}
         </div>
-        <div className="comment-body">
-          <Markdown source={body} comment repoPath={repoPath} />
-        </div>
+        {editing && onSave ? (
+          <form className="comment-body" aria-label="Edit comment" onSubmit={async (e) => {
+            e.preventDefault();
+            setBusy(true);
+            setErr("");
+            try {
+              await onSave(draft);
+              setEditing(false);
+            } catch (ex) {
+              setErr(errorMessage(ex));
+            } finally {
+              setBusy(false);
+            }
+          }}>
+            <MarkdownEditor value={draft} onChange={setDraft} label="Edit comment" repoPath={repoPath} />
+            {err && <p className="c-danger small" role="alert">{err}</p>}
+            <div className="form-actions">
+              <button type="button" className="btn" onClick={() => setEditing(false)}>Cancel</button>
+              <button type="submit" className="btn btn-primary" disabled={busy}>{busy ? "Saving…" : "Update comment"}</button>
+            </div>
+          </form>
+        ) : (
+          <div className="comment-body">
+            {renderBody ? renderBody(body) : <Markdown source={body} comment repoPath={repoPath} />}
+          </div>
+        )}
+        {footer && <div className="comment-footer">{footer}</div>}
       </div>
     </div>
   );
@@ -72,14 +117,18 @@ export function MarkdownEditor({ value, onChange, label, placeholder, id, rows =
 }
 
 /** Comment form; `extra` renders additional buttons (e.g. Close issue) that receive the current text. */
-export function CommentForm({ onSubmit, extra, repoPath }: {
+export function CommentForm({ onSubmit, extra, repoPath, initial = "", label = "Add a comment", submitText = "Comment" }: {
   onSubmit: (body: string) => Promise<void>;
   extra?: (body: string, reset: () => void) => ReactNode;
   repoPath: string;
+  /** Initial text (e.g. a quote reply). */
+  initial?: string;
+  label?: string;
+  submitText?: string;
 }) {
   const { user } = useAuth();
   const loc = useLocation();
-  const [body, setBody] = useState("");
+  const [body, setBody] = useState(initial);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>();
   if (!user) {
@@ -104,7 +153,7 @@ export function CommentForm({ onSubmit, extra, repoPath }: {
     }
   };
   return (
-    <form className="timeline-item" onSubmit={submit} aria-label="Add a comment">
+    <form className="timeline-item" onSubmit={submit} aria-label={label}>
       <div className="timeline-avatar"><Avatar user={user} size={40} /></div>
       <div className="comment box comment-form">
         <MarkdownEditor value={body} onChange={setBody} label="Comment" repoPath={repoPath} />
@@ -112,7 +161,7 @@ export function CommentForm({ onSubmit, extra, repoPath }: {
         <div className="form-actions">
           {extra?.(body, () => setBody(""))}
           <button type="submit" className="btn btn-primary" disabled={busy || !body.trim()}>
-            {busy ? "Commenting…" : "Comment"}
+            {busy ? "Commenting…" : submitText}
           </button>
         </div>
       </div>
@@ -133,6 +182,7 @@ export function LabelsSidebar({ owner, name, number, labels, canEdit, onChange }
   canEdit: boolean;
   onChange: (labels: Label[]) => void;
 }) {
+  const base = `/${owner}/${name}`;
   const [editing, setEditing] = useState(false);
   const all = useAsync(() => (editing ? api.repoLabels(owner, name) : Promise.resolve([] as Label[])), [owner, name, editing]);
   const [sel, setSel] = useState<Set<string>>(new Set());
@@ -180,6 +230,7 @@ export function LabelsSidebar({ owner, name, number, labels, canEdit, onChange }
               </label>
             ))}
           {err && <p className="c-danger small" role="alert">{err}</p>}
+          <Link to={`${base}/labels`} className="small">Edit labels</Link>
           <div className="form-actions">
             <button type="button" className="btn btn-sm" onClick={() => setEditing(false)}>Cancel</button>
             <button type="button" className="btn btn-sm btn-primary" disabled={busy} onClick={save}>
@@ -188,7 +239,9 @@ export function LabelsSidebar({ owner, name, number, labels, canEdit, onChange }
           </div>
         </fieldset>
       ) : labels.length ? (
-        <div className="label-list">{labels.map((l) => <LabelPill key={l.id} label={l} />)}</div>
+        <div className="label-list">{labels.map((l) => (
+          <Link key={l.id} to={`${base}/issues?labels=${encodeURIComponent(l.name)}`} className="label-link"><LabelPill label={l} /></Link>
+        ))}</div>
       ) : (
         <p className="muted small">None yet</p>
       )}

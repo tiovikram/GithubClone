@@ -147,8 +147,11 @@ impl GDiscussion {
             _ => DiscussionStateReason::Resolved,
         })
     }
-    async fn locked(&self) -> bool {
+    pub async fn locked(&self) -> bool {
         self.row.locked
+    }
+    pub async fn active_lock_reason(&self) -> Option<super::enums::LockReason> {
+        None
     }
     async fn author(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<Actor>> {
         Ok(loaders::user(ctx, self.row.user_id).await?.map(Actor::from_user))

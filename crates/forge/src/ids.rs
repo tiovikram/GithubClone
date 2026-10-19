@@ -16,6 +16,7 @@ fn prefix(kind: &str) -> &'static str {
         "Milestone" => "MI_",
         "PullRequestReview" => "PRR_",
         "PullRequestReviewComment" => "PRRC_",
+        "PullRequestReviewThread" => "PRRT_",
         "Release" => "RE_",
         "ReleaseAsset" => "RA_",
         "Commit" => "C_",

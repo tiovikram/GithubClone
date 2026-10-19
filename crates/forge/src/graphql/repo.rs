@@ -758,8 +758,10 @@ impl GRepo {
     async fn funding_links(&self) -> Vec<FundingLink> {
         Vec::new()
     }
-    async fn issue_templates(&self) -> Option<Vec<IssueTemplate>> {
-        Some(Vec::new())
+    /// Markdown issue forms in `.github/ISSUE_TEMPLATE/*.md` on the default branch (front matter
+    /// `name`, `about`, `title`; the rest is the body). YAML issue forms are not supported.
+    async fn issue_templates(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<Vec<IssueTemplate>>> {
+        Ok(Some(issue_templates(st(ctx), &self.ctx).await.unwrap_or_default()))
     }
     async fn projects(
         &self,
@@ -1795,25 +1797,82 @@ impl FundingLink {
     }
 }
 
-pub struct IssueTemplate;
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct IssueTemplate {
+    pub name: String,
+    pub title: Option<String>,
+    pub body: Option<String>,
+    pub about: Option<String>,
+    pub filename: Option<String>,
+}
 
 #[Object]
 impl IssueTemplate {
-    async fn name(&self) -> String {
-        String::new()
+    async fn name(&self) -> &str {
+        &self.name
     }
-    async fn title(&self) -> Option<String> {
-        None
+    async fn title(&self) -> Option<&str> {
+        self.title.as_deref()
     }
-    async fn body(&self) -> Option<String> {
-        None
+    async fn body(&self) -> Option<&str> {
+        self.body.as_deref()
     }
-    async fn about(&self) -> Option<String> {
-        None
+    async fn about(&self) -> Option<&str> {
+        self.about.as_deref()
     }
-    async fn filename(&self) -> Option<String> {
-        None
+    async fn filename(&self) -> Option<&str> {
+        self.filename.as_deref()
     }
+}
+
+async fn issue_templates(s: &AppState, repo: &RepoCtx) -> anyhow::Result<Vec<IssueTemplate>> {
+    let path = s.git.sync(repo.repo.id).await?;
+    let tree = format!("refs/heads/{}:.github/ISSUE_TEMPLATE", repo.repo.default_branch);
+    if !crate::git::read::safe_rev(&repo.repo.default_branch) {
+        return Ok(Vec::new());
+    }
+    let entries = match crate::git::read::ls_tree(&s.git.git, &path, &tree, None, false).await {
+        Ok(e) => e,
+        Err(_) => return Ok(Vec::new()),
+    };
+    let md: Vec<_> = entries.into_iter().filter(|e| e.kind == "blob" && e.path.to_lowercase().ends_with(".md")).collect();
+    let blobs = crate::git::read::cat_objects(&s.git.git, &path, &md.iter().map(|e| e.sha.clone()).collect::<Vec<_>>()).await?;
+    let mut out: Vec<IssueTemplate> = md
+        .iter()
+        .zip(blobs)
+        .filter_map(|(e, b)| b.map(|b| parse_issue_template(e.name(), &String::from_utf8_lossy(&b.data))))
+        .collect();
+    out.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+    Ok(out)
+}
+
+/// Parses a Markdown issue template: optional `---` front matter of `key: value` lines.
+pub fn parse_issue_template(filename: &str, text: &str) -> IssueTemplate {
+    let unquote = |v: &str| v.trim().trim_matches(|c| c == '"' || c == '\'').to_string();
+    let mut t = IssueTemplate { filename: Some(filename.to_string()), ..Default::default() };
+    let text = text.strip_prefix('\u{feff}').unwrap_or(text);
+    let mut body = text;
+    if let Some(rest) = text.strip_prefix("---\n").or_else(|| text.strip_prefix("---\r\n")) {
+        if let Some(end) = rest.find("\n---") {
+            for line in rest[..end].lines() {
+                if let Some((k, v)) = line.split_once(':') {
+                    let v = unquote(v);
+                    match k.trim() {
+                        "name" => t.name = v,
+                        "about" => t.about = Some(v),
+                        "title" if !v.is_empty() => t.title = Some(v),
+                        _ => {}
+                    }
+                }
+            }
+            body = rest[end + 4..].trim_start_matches(['\r', '\n']);
+        }
+    }
+    if t.name.is_empty() {
+        t.name = filename.trim_end_matches(".md").replace(['-', '_'], " ");
+    }
+    t.body = Some(body.to_string());
+    t
 }
 
 // Projects are not implemented; these types exist so gh's queries and introspection work.

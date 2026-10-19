@@ -153,7 +153,7 @@ pub async fn pulls_for_issues(db: &PgPool, rows: Vec<IssueRow>) -> ApiResult<Vec
 }
 
 /// Records an issue event (timeline). `data` carries event-specific fields, e.g.
-/// `{"requested_reviewer": <user id>, "review_requester": <user id>}`, `{"from": .., "to": ..}`.
+/// `{"requested_reviewer_id": <user id>, "review_requester_id": <user id>}`, `{"from": .., "to": ..}`.
 pub async fn record_event<'e, E: sqlx::PgExecutor<'e>>(
     db: E,
     pull: &Pull,
@@ -1224,7 +1224,7 @@ pub async fn request_reviewers(state: &AppState, ctx: &RepoCtx, actor: &User, nu
             .await?
             .rows_affected();
         if added > 0 {
-            record_event(&state.db, &pull, Some(actor.id), "review_requested", None, json!({"requested_reviewer": u.id, "review_requester": actor.id}))
+            record_event(&state.db, &pull, Some(actor.id), "review_requested", None, json!({"requested_reviewer_id": u.id, "review_requester_id": actor.id}))
                 .await?;
             let reviewer = crate::json::user::simple(&state.api_url(), state.base_url(), &u);
             crate::api::events_emit::pull_event(state, ctx, actor, "review_requested", pull.clone(), json!({"requested_reviewer": reviewer})).await;
@@ -1245,7 +1245,7 @@ pub async fn remove_requested_reviewers(state: &AppState, ctx: &RepoCtx, actor: 
             .await?
             .rows_affected();
         if removed > 0 {
-            record_event(&state.db, &pull, Some(actor.id), "review_request_removed", None, json!({"requested_reviewer": u.id, "review_requester": actor.id}))
+            record_event(&state.db, &pull, Some(actor.id), "review_request_removed", None, json!({"requested_reviewer_id": u.id, "review_requester_id": actor.id}))
                 .await?;
         }
     }
