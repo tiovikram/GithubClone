@@ -33,9 +33,12 @@ All numbers below were measured locally on this machine (Apple silicon, Docker D
 | Pod-kill chaos | 0 HTTP errors across about 477k requests with 24 forge pod kills (graceful and `--force`) on the two clusters. Pushes interrupted by kill -9 mid-push are atomic. 0 lost acknowledged pushes, `git fsck --strict` clean. Postgres and MinIO pod deletes recover in 3–4 s | [docs/deploy.md](docs/deploy.md) |
 | Runner and registry chaos | Runner pod deleted gracefully mid-job: the job still finishes `success`. Force-deleted or `kill -9`: the run fails after the 3 min heartbeat timeout, re-running it succeeds, and no runs are left stuck. A 96 MB chunked OCI upload survives killing every forge pod at once: it resumes, and the sha256 matches | [docs/deploy.md](docs/deploy.md) |
 | Security review | 24 issues fixed (including 2 critical git option injections), each with a regression test. Remaining accepted risks are listed | [docs/security.md](docs/security.md) |
-| Tests | `cargo test`: 210 tests, all passing. Web UI e2e in headless Chrome: 32/32 flows (`web/e2e/run.mjs`) | |
+| Web UI | Every server feature area has UI. The browser e2e in headless Chrome passes **239/239 steps** on a fresh database: 32 core flows plus 207 steps across the 8 feature areas. Each area includes 375 px mobile checks and no uncaught page errors | [docs/web/](docs/web/), [docs/WEB-BUILDOUT.md](docs/WEB-BUILDOUT.md) |
+| Tests | `cargo test`: 241 tests, all passing | |
 
-Implemented, beyond the basics:
+Implemented, beyond the basics (all of it in the web UI as well as the APIs; see
+[docs/web/](docs/web/) for a page-by-page map of each area: planning, repoadmin, actions,
+security, orgs, packages, social, admin):
 - Organizations, teams, collaborators, base permissions, custom repository and organization roles.
 - Issues, labels, milestones, reactions and timelines.
 - Pull requests:
@@ -111,7 +114,8 @@ cargo test -p forge                                     # unit + integration tes
 tests/gh/run.sh                                         # gh suite; writes tests/gh/report.md
 (cd tools/conformance && node run.mjs --base http://localhost:3000/api/v3 --token <token> \
     --org <org you own> --collaborator <second user> --collaborator-token <their token>)   # REST conformance
-(cd web && caffeinate -dims node e2e/run.mjs --base http://localhost:3000 --login e2e1 --password 'e2e-pass-123')   # web UI e2e
+(cd web && caffeinate -dims node e2e/run.mjs --base http://localhost:3000 --login e2e1 --password 'e2e-pass-123')   # web UI e2e: core flows + every area
+#   the site admin flows need the first account on a fresh database; --areas a,b and --only-areas narrow the run
 scripts/k8s/e2e.sh k3d && scripts/k8s/e2e.sh kind       # cluster up, full smoke, k6 load, pod/runner/registry chaos, cluster down
 tests/baseline/compat.sh; tests/baseline/k8s.sh; tests/baseline/bench.sh; tests/baseline/chaos.sh   # Forgejo comparison
 ```
@@ -162,6 +166,23 @@ the behaviour behind an operation is shallower than GitHub's, it is listed here:
   - a slow pusher holds the repo write lock.
 - **Writes:** writes are about 2x slower than on 2026-10-12 (p50 3.0 → 5.6 ms at 50 it/s), while
   reads and git are unchanged. This is not investigated yet; see [docs/baseline.md](docs/baseline.md).
+- **Web UI** (per-area details in [docs/web/](docs/web/)). These are missing because the server
+  doesn't support them:
+  - auto-merge;
+  - OAuth web authorization flow (only the device flow);
+  - two-factor authentication and a session list;
+  - notification preferences and email delivery;
+  - team review requests;
+  - "internal" repository visibility;
+  - package download counts;
+  - global webhook delivery log.
+
+  These are UI simplifications:
+  - roadmap views render as tables;
+  - only Markdown issue templates are read, not YAML issue forms;
+  - a pending review lives in the browser tab until it is submitted.
+
+  The SPA ships as one bundle, about 390 kB gzipped; areas are not lazy-loaded yet.
 - **High availability:** the design is single-region. Postgres and MinIO run as single-instance
   StatefulSets in the manifests. Production would use their HA operators; forge itself needs no
   changes for that.
