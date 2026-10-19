@@ -483,9 +483,11 @@ export async function run(t) {
       }, "a delivery");
       await page().locator('[data-testid="delivery"]').click();
       await page().waitForSelector('[data-testid="delivery-detail"]');
-      await waitBody(/X-GitHub-Event: ping/i);
-      await page().locator('[data-testid="delivery-detail"] button[role=tab]::-p-text(Response)').click();
+      // A delivery refused before sending (private address blocked) has no request headers.
       const delivered = got.length > 0;
+      if (delivered) await waitBody(/X-GitHub-Event: ping/i);
+      else await waitBody(/"zen"|"hook_id"|"hook"/);
+      await page().locator('[data-testid="delivery-detail"] button[role=tab]::-p-text(Response)').click();
       if (delivered) await waitText("thanks");
       else log("    note: the delivery did not reach the local receiver (server blocks private addresses); response shows the error");
       await shot("ra-19-delivery");
