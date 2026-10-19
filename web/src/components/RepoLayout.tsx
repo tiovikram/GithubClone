@@ -5,7 +5,7 @@ import { api, errorMessage, type Repo } from "../api";
 import { useAuth } from "../auth";
 import { useAsync } from "../hooks";
 import { repoTabs, Slot } from "../areas";
-import { Async } from "./common";
+import { Async, Spinner } from "./common";
 import { CodeIcon, ForkIcon, GearIcon, IssueOpenIcon, LockIcon, PullIcon, RepoIcon, StarIcon, TagIcon } from "./icons";
 
 function StarButton({ repo, onChange }: { repo: Repo; onChange: (count: number) => void }) {
@@ -107,6 +107,11 @@ export function RepoLayout() {
   const loc = useLocation();
   const state = useAsync(() => api.repo(owner, name), [owner, name]);
   if (name.endsWith(".git")) return <Navigate to={`/${owner}/${name.slice(0, -4)}`} replace />;
+  // While another repository loads, don't render its pages with the previous repository's
+  // context (they would fetch e.g. the old repo's PR #1). After loading, the API's answer wins
+  // even if it differs (renamed/transferred repos redirect).
+  const d = state.data;
+  if (state.loading && d && `${d.owner.login}/${d.name}`.toLowerCase() !== `${owner}/${name}`.toLowerCase()) return <Spinner />;
   return (
     <Async state={state}>
       {(repo) => {
